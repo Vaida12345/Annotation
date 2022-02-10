@@ -11,7 +11,7 @@ import SwiftUI
 struct AnnotationApp: App {
     var body: some Scene {
         DocumentGroup(newDocument: AnnotationDocument()) { file in
-            ContentView(document: file.$document)
+            DocumentView(document: file.$document)
         }
     }
 }
