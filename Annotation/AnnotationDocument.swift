@@ -22,6 +22,7 @@ struct AnnotationDocument: FileDocument {
     }
 
     static var readableContentTypes: [UTType] { [.annotationProject] }
+    static var writableContentTypes: [UTType] { [.annotationProject, .folder] }
 
     init(configuration: ReadConfiguration) throws {
         let wrapper = configuration.file
