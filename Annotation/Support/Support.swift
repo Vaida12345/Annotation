@@ -1053,6 +1053,8 @@ extension NSImage {
             resultSize.width = size.width
             resultSize.height = size.width * pixelSize.height / pixelSize.width
         }
+        print(pixelSize, size, resultSize)
+        
         return resultSize
     }
     

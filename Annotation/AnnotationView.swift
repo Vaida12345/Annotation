@@ -11,7 +11,7 @@ import SwiftUI
 
 struct AnnotationView: NSViewRepresentable {
 
-    typealias NSViewType = NSImageView
+    typealias NSViewType = NSView
 
     // core
     @Binding var annotation: Annotation
@@ -21,20 +21,20 @@ struct AnnotationView: NSViewRepresentable {
     // layout
     let size: CGSize
     
-    var imageView: NSImageView = NSImageView()
-    
     /// The vc taking charge of NSPanGestureRecognizer
     @State var viewController = ViewController(nibName: nil, bundle: nil)
     
 //    var textField = NSTextField()
 //    var annotationsViews: [NSView] = []
 
-    func makeNSView(context: Context) -> NSImageView {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: NSRect(origin: .zero, size: size))
+        let imageView: NSImageView = NSImageView()
 //        imageView.imageScaling = .scaleProportionallyUpOrDown
         let image = annotation.image
+        image.size = image.aspectRatioFit(in: size)
         imageView.frame = CGRect(origin: .zero, size: size)
         imageView.image = image
-        image.size = size
         
         viewController.viewDidLoad()
         imageView.addSubview(viewController.view)
@@ -43,24 +43,31 @@ struct AnnotationView: NSViewRepresentable {
         viewController.label = label
         viewController.annotationView = self
         
-        return imageView
+        view.addSubview(imageView)
+        return view
     }
 
-    func updateNSView(_ nsView: NSImageView, context: Context) {
+    func updateNSView(_ nsView: NSView, context: Context) {
         _ = nsView.subviews.map{ $0.removeFromSuperview() }
         viewController.annotationView = self
         
-        let image = annotation.image
-        nsView.image = image
 //        nsView.imageScaling = .scaleProportionallyUpOrDown
+        let image = annotation.image
         nsView.frame = CGRect(origin: .zero, size: size)
         image.size = image.aspectRatioFit(in: size)
+        
+        let imageView: NSImageView = NSImageView()
+        //        imageView.imageScaling = .scaleProportionallyUpOrDown
+        image.size = annotation.image.aspectRatioFit(in: size)
+        imageView.frame = CGRect(origin: .zero, size: size)
+        imageView.image =  annotation.image
+        nsView.addSubview(imageView)
         
         viewController.view.frame = CGRect(origin: .zero, size: size)
         viewController.label = label
         
         for i in annotation.annotations {
-            drawAnnotation(annotation: i, on: nsView)
+            drawAnnotation(annotation: i, on: imageView)
         }
         nsView.addSubview(viewController.view)
     }
