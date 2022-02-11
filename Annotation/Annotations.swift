@@ -8,10 +8,10 @@
 import Foundation
 import Cocoa
 
-struct Annotation: Equatable, Hashable, Encodable, Decodable, Identifiable {
+struct Annotation: Equatable, Hashable, Identifiable {
     
     var id: UUID
-    var image: String
+    var image: NSImage
     var annotations: [Annotations]
     
     struct Annotations: Equatable, Hashable, Encodable, Decodable {
@@ -143,8 +143,8 @@ extension Array where Element == Annotation {
     }
     
     /// \[label: \[(Image Name, Coordinate)\]\]
-    var labelDictionary: [String: [(String, Annotation.Annotations.Coordinate)]] {
-        var dictionary: [String: [(String, Annotation.Annotations.Coordinate)]] = [:]
+    var labelDictionary: [String: [(NSImage, Annotation.Annotations.Coordinate)]] {
+        var dictionary: [String: [(NSImage, Annotation.Annotations.Coordinate)]] = [:]
         for i in self {
             let image = i.image
             for ii in i.annotations {
@@ -163,9 +163,8 @@ extension Array where Element == Annotation {
     
 }
 
-func trimImage(from image: String, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
+func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
     autoreleasepool {
-        guard let image = FinderItem(at: image).image else { return nil }
         guard image.size != .zero else { return nil }
         let imageView = NSImageView(image: image)
         imageView.frame = CGRect(origin: .zero, size: image.size)

@@ -31,7 +31,7 @@ struct AnnotationView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSImageView {
         imageView.imageScaling = .scaleProportionallyUpOrDown
-        let image = FinderItem(at: annotation.image).image!
+        let image = annotation.image
         imageView.frame = CGRect(origin: .zero, size: size)
         imageView.image = image
         image.size = size
@@ -50,7 +50,7 @@ struct AnnotationView: NSViewRepresentable {
         _ = nsView.subviews.map{ $0.removeFromSuperview() }
         viewController.annotationView = self
         
-        let image = FinderItem(at: annotation.image).image!
+        let image = annotation.image
         nsView.image = image
         nsView.imageScaling = .scaleProportionallyUpOrDown
         nsView.frame = CGRect(origin: .zero, size: size)
@@ -111,7 +111,7 @@ struct AnnotationView: NSViewRepresentable {
             super.viewDidLoad()
             recognizer = PanGestureRecognizer(target: self, action: #selector(action))
             recognizer.touchesDidEnd = {
-                self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: FinderItem(at: self.annotationView!.annotation.image).image!)))
+                self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
                 
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 self.recognizerView.removeFromSuperview()

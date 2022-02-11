@@ -12,7 +12,7 @@ struct DocumentView: View {
     @Binding var document: AnnotationDocument
 
     var body: some View {
-        TextEditor(text: $document.text)
+        ContentView(annotations: $document.annotations)
     }
 }
 
@@ -20,10 +20,10 @@ struct ContentView: View {
     
     // core
     @State var label = "label"
-    @State var annotations: [Annotation] = [Annotation(id: UUID(), image: "/Users/vaida/Downloads/pics/[Nagi no Asukara 13].png", annotations: []), Annotation(id: UUID(), image: "/Users/vaida/Downloads/pics/[Nagi no Asukara] 1.png", annotations: [])]
-    @State var leftSideBarSelectedItem: Annotation.ID? = nil
+    @Binding var annotations: [Annotation]
     
     // layout
+    @State var leftSideBarSelectedItem: Annotation.ID? = nil
     @State var showInfoView = false
     @State var showLabelList = false
     
@@ -107,10 +107,14 @@ struct SideBar: View {
                             if panel.runModal() == .OK {
                                 withAnimation {
                                     for i in panel.urls {
-                                        FinderItem(at: i).iteratedOver { child in
-                                            if !annotations.map({ $0.image }).contains(child.path) {
-                                                annotations.append(Annotation(id: UUID(), image: child.path, annotations: []))
+                                        if FinderItem(at: i).isDirectory {
+                                            FinderItem(at: i).iteratedOver { child in
+                                                guard let image = child.image else { return }
+                                                annotations.append(Annotation(id: UUID(), image: image, annotations: []))
                                             }
+                                        } else {
+                                            guard let image = FinderItem(at: i).image else { return }
+                                            annotations.append(Annotation(id: UUID(), image: image, annotations: []))
                                         }
                                     }
                                 }
@@ -139,14 +143,12 @@ struct SideBar: View {
                         for i in panel.urls {
                             if FinderItem(at: i).isDirectory {
                                 FinderItem(at: i).iteratedOver { child in
-                                    if !annotations.map({ $0.image }).contains(child.path) {
-                                        annotations.append(Annotation(id: UUID(), image: child.path, annotations: []))
-                                    }
+                                    guard let image = child.image else { return }
+                                    annotations.append(Annotation(id: UUID(), image: image, annotations: []))
                                 }
                             } else {
-                                if !annotations.map({ $0.image }).contains(i.path) {
-                                    annotations.append(Annotation(id: UUID(), image: i.path, annotations: []))
-                                }
+                                guard let image = FinderItem(at: i).image else { return }
+                                annotations.append(Annotation(id: UUID(), image: image, annotations: []))
                             }
                         }
                     }
@@ -179,14 +181,12 @@ struct SideBar: View {
                         
                         if FinderItem(at: url).isDirectory {
                             FinderItem(at: url).iteratedOver { child in
-                                if !annotations.map({ $0.image }).contains(child.path) {
-                                    annotations.append(Annotation(id: UUID(), image: child.path, annotations: []))
-                                }
+                                guard let image = child.image else { return }
+                                annotations.append(Annotation(id: UUID(), image: image, annotations: []))
                             }
                         } else {
-                            if !annotations.map({ $0.image }).contains(url.path) {
-                                annotations.append(Annotation(id: UUID(), image: url.path, annotations: []))
-                            }
+                            guard let image = FinderItem(at: url).image else { return }
+                            annotations.append(Annotation(id: UUID(), image: image, annotations: []))
                         }
                     }
                 }
@@ -202,14 +202,10 @@ struct SideBarItem: View {
     @State var annotation: Annotation
     
     var body: some View {
-        if let image = FinderItem(at: annotation.image).image {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .cornerRadius(5)
-        } else {
-            Text(annotation.image)
-        }
+        Image(nsImage: annotation.image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .cornerRadius(5)
     }
 }
 
@@ -226,13 +222,7 @@ struct DetailView: View {
     var body: some View {
         GeometryReader { reader in
             ZStack {
-                if FinderItem(at: annotation.image).image != nil {
-                    AnnotationView(annotation: $annotation, label: $currentLabel, size: reader.size)
-                    
-                } else {
-                    Text("No Image Found")
-                }
-                
+                AnnotationView(annotation: $annotation, label: $currentLabel, size: reader.size)
                 
                 HStack {
                     VStack {
@@ -521,7 +511,7 @@ struct LabelListItems: View {
 struct LabelListItem: View {
     
     @State var image: NSImage? = nil
-    @State var item: (String, Annotation.Annotations.Coordinate)
+    @State var item: (NSImage, Annotation.Annotations.Coordinate)
     
     var body: some View {
         if let image = image {
@@ -552,7 +542,7 @@ struct LabelListItem: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            ContentView()
+            ContentView(, annotations: .constant([]))
             
         }
     }

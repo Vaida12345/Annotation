@@ -37,6 +37,7 @@
 		B416914B27B53B6C0029AB97 /* Annotations.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914A27B53B6C0029AB97 /* Annotations.swift */; };
 		B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914C27B53B740029AB97 /* AnnotationView.swift */; };
 		B416914F27B53FB20029AB97 /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B416914E27B53FB20029AB97 /* icon.icns */; };
+		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -73,6 +74,7 @@
 		B416914A27B53B6C0029AB97 /* Annotations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Annotations.swift; sourceTree = "<group>"; };
 		B416914C27B53B740029AB97 /* AnnotationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnnotationView.swift; sourceTree = "<group>"; };
 		B416914E27B53FB20029AB97 /* icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icon.icns; sourceTree = "<group>"; };
+		B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Folder Icon.icns"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,6 +139,7 @@
 		B416911D27B53B450029AB97 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */,
 				B416914E27B53FB20029AB97 /* icon.icns */,
 				B416910C27B53B020029AB97 /* Assets.xcassets */,
 				B416911127B53B020029AB97 /* Info.plist */,
@@ -257,6 +260,7 @@
 			files = (
 				B416914F27B53FB20029AB97 /* icon.icns in Resources */,
 				B416911A27B53B2B0029AB97 /* LICENSE in Resources */,
+				B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */,
 				B416911027B53B020029AB97 /* Preview Assets.xcassets in Resources */,
 				B416911B27B53B2B0029AB97 /* README.md in Resources */,
 				B416910D27B53B020029AB97 /* Assets.xcassets in Resources */,
