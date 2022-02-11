@@ -105,19 +105,7 @@ struct SideBar: View {
                             panel.allowsMultipleSelection = true
                             panel.canChooseDirectories = true
                             if panel.runModal() == .OK {
-                                withAnimation {
-                                    for i in panel.urls {
-                                        if FinderItem(at: i).isDirectory {
-                                            FinderItem(at: i).iteratedOver { child in
-                                                guard let image = child.image else { return }
-                                                annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                                            }
-                                        } else {
-                                            guard let image = FinderItem(at: i).image else { return }
-                                            annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                                        }
-                                    }
-                                }
+                                annotations.importForm(urls: panel.urls)
                             }
                         }
                     }

@@ -210,6 +210,7 @@ extension Array where Element == Annotation {
                 default:
                     guard let image = FinderItem(at: i).image else { return }
                     self.append(Annotation(id: UUID(), image: image, annotations: []))
+                    print("Imported from images")
                 }
             }
         }
