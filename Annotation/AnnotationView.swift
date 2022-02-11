@@ -30,7 +30,7 @@ struct AnnotationView: NSViewRepresentable {
 //    var annotationsViews: [NSView] = []
 
     func makeNSView(context: Context) -> NSImageView {
-        imageView.imageScaling = .scaleProportionallyUpOrDown
+//        imageView.imageScaling = .scaleProportionallyUpOrDown
         let image = annotation.image
         imageView.frame = CGRect(origin: .zero, size: size)
         imageView.image = image
@@ -54,23 +54,7 @@ struct AnnotationView: NSViewRepresentable {
         nsView.image = image
         nsView.imageScaling = .scaleProportionallyUpOrDown
         nsView.frame = CGRect(origin: .zero, size: size)
-        image.size = { ()-> CGSize in
-            var scaleFactor: Double // imageView / image
-            let frame = image.size
-            let imageView = nsView
-            
-            let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
-            
-            if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
-                scaleFactor = imageView.frame.width / Double(cgImage.width)
-            } else {
-                scaleFactor = imageView.frame.height / Double(cgImage.height)
-            }
-            
-            let width = frame.width * scaleFactor
-            let height = frame.height * scaleFactor
-            return CGSize(width: width, height: height)
-        }()
+        image.size = image.aspectRatioFit(in: size)
         
         viewController.view.frame = CGRect(origin: .zero, size: size)
         viewController.label = label

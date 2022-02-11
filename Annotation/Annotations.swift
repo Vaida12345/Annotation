@@ -206,12 +206,3 @@ func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordi
         return result
     }
 }
-
-extension NSImage {
-    
-    var pixelSize: CGSize? {
-        guard let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-        return CGSize(width: cgImage.width, height: cgImage.height)
-    }
-    
-}
