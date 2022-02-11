@@ -1048,10 +1048,10 @@ extension NSImage {
         // if the `size` is wider than `pixel size`
         if size.width / size.height >= pixelSize.width / pixelSize.height {
             resultSize.height = size.height
-            resultSize.width = pixelSize.width * size.height / pixelSize.height
+            resultSize.width = size.height * pixelSize.width / pixelSize.height
         } else {
             resultSize.width = size.width
-            resultSize.height = pixelSize.height * size.width / pixelSize.width
+            resultSize.height = size.width * pixelSize.height / pixelSize.width
         }
         return resultSize
     }

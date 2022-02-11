@@ -52,7 +52,7 @@ struct AnnotationView: NSViewRepresentable {
         
         let image = annotation.image
         nsView.image = image
-        nsView.imageScaling = .scaleProportionallyUpOrDown
+//        nsView.imageScaling = .scaleProportionallyUpOrDown
         nsView.frame = CGRect(origin: .zero, size: size)
         image.size = image.aspectRatioFit(in: size)
         
@@ -74,8 +74,8 @@ struct AnnotationView: NSViewRepresentable {
         view.layer = layer
         image.addSubview(view)
         
-        let label = NSHostingView(rootView: TextLabel(value: label))
-        label.frame = CGRect(x: view.frame.width-100, y: view.frame.height-20, width: 100, height: 20)
+        let label = NSHostingView(rootView: TextLabel(value: annotation.label, size: CGSize(width: rect.width, height: 20)))
+        label.frame = CGRect(x: view.frame.width-rect.width-2, y: view.frame.height-20, width: rect.width, height: 20)
         view.addSubview(label)
     }
     
@@ -120,10 +120,11 @@ struct AnnotationView: NSViewRepresentable {
 
 struct TextLabel: View {
     @State var value: String
+    @State var size: CGSize
     
     var body: some View {
         Text(value)
-            .frame(width: 100, height: 20, alignment: .trailing)
+            .frame(width: size.width, height: size.height, alignment: .trailing)
             .multilineTextAlignment(.trailing)
             .background(.ultraThinMaterial)
     }
