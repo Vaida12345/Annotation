@@ -113,8 +113,8 @@ class PanGestureRecognizer: NSPanGestureRecognizer {
     ///    - mouseDown: Informs the gesture recognizer that the user pressed the left mouse button.
     ///    - mouseDragged: Informs the gesture recognizer that the user moved the mouse with the left button pressed.
     ///    - mouseUp: Informs the gesture recognizer that the user released the left mouse button.
-    convenience init(mouseDown: (()->())? = nil, mouseDragged: (()->())? = nil, mouseUp: (()->())? = nil) {
-        self.init()
+    convenience init(target: Any?, mouseDown: (()->())? = nil, mouseDragged: (()->())? = nil, mouseUp: (()->())? = nil) {
+        self.init(target: target, action: nil)
         self.touchesDidStart = mouseDown
         self.touchesDragged = mouseDragged
         self.touchesDidEnd = mouseUp
