@@ -217,7 +217,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
         }
     }
     
-    var id: String { return self.path }
+    var id: UUID
     
     /// Returns the image at the path, if exists.
     var image: NSImage? {
@@ -305,6 +305,11 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
                         .replacingOccurrences(of: "?", with: "\\?")
     }
     
+    /// The `UTType` of the file.
+    var type: UTType? {
+        return try? url.resourceValues(forKeys: [.contentTypeKey]).contentType
+    }
+    
     /// Returns the url of the path.
     var url: URL {
         get { return URL(fileURLWithPath: self.path) }
@@ -327,6 +332,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     ///    - path: The absolute path.
     init(at path: String) {
         self.path = path
+        self.id = UUID()
     }
     
     /// Creates an instance with an absolute path.
@@ -335,6 +341,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     ///    - path: The absolute path.
     init(at path: Substring) {
         self.path = String(path)
+        self.id = UUID()
     }
     
     /// Creates an instance with a url.
@@ -343,6 +350,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     ///    - url: The file url.
     init(at url: URL) {
         self.path = url.path
+        self.id = UUID()
     }
     
     /// Creates an instance from itself.
@@ -351,6 +359,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     ///    - instance: The instance to initialize with.
     init(_ instance: FinderItem) {
         self.path = instance.path
+        self.id = UUID()
     }
     
     /// Creates an instance with an absolute path.
@@ -360,6 +369,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     init?(at path: String?) {
         guard let path = path else { return nil }
         self.path = path
+        self.id = UUID()
     }
     
     /// Creates an instance with an absolute path.
@@ -369,6 +379,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     init?(at path: Substring?) {
         guard let path = path else { return nil }
         self.path = String(path)
+        self.id = UUID()
     }
     
     /// Creates an instance with a url.
@@ -378,6 +389,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     init?(at url: URL?) {
         guard let url = url else { return nil }
         self.path = url.path
+        self.id = UUID()
     }
     
     /// Creates an instance from itself.
@@ -387,6 +399,7 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
     init?(_ instance: FinderItem?) {
         guard let instance = instance else { return nil }
         self.path = instance.path
+        self.id = UUID()
     }
     
     
