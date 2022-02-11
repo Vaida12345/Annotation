@@ -120,28 +120,6 @@ struct AnnotationView: NSViewRepresentable {
         }
         
     }
-    
-    class PanGestureRecognizer: NSPanGestureRecognizer {
-        
-        var touchesDidEnd: (()->())? = nil
-        var touchesDidStart: (()->())? = nil
-        
-        override func mouseUp(with event: NSEvent) {
-            super.mouseUp(with: event)
-            if touchesDidEnd != nil {
-                touchesDidEnd!()
-            }
-        }
-        
-        override func mouseDown(with event: NSEvent) {
-            super.mouseDown(with: event)
-            
-            if touchesDidStart != nil {
-                touchesDidStart!()
-            }
-        }
-        
-    }
 
 }
 
