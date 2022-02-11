@@ -88,6 +88,9 @@ struct SideBar: View {
     @Binding var selection: Annotation.ID?
     @Binding var annotations: [Annotation]
     
+    // layout
+    @State var isShowingImportDialog = false
+    
     var body: some View {
         
         List(selection: $selection) {
@@ -101,24 +104,7 @@ struct SideBar: View {
                         }
                         
                         Button("Add") {
-                            let panel = NSOpenPanel()
-                            panel.allowsMultipleSelection = true
-                            panel.canChooseDirectories = true
-                            if panel.runModal() == .OK {
-                                withAnimation {
-                                    for i in panel.urls {
-                                        if FinderItem(at: i).isDirectory {
-                                            FinderItem(at: i).iteratedOver { child in
-                                                guard let image = child.image else { return }
-                                                annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                                            }
-                                        } else {
-                                            guard let image = FinderItem(at: i).image else { return }
-                                            annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                                        }
-                                    }
-                                }
-                            }
+                            isShowingImportDialog = true
                         }
                     }
             }
@@ -135,24 +121,7 @@ struct SideBar: View {
                 }
             }
             .onTapGesture {
-                let panel = NSOpenPanel()
-                panel.allowsMultipleSelection = true
-                panel.canChooseDirectories = true
-                if panel.runModal() == .OK {
-                    withAnimation {
-                        for i in panel.urls {
-                            if FinderItem(at: i).isDirectory {
-                                FinderItem(at: i).iteratedOver { child in
-                                    guard let image = child.image else { return }
-                                    annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                                }
-                            } else {
-                                guard let image = FinderItem(at: i).image else { return }
-                                annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                            }
-                        }
-                    }
-                }
+                isShowingImportDialog = true
             }
             
         }
@@ -178,20 +147,15 @@ struct SideBar: View {
                         guard let urlData = urlData as? Data else { return }
                         guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
                         
-                        
-                        if FinderItem(at: url).isDirectory {
-                            FinderItem(at: url).iteratedOver { child in
-                                guard let image = child.image else { return }
-                                annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                            }
-                        } else {
-                            guard let image = FinderItem(at: url).image else { return }
-                            annotations.append(Annotation(id: UUID(), image: image, annotations: []))
-                        }
+                        annotations.importForm(urls: [url])
                     }
                 }
             }
             return true
+        }
+        .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
+            guard let urls = try? result.get() else { return }
+            annotations.importForm(urls: urls)
         }
         
     }
@@ -226,7 +190,7 @@ struct DetailView: View {
                 
                 HStack {
                     VStack {
-                        MenuButton(label: Text(currentLabel)) {
+                        Menu {
                             ForEach(annotations.labels, id: \.self) { label in
                                 Button(label) {
                                     currentLabel = label
@@ -236,7 +200,10 @@ struct DetailView: View {
                                 currentLabel = "New Label"
                                 showLabelSheet = true
                             }
+                        } label: {
+                            Text(currentLabel)
                         }
+                        .background(RoundedRectangle(cornerRadius: 5).fill(.ultraThinMaterial))
                         .frame(width: 100, height: 20)
                         .padding()
                         

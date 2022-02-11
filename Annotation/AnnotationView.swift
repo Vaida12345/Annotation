@@ -30,7 +30,7 @@ struct AnnotationView: NSViewRepresentable {
 //    var annotationsViews: [NSView] = []
 
     func makeNSView(context: Context) -> NSImageView {
-        imageView.imageScaling = .scaleProportionallyUpOrDown
+//        imageView.imageScaling = .scaleProportionallyUpOrDown
         let image = annotation.image
         imageView.frame = CGRect(origin: .zero, size: size)
         imageView.image = image
@@ -54,23 +54,7 @@ struct AnnotationView: NSViewRepresentable {
         nsView.image = image
         nsView.imageScaling = .scaleProportionallyUpOrDown
         nsView.frame = CGRect(origin: .zero, size: size)
-        image.size = { ()-> CGSize in
-            var scaleFactor: Double // imageView / image
-            let frame = image.size
-            let imageView = nsView
-            
-            let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
-            
-            if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
-                scaleFactor = imageView.frame.width / Double(cgImage.width)
-            } else {
-                scaleFactor = imageView.frame.height / Double(cgImage.height)
-            }
-            
-            let width = frame.width * scaleFactor
-            let height = frame.height * scaleFactor
-            return CGSize(width: width, height: height)
-        }()
+        image.size = image.aspectRatioFit(in: size)
         
         viewController.view.frame = CGRect(origin: .zero, size: size)
         viewController.label = label
@@ -90,12 +74,9 @@ struct AnnotationView: NSViewRepresentable {
         view.layer = layer
         image.addSubview(view)
         
-        let label = NSTextField(string: annotation.label)
-        label.isEditable = false
+        let label = NSHostingView(rootView: TextLabel(value: label))
         label.frame = CGRect(x: view.frame.width-100, y: view.frame.height-20, width: 100, height: 20)
-        label.alignment = .right
         view.addSubview(label)
-        label.backgroundColor = NSColor.gray.withAlphaComponent(0.1)
     }
     
     
@@ -111,7 +92,9 @@ struct AnnotationView: NSViewRepresentable {
             super.viewDidLoad()
             recognizer = PanGestureRecognizer(target: self, action: #selector(action))
             recognizer.touchesDidEnd = {
-                self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
+                if self.recognizerView.frame.size != .zero {
+                    self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
+                }
                 
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 self.recognizerView.removeFromSuperview()
@@ -162,4 +145,13 @@ struct AnnotationView: NSViewRepresentable {
 
 }
 
-
+struct TextLabel: View {
+    @State var value: String
+    
+    var body: some View {
+        Text(value)
+            .frame(width: 100, height: 20, alignment: .trailing)
+            .multilineTextAlignment(.trailing)
+            .background(.ultraThinMaterial)
+    }
+}

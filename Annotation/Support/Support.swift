@@ -936,6 +936,14 @@ extension NSImage {
         return !isMonoColor
     }
     
+    /// The pixel size of `NSImage`.
+    ///
+    /// aka, `self.cgImage.size`.
+    var pixelSize: CGSize? {
+        guard let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        return CGSize(width: cgImage.width, height: cgImage.height)
+    }
+    
     convenience init?(sizeFromImage: NSImage, colorMatrix: [[NSColor]]) {
         guard let cgImage = sizeFromImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
         let representation = NSBitmapImageRep(cgImage: cgImage)
@@ -953,6 +961,22 @@ extension NSImage {
         }
         guard let cgImage = representation.cgImage else { return nil }
         self.init(cgImage: cgImage, size: sizeFromImage.size)
+    }
+    
+    /// Returns the size which the image fits in the size.
+    func aspectRatioFit(in size: CGSize) -> CGSize {
+        let pixelSize = self.pixelSize!
+        var resultSize: CGSize = .zero
+        
+        // if the `size` is wider than `pixel size`
+        if size.width / size.height >= pixelSize.width / pixelSize.height {
+            resultSize.height = size.height
+            resultSize.width = pixelSize.width * size.height / pixelSize.height
+        } else {
+            resultSize.width = size.width
+            resultSize.height = pixelSize.height * size.width / pixelSize.width
+        }
+        return resultSize
     }
     
     /// Embed the image in a square.

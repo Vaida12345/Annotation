@@ -7,6 +7,7 @@
 
 import Foundation
 import Cocoa
+import SwiftUI
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
@@ -65,13 +66,6 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let width = frame.width / scaleFactor
                 let height = frame.height / scaleFactor
                 
-                print(frame)
-                print(scaleFactor)
-                print(widthMargin, heightMargin)
-                print("image size", cgImage.width, cgImage.height)
-                print("Frame", imageView.frame)
-                print("result", x, y, width, height)
-                
                 self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
             }
             
@@ -95,13 +89,6 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let y = (imageView.frame.height - (frame.origin.y + frame.height / 2) - heightMargin) / scaleFactor
                 let width = frame.width / scaleFactor
                 let height = frame.height / scaleFactor
-                
-                print(frame)
-                print(scaleFactor)
-                print(widthMargin, heightMargin)
-                print("image size", cgImage.width, cgImage.height)
-                print("Frame", imageView.frame)
-                print("result", x, y, width, height)
                 
                 self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
             }
@@ -134,6 +121,32 @@ extension CGRect {
         
         self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
     }
+    
+    /// change the coordinate from that of an image to that of an image pixel.
+    init(from coordinate: Annotation.Annotations.Coordinate, by image: NSImage) {
+        var scaleFactor: Double // image rep size / image pixel size
+        var heightMargin: Double = 0
+        var widthMargin: Double = 0
+        
+        let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
+        
+        let firstSize = NSImage(data: image.tiffRepresentation!)!.size // image rep size
+        
+        if Double(cgImage.width) / Double(cgImage.height) >= firstSize.width / firstSize.height {
+            scaleFactor = firstSize.width / Double(cgImage.width)
+            heightMargin = (firstSize.height - Double(cgImage.height) * scaleFactor) / 2
+        } else {
+            scaleFactor = firstSize.height / Double(cgImage.height)
+            widthMargin = (firstSize.width - Double(cgImage.width) * scaleFactor) / 2
+        }
+        
+        let x = coordinate.x * scaleFactor + widthMargin
+        let y = -1 * (coordinate.y * scaleFactor + heightMargin - firstSize.height)
+        let width = coordinate.width * scaleFactor
+        let height = coordinate.height * scaleFactor
+        
+        self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+    }
 }
 
 extension Array where Element == Annotation {
@@ -161,15 +174,72 @@ extension Array where Element == Annotation {
         return dictionary
     }
     
+    mutating func importForm(urls: [URL]) {
+        withAnimation {
+            for i in urls {
+                let item = FinderItem(at: i)
+                guard item.type != nil else { continue }
+                
+                switch item.type! {
+                case .annotationProject, .folder:
+                    print("decode from annotationProject", terminator: ": ")
+                    guard let file = try? AnnotationDocument(from: FileWrapper(url: i, options: [])) else {
+                        print("failed")
+                        fallthrough
+                    }
+                    self = self.union(file.annotations)
+                    print("completed")
+                    
+                case .folder:
+                    do {
+                        print("decode from annotation folder", terminator: ": ")
+                        let wrapper = try FileWrapper(url: i, options: [])
+                        let mainWrapper = wrapper.fileWrappers!["annotations.json"]
+                        let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: (mainWrapper?.regularFileContents)!)
+                        for ii in annotationImport {
+                            self.append(Annotation(id: UUID(), image: FinderItem(at: i.path + "/" + ii.image).image!, annotations: ii.annotations))
+                        }
+                    } catch {
+                        print("failed")
+                        print("decode from regular files", terminator: ": ")
+                        item.iteratedOver { child in
+                            guard let image = child.image else { return }
+                            self.append(Annotation(id: UUID(), image: image, annotations: []))
+                        }
+                    }
+                    print("completed")
+                    
+                case .quickTimeMovie:
+                    guard let frames = FinderItem(at: i).frames else { return }
+                    for i in frames {
+                        self.append(Annotation(id: UUID(), image: i, annotations: []))
+                    }
+                    print("Imported from video")
+                    
+                default:
+                    guard let image = FinderItem(at: i).image else { return }
+                    self.append(Annotation(id: UUID(), image: image, annotations: []))
+                    print("Imported from images")
+                }
+            }
+        }
+    }
+    
+    private struct AnnotationImport: Codable {
+        
+        let image: String
+        let annotations: [Annotation.Annotations]
+        
+    }
+    
 }
 
 func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
     autoreleasepool {
-        guard image.size != .zero else { return nil }
-        let imageView = NSImageView(image: image)
-        imageView.frame = CGRect(origin: .zero, size: image.size)
-        let rect =  CGRect(from: coordinate, by: imageView)
+        guard image.pixelSize != .zero else { return nil }
+        let rect = CGRect(from: coordinate, by: image)
         guard rect.size != .zero else { return nil }
-        return image.trimmed(rect: rect)
+        let result = NSImage(data: image.tiffRepresentation!)!.trimmed(rect: rect)
+        return result
     }
 }
