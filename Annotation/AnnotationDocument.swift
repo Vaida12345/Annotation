@@ -37,7 +37,7 @@ struct AnnotationDocument: FileDocument {
         var annotations: [Annotation] = []
         for i in 0..<document.count {
             let documentItem = document[i]
-            let mediaItem = mediaFileWrapper.fileWrappers![documentItem.id.description]!
+            let mediaItem = mediaFileWrapper.fileWrappers!["\(documentItem.id.description).png"]!
             
             annotations.append(Annotation(id: documentItem.id, image: NSImage(data: mediaItem.regularFileContents!)!, annotations: documentItem.annotations))
         }

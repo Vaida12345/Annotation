@@ -152,6 +152,7 @@ struct AnnotationView: NSViewRepresentable {
         
         override func mouseDown(with event: NSEvent) {
             super.mouseDown(with: event)
+            
             if touchesDidStart != nil {
                 touchesDidStart!()
             }

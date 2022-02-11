@@ -111,8 +111,8 @@
 				B416910627B53B020029AB97 /* AnnotationApp.swift */,
 				B416910827B53B020029AB97 /* AnnotationDocument.swift */,
 				B416914A27B53B6C0029AB97 /* Annotations.swift */,
-				B416914C27B53B740029AB97 /* AnnotationView.swift */,
 				B416910A27B53B020029AB97 /* ContentView.swift */,
+				B416914C27B53B740029AB97 /* AnnotationView.swift */,
 				B416911E27B53B590029AB97 /* Support */,
 				B416911D27B53B450029AB97 /* Assets */,
 			);

@@ -542,7 +542,7 @@ struct LabelListItem: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            ContentView(, annotations: .constant([]))
+            ContentView(annotations: .constant([]))
             
         }
     }
