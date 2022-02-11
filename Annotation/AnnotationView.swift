@@ -130,9 +130,14 @@ struct TextLabel: View {
     @State var size: CGSize
     
     var body: some View {
-        Text(value)
-            .frame(width: size.width, height: size.height, alignment: .trailing)
-            .multilineTextAlignment(.trailing)
-            .background(.ultraThinMaterial)
+        HStack {
+            Text(value)
+                .multilineTextAlignment(.trailing)
+                .background {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                }
+        }
+        .frame(width: size.width, height: size.height, alignment: .trailing)
     }
 }
