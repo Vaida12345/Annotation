@@ -74,12 +74,9 @@ struct AnnotationView: NSViewRepresentable {
         view.layer = layer
         image.addSubview(view)
         
-        let label = NSTextField(string: annotation.label)
-        label.isEditable = false
+        let label = NSHostingView(rootView: TextLabel(value: label))
         label.frame = CGRect(x: view.frame.width-100, y: view.frame.height-20, width: 100, height: 20)
-        label.alignment = .right
         view.addSubview(label)
-        label.backgroundColor = NSColor.gray.withAlphaComponent(0.1)
     }
     
     
@@ -148,4 +145,13 @@ struct AnnotationView: NSViewRepresentable {
 
 }
 
-
+struct TextLabel: View {
+    @State var value: String
+    
+    var body: some View {
+        Text(value)
+            .frame(width: 100, height: 20, alignment: .trailing)
+            .multilineTextAlignment(.trailing)
+            .background(.ultraThinMaterial)
+    }
+}
