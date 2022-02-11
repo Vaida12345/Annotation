@@ -50,7 +50,7 @@ struct AnnotationDocument: FileDocument {
         // create AnnotationDocument.AnnotationExport
         var annotationsExport: [AnnotationExport] = []
         for i in self.annotations {
-            annotationsExport.append(AnnotationExport(id: i.id, annotations: i.annotations))
+            annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations))
         }
         
         let encoder = JSONEncoder()
@@ -80,6 +80,7 @@ struct AnnotationDocument: FileDocument {
     struct AnnotationExport: Codable {
         
         var id: UUID
+        var image: String
         var annotations: [Annotation.Annotations]
         
     }
