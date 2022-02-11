@@ -28,6 +28,16 @@ protocol Copyable {
 ///     let alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
 let alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
 
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return true
+    }
+    
+}
+
+
 /// A transcoder that converts  between different bases.
 struct Coder {
     static let characters = ["0","1","2","3","4","5","6","7","8","9", "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","+","-"]
@@ -90,6 +100,53 @@ struct Coder {
     }
 }
 
+/// A continuous gesture recognizer for panning gestures.
+class PanGestureRecognizer: NSPanGestureRecognizer {
+    
+    var touchesDidStart: (()->())? = nil
+    var touchesDragged: (()->())? = nil
+    var touchesDidEnd: (()->())? = nil
+    
+    /// Creates an instance with its actions.
+    ///
+    /// - Parameters:
+    ///    - mouseDown: Informs the gesture recognizer that the user pressed the left mouse button.
+    ///    - mouseDragged: Informs the gesture recognizer that the user moved the mouse with the left button pressed.
+    ///    - mouseUp: Informs the gesture recognizer that the user released the left mouse button.
+    convenience init(target: Any?, mouseDown: (()->())? = nil, mouseDragged: (()->())? = nil, mouseUp: (()->())? = nil) {
+        self.init(target: target, action: nil)
+        self.touchesDidStart = mouseDown
+        self.touchesDragged = mouseDragged
+        self.touchesDidEnd = mouseUp
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        super.mouseDown(with: event)
+        
+        if touchesDidStart != nil {
+            touchesDidStart!()
+        }
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        super.mouseDragged(with: event)
+        
+        if touchesDragged != nil {
+            touchesDragged!()
+        }
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        super.mouseUp(with: event)
+        
+        if touchesDidEnd != nil {
+            touchesDidEnd!()
+        }
+    }
+    
+}
+
+
 /// A `Size` whose `width` and `height` are both `Int`.
 struct Size: Equatable {
     /// The size whose width and height are both zero.
@@ -102,14 +159,6 @@ struct Size: Equatable {
     
     /// The height of the size.
     var height: Int
-}
-
-class AppDelegate: NSObject, NSApplicationDelegate {
-    
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return true
-    }
-    
 }
 
 
@@ -519,6 +568,27 @@ extension Array {
     
 }
 
+
+extension AVAsset {
+    
+    /// The audio track of the video file.
+    var audioTrack: AVAssetTrack? {
+        return self.tracks(withMediaType: AVMediaType.audio).first
+    }
+    
+    var frameRate: Float? {
+        guard let value = self.tracks(withMediaType: .video).first else { return nil }
+        return value.nominalFrameRate
+    }
+    
+    /// The audio track of the video file
+    var videoTrack: AVAssetTrack? {
+        return self.tracks(withMediaType: AVMediaType.video).first
+    }
+    
+}
+
+
 extension BinaryFloatingPoint where Self: LosslessStringConvertible {
     
     /// The `String` representation of the part after the decimal place ".".
@@ -632,6 +702,7 @@ extension BinaryFloatingPoint where Self: LosslessStringConvertible {
     
 }
 
+
 extension BinaryInteger {
     
     /// Returns the expression of file size.
@@ -649,6 +720,7 @@ extension BinaryInteger {
     }
     
 }
+
 
 extension CGRect {
     
@@ -681,6 +753,7 @@ extension CGRect {
     
 }
 
+
 extension Copyable {
     
     /// Copies the instance.
@@ -689,6 +762,7 @@ extension Copyable {
     }
     
 }
+
 
 extension CMTime {
     
@@ -702,6 +776,7 @@ extension CMTime {
     }
     
 }
+
 
 extension Character {
     
@@ -826,6 +901,7 @@ extension Collection {
     
 }
 
+
 extension Int {
     
     /// Initialize with a `Character`.
@@ -834,6 +910,7 @@ extension Int {
     }
     
 }
+
 
 extension NSImage {
     
@@ -971,11 +1048,13 @@ extension NSImage {
         // if the `size` is wider than `pixel size`
         if size.width / size.height >= pixelSize.width / pixelSize.height {
             resultSize.height = size.height
-            resultSize.width = pixelSize.width * size.height / pixelSize.height
+            resultSize.width = size.height * pixelSize.width / pixelSize.height
         } else {
             resultSize.width = size.width
-            resultSize.height = pixelSize.height * size.width / pixelSize.width
+            resultSize.height = size.width * pixelSize.height / pixelSize.width
         }
+        print(pixelSize, size, resultSize)
+        
         return resultSize
     }
     
@@ -1080,6 +1159,7 @@ extension NSImage {
     
 }
 
+
 extension NSView {
     
     /// The `NSImage` representation of the view.
@@ -1092,6 +1172,7 @@ extension NSView {
     }
     
 }
+
 
 extension Numeric {
     
@@ -1108,6 +1189,7 @@ extension Numeric {
     }
     
 }
+
 
 extension SignedInteger {
     
@@ -1141,6 +1223,7 @@ extension SignedInteger {
     }
     
 }
+
 
 extension String {
     
@@ -1230,10 +1313,11 @@ extension String {
     
 }
 
+
 extension View {
     
-    @discardableResult
-    func openInWindow(title: String, sender: Any?) -> NSWindow {
+    /// Open the `View` in a new window.
+    @discardableResult func openInWindow(title: String, sender: Any?) -> NSWindow {
         let controller = NSHostingController(rootView: self)
         let win = NSWindow(contentViewController: controller)
         win.contentViewController = controller
@@ -1242,7 +1326,7 @@ extension View {
         return win
     }
     
-    // The `NSImage` representation of the view.
+    /// The `NSImage` representation of the view.
     ///
     /// - Returns: The `NSImage` of view.
     var image: NSImage {
@@ -1251,7 +1335,12 @@ extension View {
         return view.image
     }
     
-    // The `NSImage` representation of the view.
+    /// The `NSImage` representation of the view.
+    var nsView: NSView {
+        return NSHostingView(rootView: self)
+    }
+    
+    /// The `NSImage` representation of the view.
     ///
     /// - Returns: The `NSImage` of view.
     func saveImage(size: CGSize) -> NSImage {
@@ -1566,21 +1655,3 @@ func pow(_ lhs: Int, _ rhs: Int) -> Int {
     return Int(pow(Double(lhs), Double(rhs)))
 }
 
-extension AVAsset {
-    
-    /// The audio track of the video file.
-    var audioTrack: AVAssetTrack? {
-        return self.tracks(withMediaType: AVMediaType.audio).first
-    }
-    
-    var frameRate: Float? {
-        guard let value = self.tracks(withMediaType: .video).first else { return nil }
-        return value.nominalFrameRate
-    }
-    
-    /// The audio track of the video file
-    var videoTrack: AVAssetTrack? {
-        return self.tracks(withMediaType: AVMediaType.video).first
-    }
-    
-}

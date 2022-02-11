@@ -11,7 +11,7 @@ import SwiftUI
 
 struct AnnotationView: NSViewRepresentable {
 
-    typealias NSViewType = NSImageView
+    typealias NSViewType = NSView
 
     // core
     @Binding var annotation: Annotation
@@ -21,20 +21,20 @@ struct AnnotationView: NSViewRepresentable {
     // layout
     let size: CGSize
     
-    var imageView: NSImageView = NSImageView()
-    
     /// The vc taking charge of NSPanGestureRecognizer
     @State var viewController = ViewController(nibName: nil, bundle: nil)
     
 //    var textField = NSTextField()
 //    var annotationsViews: [NSView] = []
 
-    func makeNSView(context: Context) -> NSImageView {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: NSRect(origin: .zero, size: size))
+        let imageView: NSImageView = NSImageView()
 //        imageView.imageScaling = .scaleProportionallyUpOrDown
         let image = annotation.image
+        image.size = image.aspectRatioFit(in: size)
         imageView.frame = CGRect(origin: .zero, size: size)
         imageView.image = image
-        image.size = size
         
         viewController.viewDidLoad()
         imageView.addSubview(viewController.view)
@@ -43,24 +43,31 @@ struct AnnotationView: NSViewRepresentable {
         viewController.label = label
         viewController.annotationView = self
         
-        return imageView
+        view.addSubview(imageView)
+        return view
     }
 
-    func updateNSView(_ nsView: NSImageView, context: Context) {
+    func updateNSView(_ nsView: NSView, context: Context) {
         _ = nsView.subviews.map{ $0.removeFromSuperview() }
         viewController.annotationView = self
         
+//        nsView.imageScaling = .scaleProportionallyUpOrDown
         let image = annotation.image
-        nsView.image = image
-        nsView.imageScaling = .scaleProportionallyUpOrDown
         nsView.frame = CGRect(origin: .zero, size: size)
         image.size = image.aspectRatioFit(in: size)
+        
+        let imageView: NSImageView = NSImageView()
+        //        imageView.imageScaling = .scaleProportionallyUpOrDown
+        image.size = annotation.image.aspectRatioFit(in: size)
+        imageView.frame = CGRect(origin: .zero, size: size)
+        imageView.image =  annotation.image
+        nsView.addSubview(imageView)
         
         viewController.view.frame = CGRect(origin: .zero, size: size)
         viewController.label = label
         
         for i in annotation.annotations {
-            drawAnnotation(annotation: i, on: nsView)
+            drawAnnotation(annotation: i, on: imageView)
         }
         nsView.addSubview(viewController.view)
     }
@@ -74,8 +81,8 @@ struct AnnotationView: NSViewRepresentable {
         view.layer = layer
         image.addSubview(view)
         
-        let label = NSHostingView(rootView: TextLabel(value: label))
-        label.frame = CGRect(x: view.frame.width-100, y: view.frame.height-20, width: 100, height: 20)
+        let label = NSHostingView(rootView: TextLabel(value: annotation.label, size: CGSize(width: rect.width, height: 20)))
+        label.frame = CGRect(x: view.frame.width-rect.width-2, y: view.frame.height-20, width: rect.width, height: 20)
         view.addSubview(label)
     }
     
@@ -90,8 +97,17 @@ struct AnnotationView: NSViewRepresentable {
         
         override func viewDidLoad() {
             super.viewDidLoad()
-            recognizer = PanGestureRecognizer(target: self, action: #selector(action))
-            recognizer.touchesDidEnd = {
+            recognizer = PanGestureRecognizer(target: self, mouseDown: { [self] in
+                self.view.addSubview(recognizerView)
+                self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
+                recognizerStartingPoint = recognizer.location(in: self.view)
+            }, mouseDragged: { [self] in
+                recognizerView.layer?.borderWidth = 2
+                recognizerView.layer?.borderColor = NSColor.blue.cgColor
+                
+                recognizerView.frame = CGRect(x: [recognizer.location(in: self.view).x, recognizerStartingPoint.x].sorted(by: <).first!, y: [recognizer.location(in: self.view).y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(recognizer.translation(in: self.view).x), height: abs(recognizer.translation(in: self.view).y))
+                print(recognizerView.frame)
+            }, mouseUp: { [self] in
                 if self.recognizerView.frame.size != .zero {
                     self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
                 }
@@ -99,46 +115,10 @@ struct AnnotationView: NSViewRepresentable {
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 self.recognizerView.removeFromSuperview()
                 self.recognizerStartingPoint = NSPoint.zero
-            }
-            recognizer.touchesDidStart = { [self] in
-                self.view.addSubview(recognizerView)
-                self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
-                recognizerStartingPoint = recognizer.location(in: self.view)
-            }
+            })
             self.view = NSView()
             self.view.addGestureRecognizer(recognizer)
             self.view.addSubview(recognizerView)
-        }
-        
-        @objc func action() {
-
-            recognizerView.layer?.borderWidth = 2
-            recognizerView.layer?.borderColor = NSColor.blue.cgColor
-
-            recognizerView.frame = CGRect(x: [recognizer.location(in: self.view).x, recognizerStartingPoint.x].sorted(by: <).first!, y: [recognizer.location(in: self.view).y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(recognizer.translation(in: self.view).x), height: abs(recognizer.translation(in: self.view).y))
-            print(recognizerView.frame)
-        }
-        
-    }
-    
-    class PanGestureRecognizer: NSPanGestureRecognizer {
-        
-        var touchesDidEnd: (()->())? = nil
-        var touchesDidStart: (()->())? = nil
-        
-        override func mouseUp(with event: NSEvent) {
-            super.mouseUp(with: event)
-            if touchesDidEnd != nil {
-                touchesDidEnd!()
-            }
-        }
-        
-        override func mouseDown(with event: NSEvent) {
-            super.mouseDown(with: event)
-            
-            if touchesDidStart != nil {
-                touchesDidStart!()
-            }
         }
         
     }
@@ -147,11 +127,17 @@ struct AnnotationView: NSViewRepresentable {
 
 struct TextLabel: View {
     @State var value: String
+    @State var size: CGSize
     
     var body: some View {
-        Text(value)
-            .frame(width: 100, height: 20, alignment: .trailing)
-            .multilineTextAlignment(.trailing)
-            .background(.ultraThinMaterial)
+        HStack {
+            Text(value)
+                .multilineTextAlignment(.trailing)
+                .background {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                }
+        }
+        .frame(width: size.width, height: size.height, alignment: .trailing)
     }
 }
