@@ -12,7 +12,6 @@ struct AnnotationApp: App {
     
     @State var file: AnnotationDocument = AnnotationDocument()
     @State var isShowingExportDialog = false
-    @State var isShowingImportDialog = false
     
     var body: some Scene {
         DocumentGroup(newDocument: AnnotationDocument()) { file in
@@ -24,15 +23,6 @@ struct AnnotationApp: App {
         .commands {
             CommandGroup(replacing: .importExport) {
                 Section {
-                    Button("Import") {
-                        isShowingImportDialog = true
-                    }
-                    .keyboardShortcut("i")
-                    .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .image], allowsMultipleSelection: true) { result in
-                        guard let urls = try? result.get() else { return }
-                        file.annotations.importForm(urls: urls)
-                    }
-                    
                     Button("Export...") {
                         isShowingExportDialog = true
                     }
