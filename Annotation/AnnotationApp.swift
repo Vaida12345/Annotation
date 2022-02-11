@@ -30,9 +30,7 @@ struct AnnotationApp: App {
                     .keyboardShortcut("i")
                     .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .image], allowsMultipleSelection: true) { result in
                         guard let urls = try? result.get() else { return }
-                        for i in urls {
-                            
-                        }
+                        file.annotations.importForm(urls: urls)
                     }
                     
                     Button("Export...") {
@@ -41,10 +39,11 @@ struct AnnotationApp: App {
                     .fileExporter(isPresented: $isShowingExportDialog, document: file, contentType: .folder, defaultFilename: "Annotation Export") { result in
                         guard let url = try? result.get() else { return }
                         FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
-                        
                     }
                 }
             }
         }
     }
 }
+
+

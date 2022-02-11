@@ -7,6 +7,7 @@
 
 import Foundation
 import Cocoa
+import SwiftUI
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
@@ -171,6 +172,54 @@ extension Array where Element == Annotation {
         }
         
         return dictionary
+    }
+    
+    mutating func importForm(urls: [URL]) {
+        withAnimation {
+            for i in urls {
+                let item = FinderItem(at: i)
+                guard item.type != nil else { continue }
+                
+                switch item.type! {
+                case .annotationProject, .folder:
+                    print("decode from annotationProject", terminator: ": ")
+                    guard let file = try? AnnotationDocument(from: FileWrapper(url: i, options: [])) else {
+                        print("failed")
+                        fallthrough
+                    }
+                    self = self.union(file.annotations)
+                    print("completed")
+                case .folder:
+                    do {
+                        print("decode from annotation folder", terminator: ": ")
+                        let wrapper = try FileWrapper(url: i, options: [])
+                        let mainWrapper = wrapper.fileWrappers!["annotations.json"]
+                        let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: (mainWrapper?.regularFileContents)!)
+                        for ii in annotationImport {
+                            self.append(Annotation(id: UUID(), image: FinderItem(at: i.path + "/" + ii.image).image!, annotations: ii.annotations))
+                        }
+                    } catch {
+                        print("failed")
+                        print("decode from regular files", terminator: ": ")
+                        item.iteratedOver { child in
+                            guard let image = child.image else { return }
+                            self.append(Annotation(id: UUID(), image: image, annotations: []))
+                        }
+                    }
+                    print("completed")
+                default:
+                    guard let image = FinderItem(at: i).image else { return }
+                    self.append(Annotation(id: UUID(), image: image, annotations: []))
+                }
+            }
+        }
+    }
+    
+    private struct AnnotationImport: Codable {
+        
+        let image: String
+        let annotations: [Annotation.Annotations]
+        
     }
     
 }

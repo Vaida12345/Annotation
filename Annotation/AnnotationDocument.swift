@@ -23,11 +23,10 @@ struct AnnotationDocument: FileDocument {
 
     static var readableContentTypes: [UTType] { [.annotationProject] }
     static var writableContentTypes: [UTType] { [.annotationProject, .folder] }
-
-    init(configuration: ReadConfiguration) throws {
-        let wrapper = configuration.file
+    
+    init(from wrapper: FileWrapper) throws {
         let mainWrapper = wrapper.fileWrappers!["annotations.json"]
-        let mediaFileWrapper = wrapper.fileWrappers!["Media"]!
+        guard let mediaFileWrapper = wrapper.fileWrappers!["Media"] else { throw CocoaError(.fileReadCorruptFile) }
         guard let data = mainWrapper?.regularFileContents,
               let document = try? JSONDecoder().decode([AnnotationExport].self, from: data)
         else {
@@ -44,6 +43,11 @@ struct AnnotationDocument: FileDocument {
         }
         
         self.annotations = annotations
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        let wrapper = configuration.file
+        try self.init(from: wrapper)
     }
     
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
