@@ -190,7 +190,7 @@ struct DetailView: View {
                 
                 HStack {
                     VStack {
-                        MenuButton(label: Text(currentLabel)) {
+                        Menu {
                             ForEach(annotations.labels, id: \.self) { label in
                                 Button(label) {
                                     currentLabel = label
@@ -200,7 +200,10 @@ struct DetailView: View {
                                 currentLabel = "New Label"
                                 showLabelSheet = true
                             }
+                        } label: {
+                            Text(currentLabel)
                         }
+                        .background(RoundedRectangle(cornerRadius: 5).fill(.ultraThinMaterial))
                         .frame(width: 100, height: 20)
                         .padding()
                         
