@@ -65,13 +65,6 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let width = frame.width / scaleFactor
                 let height = frame.height / scaleFactor
                 
-                print(frame)
-                print(scaleFactor)
-                print(widthMargin, heightMargin)
-                print("image size", cgImage.width, cgImage.height)
-                print("Frame", imageView.frame)
-                print("result", x, y, width, height)
-                
                 self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
             }
             
@@ -95,13 +88,6 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let y = (imageView.frame.height - (frame.origin.y + frame.height / 2) - heightMargin) / scaleFactor
                 let width = frame.width / scaleFactor
                 let height = frame.height / scaleFactor
-                
-                print(frame)
-                print(scaleFactor)
-                print(widthMargin, heightMargin)
-                print("image size", cgImage.width, cgImage.height)
-                print("Frame", imageView.frame)
-                print("result", x, y, width, height)
                 
                 self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
             }
@@ -133,7 +119,6 @@ extension CGRect {
         let height = coordinate.height * scaleFactor
         
         self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
-        print(">>-",  self)
     }
     
     /// change the coordinate from that of an image to that of an image pixel.
@@ -160,7 +145,6 @@ extension CGRect {
         let height = coordinate.height * scaleFactor
         
         self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
-        print(">>-",  self)
     }
 }
 
@@ -193,16 +177,10 @@ extension Array where Element == Annotation {
 
 func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
     autoreleasepool {
-        print("===== trim image ====")
-        print(image)
-        print(coordinate)
         guard image.pixelSize != .zero else { return nil }
         let rect = CGRect(from: coordinate, by: image)
-        print(rect.size)
         guard rect.size != .zero else { return nil }
-        print("return")
         let result = NSImage(data: image.tiffRepresentation!)!.trimmed(rect: rect)
-        print(result)
         return result
     }
 }
