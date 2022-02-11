@@ -967,7 +967,6 @@ extension NSImage {
     func aspectRatioFit(in size: CGSize) -> CGSize {
         let pixelSize = self.pixelSize!
         var resultSize: CGSize = .zero
-        print(pixelSize, size)
         
         // if the `size` is wider than `pixel size`
         if size.width / size.height >= pixelSize.width / pixelSize.height {
@@ -977,7 +976,6 @@ extension NSImage {
             resultSize.width = size.width
             resultSize.height = pixelSize.height * size.width / pixelSize.width
         }
-        print(resultSize)
         return resultSize
     }
     
