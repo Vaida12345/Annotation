@@ -189,6 +189,7 @@ extension Array where Element == Annotation {
                     }
                     self = self.union(file.annotations)
                     print("completed")
+                    
                 case .folder:
                     do {
                         print("decode from annotation folder", terminator: ": ")
@@ -207,6 +208,14 @@ extension Array where Element == Annotation {
                         }
                     }
                     print("completed")
+                    
+                case .quickTimeMovie:
+                    guard let frames = FinderItem(at: i).frames else { return }
+                    for i in frames {
+                        self.append(Annotation(id: UUID(), image: i, annotations: []))
+                    }
+                    print("Imported from video")
+                    
                 default:
                     guard let image = FinderItem(at: i).image else { return }
                     self.append(Annotation(id: UUID(), image: image, annotations: []))
