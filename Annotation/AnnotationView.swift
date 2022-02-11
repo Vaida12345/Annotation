@@ -90,8 +90,17 @@ struct AnnotationView: NSViewRepresentable {
         
         override func viewDidLoad() {
             super.viewDidLoad()
-            recognizer = PanGestureRecognizer(target: self, action: #selector(action))
-            recognizer.touchesDidEnd = {
+            recognizer = PanGestureRecognizer(target: self, mouseDown: { [self] in
+                self.view.addSubview(recognizerView)
+                self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
+                recognizerStartingPoint = recognizer.location(in: self.view)
+            }, mouseDragged: { [self] in
+                recognizerView.layer?.borderWidth = 2
+                recognizerView.layer?.borderColor = NSColor.blue.cgColor
+                
+                recognizerView.frame = CGRect(x: [recognizer.location(in: self.view).x, recognizerStartingPoint.x].sorted(by: <).first!, y: [recognizer.location(in: self.view).y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(recognizer.translation(in: self.view).x), height: abs(recognizer.translation(in: self.view).y))
+                print(recognizerView.frame)
+            }, mouseUp: { [self] in
                 if self.recognizerView.frame.size != .zero {
                     self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
                 }
@@ -99,24 +108,10 @@ struct AnnotationView: NSViewRepresentable {
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 self.recognizerView.removeFromSuperview()
                 self.recognizerStartingPoint = NSPoint.zero
-            }
-            recognizer.touchesDidStart = { [self] in
-                self.view.addSubview(recognizerView)
-                self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
-                recognizerStartingPoint = recognizer.location(in: self.view)
-            }
+            })
             self.view = NSView()
             self.view.addGestureRecognizer(recognizer)
             self.view.addSubview(recognizerView)
-        }
-        
-        @objc func action() {
-
-            recognizerView.layer?.borderWidth = 2
-            recognizerView.layer?.borderColor = NSColor.blue.cgColor
-
-            recognizerView.frame = CGRect(x: [recognizer.location(in: self.view).x, recognizerStartingPoint.x].sorted(by: <).first!, y: [recognizer.location(in: self.view).y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(recognizer.translation(in: self.view).x), height: abs(recognizer.translation(in: self.view).y))
-            print(recognizerView.frame)
         }
         
     }
