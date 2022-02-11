@@ -133,6 +133,34 @@ extension CGRect {
         let height = coordinate.height * scaleFactor
         
         self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+        print(">>-",  self)
+    }
+    
+    /// change the coordinate from that of an image to that of an image pixel.
+    init(from coordinate: Annotation.Annotations.Coordinate, by image: NSImage) {
+        var scaleFactor: Double // image rep size / image pixel size
+        var heightMargin: Double = 0
+        var widthMargin: Double = 0
+        
+        let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
+        
+        let firstSize = NSImage(data: image.tiffRepresentation!)!.size // image rep size
+        
+        if Double(cgImage.width) / Double(cgImage.height) >= firstSize.width / firstSize.height {
+            scaleFactor = firstSize.width / Double(cgImage.width)
+            heightMargin = (firstSize.height - Double(cgImage.height) * scaleFactor) / 2
+        } else {
+            scaleFactor = firstSize.height / Double(cgImage.height)
+            widthMargin = (firstSize.width - Double(cgImage.width) * scaleFactor) / 2
+        }
+        
+        let x = coordinate.x * scaleFactor + widthMargin
+        let y = -1 * (coordinate.y * scaleFactor + heightMargin - firstSize.height)
+        let width = coordinate.width * scaleFactor
+        let height = coordinate.height * scaleFactor
+        
+        self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+        print(">>-",  self)
     }
 }
 
@@ -165,11 +193,25 @@ extension Array where Element == Annotation {
 
 func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
     autoreleasepool {
-        guard image.size != .zero else { return nil }
-        let imageView = NSImageView(image: image)
-        imageView.frame = CGRect(origin: .zero, size: image.size)
-        let rect =  CGRect(from: coordinate, by: imageView)
+        print("===== trim image ====")
+        print(image)
+        print(coordinate)
+        guard image.pixelSize != .zero else { return nil }
+        let rect = CGRect(from: coordinate, by: image)
+        print(rect.size)
         guard rect.size != .zero else { return nil }
-        return image.trimmed(rect: rect)
+        print("return")
+        let result = NSImage(data: image.tiffRepresentation!)!.trimmed(rect: rect)
+        print(result)
+        return result
     }
+}
+
+extension NSImage {
+    
+    var pixelSize: CGSize? {
+        guard let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        return CGSize(width: cgImage.width, height: cgImage.height)
+    }
+    
 }

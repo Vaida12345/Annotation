@@ -111,7 +111,9 @@ struct AnnotationView: NSViewRepresentable {
             super.viewDidLoad()
             recognizer = PanGestureRecognizer(target: self, action: #selector(action))
             recognizer.touchesDidEnd = {
-                self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
+                if self.recognizerView.frame.size != .zero {
+                    self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
+                }
                 
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 self.recognizerView.removeFromSuperview()
