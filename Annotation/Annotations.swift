@@ -195,19 +195,23 @@ extension Array where Element == Annotation {
                         print("decode from annotation folder", terminator: ": ")
                         let wrapper = try FileWrapper(url: i, options: [])
                         let mainWrapper = wrapper.fileWrappers!["annotations.json"]
-                        let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: (mainWrapper?.regularFileContents)!)
+                        guard let value = mainWrapper?.regularFileContents else { fallthrough }
+                        let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: value)
                         for ii in annotationImport {
                             self.append(Annotation(id: UUID(), image: FinderItem(at: i.path + "/" + ii.image).image!, annotations: ii.annotations))
                         }
                     } catch {
-                        print("failed")
-                        print("decode from regular files", terminator: ": ")
-                        item.iteratedOver { child in
-                            guard let image = child.image else { return }
-                            self.append(Annotation(id: UUID(), image: image, annotations: []))
-                        }
+                        fallthrough
                     }
                     print("completed")
+                    
+                case .folder:
+                    print("failed")
+                    print("decode from regular files", terminator: ": ")
+                    item.iteratedOver { child in
+                        guard let image = child.image else { return }
+                        self.append(Annotation(id: UUID(), image: image, annotations: []))
+                    }
                     
                 case .quickTimeMovie:
                     guard let frames = FinderItem(at: i).frames else { return }
