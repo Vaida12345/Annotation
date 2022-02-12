@@ -46,6 +46,7 @@ struct ContentView: View {
                             .multilineTextAlignment(.center)
                             .padding(.all)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 
                 if showInfoView {
