@@ -34,6 +34,18 @@ struct ContentView: View {
             ZStack {
                 if let item = $annotations.first(where: {$0.id == leftSideBarSelectedItem}) {
                     DetailView(annotation: item, annotations: $annotations)
+                } else {
+                    VStack {
+                        Image(systemName: "square.and.arrow.down.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(.all)
+                            .frame(width: 100, height: 100, alignment: .center)
+                        Text("Drag files or folder.")
+                            .font(.title)
+                            .multilineTextAlignment(.center)
+                            .padding(.all)
+                    }
                 }
                 
                 if showInfoView {
@@ -53,6 +65,21 @@ struct ContentView: View {
                     }
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
                 }
+            }
+            .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
+                withAnimation {
+                    for i in providers {
+                        i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
+                            
+                            guard error == nil else { return }
+                            guard let urlData = urlData as? Data else { return }
+                            guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+                            
+                            annotations.importForm(urls: [url])
+                        }
+                    }
+                }
+                return true
             }
             .toolbar {
                 
