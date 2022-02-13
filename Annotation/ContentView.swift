@@ -8,32 +8,26 @@
 import SwiftUI
 import Cocoa
 
-struct DocumentView: View {
-    @Binding var document: AnnotationDocument
-
-    var body: some View {
-        ContentView(annotations: $document.annotations)
-    }
-}
-
 struct ContentView: View {
     
     // core
     @State var label = "label"
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     // layout
     @State var leftSideBarSelectedItem: Annotation.ID? = nil
     @State var showInfoView = false
     @State var showLabelList = false
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some View {
         NavigationView {
-            SideBar(selection: $leftSideBarSelectedItem, annotations: $annotations)
+            SideBar(selection: $leftSideBarSelectedItem)
             
             ZStack {
-                if let item = $annotations.first(where: {$0.id == leftSideBarSelectedItem}) {
-                    DetailView(annotation: item, annotations: $annotations)
+                if let item = $document.annotations.first(where: {$0.id == leftSideBarSelectedItem}) {
+                    DetailView(annotation: item)
                 } else {
                     VStack {
                         Image(systemName: "square.and.arrow.down.fill")
@@ -52,8 +46,8 @@ struct ContentView: View {
                 if showInfoView {
                     HStack {
                         Spacer()
-                        if annotations.first(where: {$0.id == leftSideBarSelectedItem}) != nil {
-                            InfoView(annotation: $annotations.first(where: {$0.id == leftSideBarSelectedItem})!, annotations: $annotations)
+                        if document.annotations.first(where: {$0.id == leftSideBarSelectedItem}) != nil {
+                            InfoView(annotation: $document.annotations.first(where: {$0.id == leftSideBarSelectedItem})!)
                                 .frame(width: 300)
                         }
                     }
@@ -61,7 +55,7 @@ struct ContentView: View {
                 } else if showLabelList {
                     HStack {
                         Spacer()
-                        LabelList(annotations: $annotations, leftSideBarSelectedItem: $leftSideBarSelectedItem)
+                        LabelList(leftSideBarSelectedItem: $leftSideBarSelectedItem)
                             .frame(width: 300)
                     }
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
@@ -76,7 +70,7 @@ struct ContentView: View {
                             guard let urlData = urlData as? Data else { return }
                             guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
                             
-                            annotations.importForm(urls: [url])
+                            document.annotations.importForm(urls: [url])
                         }
                     }
                 }
@@ -105,6 +99,7 @@ struct ContentView: View {
                 }
                 
             }
+            
         }
     }
     
@@ -114,20 +109,22 @@ struct SideBar: View {
     
     // core
     @Binding var selection: Annotation.ID?
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     // layout
     @State var isShowingImportDialog = false
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some View {
         
         List(selection: $selection) {
-            ForEach(annotations) { annotation in
+            ForEach(document.annotations) { annotation in
                 SideBarItem(annotation: annotation)
                     .contextMenu {
                         Button("Remove") {
                             withAnimation {
-                                _ = annotations.remove(at: annotations.firstIndex(of: annotation)!)
+                                document.annotations.removeAll(where: { $0 == annotation })
                             }
                         }
                         
@@ -175,7 +172,7 @@ struct SideBar: View {
                         guard let urlData = urlData as? Data else { return }
                         guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
                         
-                        annotations.importForm(urls: [url])
+                        document.annotations.importForm(urls: [url])
                     }
                 }
             }
@@ -183,7 +180,7 @@ struct SideBar: View {
         }
         .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
             guard let urls = try? result.get() else { return }
-            annotations.importForm(urls: urls)
+            document.annotations.importForm(urls: urls)
         }
         
     }
@@ -205,7 +202,7 @@ struct DetailView: View {
     
     // core
     @Binding var annotation: Annotation
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     // layout
     @State var showLabelSheet = false
@@ -219,7 +216,7 @@ struct DetailView: View {
                 HStack {
                     VStack {
                         Menu {
-                            ForEach(annotations.labels, id: \.self) { label in
+                            ForEach(document.annotations.labels, id: \.self) { label in
                                 Button(label) {
                                     currentLabel = label
                                 }
@@ -272,11 +269,11 @@ struct InfoView: View {
     
     // core
     @Binding var annotation: Annotation
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     var body: some View {
         List($annotation.annotations, id: \.self) { item in
-            InfoViewItem(item: item, annotation: $annotation, annotations: $annotations)
+            InfoViewItem(item: item, annotation: $annotation)
             Divider()
         }
     }
@@ -286,7 +283,7 @@ struct InfoViewItem: View {
     
     @Binding var item: Annotation.Annotations
     @Binding var annotation: Annotation
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     @State var onEdit = false
     @State var showLabelSheet = false
@@ -302,7 +299,7 @@ struct InfoViewItem: View {
                             .font(.title3)
                     } else {
                         Menu {
-                            ForEach(annotations.labels, id: \.self) { label in
+                            ForEach(document.annotations.labels, id: \.self) { label in
                                 Button(label) {
                                     item.label = label
                                 }
@@ -401,7 +398,7 @@ struct InfoViewImage: View {
 struct LabelList: View {
     
     // core
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     @Binding var leftSideBarSelectedItem: Annotation.ID?
     
@@ -411,7 +408,7 @@ struct LabelList: View {
     
     
     var body: some View {
-        List(annotations.labels, id: \.self) { label in
+        List(document.annotations.labels, id: \.self) { label in
             VStack {
                 HStack {
                     Text(label)
@@ -424,14 +421,14 @@ struct LabelList: View {
                     Image(systemName: "trash")
                         .onTapGesture {
                             withAnimation {
-                                for index in 0..<annotations.count {
-                                    annotations[index].annotations.removeAll(where: { $0.label == label })
+                                for index in 0..<document.annotations.count {
+                                    document.annotations[index].annotations.removeAll(where: { $0.label == label })
                                 }
                             }
                         }
                 }
                 
-                LabelListItems(annotations: $annotations, leftSideBarSelectedItem: $leftSideBarSelectedItem, label: label)
+                LabelListItems(leftSideBarSelectedItem: $leftSideBarSelectedItem, label: label)
                 
                 Divider()
             }
@@ -446,10 +443,10 @@ struct LabelList: View {
                 TextField(oldName, text: $newLabel)
                     .onSubmit {
                         //                        allLabels[allLabels.lastIndex(of: oldName)!] = newLabel
-                        for i in 0..<annotations.count {
-                            for ii in 0..<annotations[i].annotations.count {
-                                if annotations[i].annotations[ii].label == oldName {
-                                    annotations[i].annotations[ii].label = newLabel
+                        for i in 0..<document.annotations.count {
+                            for ii in 0..<document.annotations[i].annotations.count {
+                                if document.annotations[i].annotations[ii].label == oldName {
+                                    document.annotations[i].annotations[ii].label = newLabel
                                 }
                             }
                         }
@@ -460,10 +457,10 @@ struct LabelList: View {
                     
                     Button("Done") {
                         //                        allLabels[allLabels.lastIndex(of: oldName)!] = newLabel
-                        for i in 0..<annotations.count {
-                            for ii in 0..<annotations[i].annotations.count {
-                                if annotations[i].annotations[ii].label == oldName {
-                                    annotations[i].annotations[ii].label = newLabel
+                        for i in 0..<document.annotations.count {
+                            for ii in 0..<document.annotations[i].annotations.count {
+                                if document.annotations[i].annotations[ii].label == oldName {
+                                    document.annotations[i].annotations[ii].label = newLabel
                                 }
                             }
                         }
@@ -480,20 +477,20 @@ struct LabelList: View {
 
 struct LabelListItems: View {
     
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     @Binding var leftSideBarSelectedItem: Annotation.ID?
     @State var label: String
     
     var body: some View {
         
-        if let labelsDictionary = annotations.labelDictionary[label] {
+        if let labelsDictionary = document.annotations.labelDictionary[label] {
             ScrollView(.horizontal) {
                 HStack {
                     ForEach(labelsDictionary, id: \.1.description) { item in
                         LabelListItem(item: item)
                             .onTapGesture(count: 2) {
-                                guard let index = annotations.firstIndex(where: { $0.image == item.0 }) else { return }
-                                leftSideBarSelectedItem = annotations[index].id
+                                guard let index = document.annotations.firstIndex(where: { $0.image == item.0 }) else { return }
+                                leftSideBarSelectedItem = document.annotations[index].id
                             }
                     }
                 }
@@ -530,15 +527,6 @@ struct LabelListItem: View {
                     image = trimImage(from: item.0, at: item.1)
                 }
             }
-        }
-    }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            ContentView(annotations: .constant([]))
-            
         }
     }
 }
