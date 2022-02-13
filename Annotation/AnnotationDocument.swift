@@ -77,8 +77,8 @@ final class AnnotationDocument: ReferenceFileDocument {
             mediaWrapper.preferredFilename = "Media"
             wrapper.addFileWrapper(mediaWrapper)
             
-            for index in 0..<annotations.count {
-                let item = annotations[index]
+            for index in 0..<snapshot.count {
+                let item = snapshot[index]
                 let image = item.image
                 let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
                 imageWrapper.preferredFilename = "\(item.id).png"
@@ -106,8 +106,9 @@ final class AnnotationDocument: ReferenceFileDocument {
             mediaWrapper.preferredFilename = "Media"
             wrapper.addFileWrapper(mediaWrapper)
             
-            for index in 0..<annotations.count {
-                let item = annotations[index]
+            for index in 0..<snapshot.count {
+                let item = snapshot[index]
+                guard !item.annotations.isEmpty else { continue }
                 let image = item.image
                 let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
                 imageWrapper.preferredFilename = "\(item.id).png"
