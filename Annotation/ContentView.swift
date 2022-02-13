@@ -62,18 +62,17 @@ struct ContentView: View {
                 }
             }
             .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
-                withAnimation {
-                    for i in providers {
-                        i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
-                            
-                            guard error == nil else { return }
-                            guard let urlData = urlData as? Data else { return }
-                            guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                            
-                            document.annotations.importForm(urls: [url])
-                        }
+                for i in providers {
+                    i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
+                        
+                        guard error == nil else { return }
+                        guard let urlData = urlData as? Data else { return }
+                        guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+                        
+                        document.addItems(from: [url], undoManager: undoManager)
                     }
                 }
+                
                 return true
             }
             .toolbar {
@@ -87,6 +86,7 @@ struct ContentView: View {
                         showInfoView = false
                     }
                 }
+                .help("Show Label List")
                 
                 Toggle(isOn: $showInfoView.animation()) {
                     Image(systemName: "list.bullet")
@@ -97,6 +97,7 @@ struct ContentView: View {
                         showLabelList = false
                     }
                 }
+                .help("Show Info View")
                 
             }
             
@@ -123,15 +124,19 @@ struct SideBar: View {
                 SideBarItem(annotation: annotation)
                     .contextMenu {
                         Button("Remove") {
-                            withAnimation {
-                                document.annotations.removeAll(where: { $0 == annotation })
-                            }
+                            document.delete(item: annotation, undoManager: undoManager)
                         }
                         
                         Button("Add") {
                             isShowingImportDialog = true
                         }
                     }
+            }
+            .onMove { fromIndex, toIndex in
+                document.moveItemsAt(offsets: fromIndex, toOffset: toIndex, undoManager: undoManager)
+            }
+            .onDelete { index in
+                document.delete(offsets: index, undoManager: undoManager)
             }
             
             GroupBox {
@@ -164,23 +169,21 @@ struct SideBar: View {
             }
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
-            withAnimation {
-                for i in providers {
-                    i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
-                        
-                        guard error == nil else { return }
-                        guard let urlData = urlData as? Data else { return }
-                        guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                        
-                        document.annotations.importForm(urls: [url])
-                    }
+            for i in providers {
+                i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
+                    
+                    guard error == nil else { return }
+                    guard let urlData = urlData as? Data else { return }
+                    guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+                    
+                    document.addItems(from: [url], undoManager: undoManager)
                 }
             }
             return true
         }
         .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
             guard let urls = try? result.get() else { return }
-            document.annotations.importForm(urls: urls)
+            document.addItems(from: urls, undoManager: undoManager)
         }
         
     }
@@ -269,7 +272,6 @@ struct InfoView: View {
     
     // core
     @Binding var annotation: Annotation
-    @EnvironmentObject var document: AnnotationDocument
     
     var body: some View {
         List($annotation.annotations, id: \.self) { item in
@@ -289,6 +291,8 @@ struct InfoViewItem: View {
     @State var showLabelSheet = false
     @State var newLabel = ""
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some View {
         HStack {
             InfoViewImage(annotation: annotation, coordinate: item.coordinates)
@@ -301,7 +305,9 @@ struct InfoViewItem: View {
                         Menu {
                             ForEach(document.annotations.labels, id: \.self) { label in
                                 Button(label) {
-                                    item.label = label
+                                    document.apply(action: {
+                                        item.label = label
+                                    }, undoManager: undoManager)
                                 }
                             }
                             
@@ -345,6 +351,9 @@ struct InfoViewItem: View {
                     .onSubmit {
                         item.label = newLabel
                         showLabelSheet = false
+                    }
+                    .onAppear {
+                        newLabel = item.label
                     }
                 HStack {
                     Spacer()
@@ -406,7 +415,6 @@ struct LabelList: View {
     @State var oldName: String = ""
     @State var newLabel: String = ""
     
-    
     var body: some View {
         List(document.annotations.labels, id: \.self) { label in
             VStack {
@@ -451,6 +459,9 @@ struct LabelList: View {
                             }
                         }
                         showLabelSheet = false
+                    }
+                    .onAppear {
+                        newLabel = oldName
                     }
                 HStack {
                     Spacer()

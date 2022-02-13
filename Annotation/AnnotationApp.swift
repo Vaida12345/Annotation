@@ -14,6 +14,8 @@ struct AnnotationApp: App {
     @State var isShowingExportDialog = false
     @State var isShowingImportDialog = false
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some Scene {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in
             ContentView()
@@ -30,7 +32,7 @@ struct AnnotationApp: App {
                     .keyboardShortcut("i")
                     .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .image], allowsMultipleSelection: true) { result in
                         guard let urls = try? result.get() else { return }
-                        file.annotations.importForm(urls: urls)
+                        file.addItems(from: urls, undoManager: undoManager)
                     }
                     
                     Button("Export...") {
