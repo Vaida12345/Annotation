@@ -63,12 +63,10 @@ struct ContentView: View {
             }
             .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
                 for i in providers {
-                    i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
-                        
-                        guard error == nil else { return }
-                        guard let urlData = urlData as? Data else { return }
+                    Task {
+                        guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
+                        guard let urlData = result as? Data else { return }
                         guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                        
                         document.addItems(from: [url], undoManager: undoManager)
                     }
                 }
@@ -170,12 +168,10 @@ struct SideBar: View {
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
             for i in providers {
-                i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
-                    
-                    guard error == nil else { return }
-                    guard let urlData = urlData as? Data else { return }
+                Task {
+                    guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
+                    guard let urlData = result as? Data else { return }
                     guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                    
                     document.addItems(from: [url], undoManager: undoManager)
                 }
             }
