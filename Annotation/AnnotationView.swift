@@ -21,8 +21,7 @@ struct AnnotationView: NSViewRepresentable {
     // layout
     let size: CGSize
     
-    /// The vc taking charge of NSPanGestureRecognizer
-    @State var viewController = ViewController(nibName: nil, bundle: nil)
+    @EnvironmentObject var document: AnnotationDocument
     
 //    var textField = NSTextField()
 //    var annotationsViews: [NSView] = []
@@ -36,6 +35,7 @@ struct AnnotationView: NSViewRepresentable {
         imageView.frame = CGRect(origin: .zero, size: size)
         imageView.image = image
         
+        let viewController = ViewController(document: document)
         viewController.viewDidLoad()
         imageView.addSubview(viewController.view)
         
@@ -49,7 +49,17 @@ struct AnnotationView: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         _ = nsView.subviews.map{ $0.removeFromSuperview() }
+        
+        let viewController = ViewController(document: document)
+        viewController.viewDidLoad()
+        nsView.addSubview(viewController.view)
+        
+        viewController.view.frame = CGRect(origin: .zero, size: size)
+        viewController.label = label
         viewController.annotationView = self
+        
+        viewController.annotationView = self
+        viewController.document = document
         
 //        nsView.imageScaling = .scaleProportionallyUpOrDown
         let image = annotation.image
@@ -87,13 +97,15 @@ struct AnnotationView: NSViewRepresentable {
     }
     
     
-    class ViewController: NSViewController {
+    final class ViewController: NSViewController {
         
         var recognizerView = NSView()
         var recognizer = PanGestureRecognizer()
         var recognizerStartingPoint = NSPoint.zero
         var label = "Label"
         var annotationView: AnnotationView? = nil
+        
+        @State var document: AnnotationDocument
         
         override func viewDidLoad() {
             super.viewDidLoad()
@@ -109,7 +121,9 @@ struct AnnotationView: NSViewRepresentable {
                 print(recognizerView.frame)
             }, mouseUp: { [self] in
                 if self.recognizerView.frame.size != .zero {
-                    self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
+                    document.apply(undoManager: undoManager, action: {
+                        self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
+                    })
                 }
                 
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
@@ -119,6 +133,15 @@ struct AnnotationView: NSViewRepresentable {
             self.view = NSView()
             self.view.addGestureRecognizer(recognizer)
             self.view.addSubview(recognizerView)
+        }
+        
+        init(document: AnnotationDocument) {
+            self.document = document
+            super.init(nibName: nil, bundle: nil)
+        }
+        
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
         }
         
     }

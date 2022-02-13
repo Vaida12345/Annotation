@@ -8,39 +8,46 @@
 import SwiftUI
 import Cocoa
 
-struct DocumentView: View {
-    @Binding var document: AnnotationDocument
-
-    var body: some View {
-        ContentView(annotations: $document.annotations)
-    }
-}
-
 struct ContentView: View {
     
     // core
     @State var label = "label"
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     // layout
     @State var leftSideBarSelectedItem: Annotation.ID? = nil
     @State var showInfoView = false
     @State var showLabelList = false
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some View {
         NavigationView {
-            SideBar(selection: $leftSideBarSelectedItem, annotations: $annotations)
+            SideBar(selection: $leftSideBarSelectedItem)
             
             ZStack {
-                if let item = $annotations.first(where: {$0.id == leftSideBarSelectedItem}) {
-                    DetailView(annotation: item, annotations: $annotations)
+                if let item = $document.annotations.first(where: {$0.id == leftSideBarSelectedItem}) {
+                    DetailView(annotation: item)
+                } else {
+                    VStack {
+                        Image(systemName: "square.and.arrow.down.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(.all)
+                            .frame(width: 100, height: 100, alignment: .center)
+                        Text("Drag files or folder.")
+                            .font(.title)
+                            .multilineTextAlignment(.center)
+                            .padding(.all)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 
                 if showInfoView {
                     HStack {
                         Spacer()
-                        if annotations.first(where: {$0.id == leftSideBarSelectedItem}) != nil {
-                            InfoView(annotation: $annotations.first(where: {$0.id == leftSideBarSelectedItem})!, annotations: $annotations)
+                        if document.annotations.first(where: {$0.id == leftSideBarSelectedItem}) != nil {
+                            InfoView(annotation: $document.annotations.first(where: {$0.id == leftSideBarSelectedItem})!)
                                 .frame(width: 300)
                         }
                     }
@@ -48,11 +55,23 @@ struct ContentView: View {
                 } else if showLabelList {
                     HStack {
                         Spacer()
-                        LabelList(annotations: $annotations, leftSideBarSelectedItem: $leftSideBarSelectedItem)
+                        LabelList(leftSideBarSelectedItem: $leftSideBarSelectedItem)
                             .frame(width: 300)
                     }
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
                 }
+            }
+            .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
+                for i in providers {
+                    Task {
+                        guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
+                        guard let urlData = result as? Data else { return }
+                        guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+                        await document.addItems(from: [url], undoManager: undoManager)
+                    }
+                }
+                
+                return true
             }
             .toolbar {
                 
@@ -65,6 +84,7 @@ struct ContentView: View {
                         showInfoView = false
                     }
                 }
+                .help("Show Label List")
                 
                 Toggle(isOn: $showInfoView.animation()) {
                     Image(systemName: "list.bullet")
@@ -75,8 +95,10 @@ struct ContentView: View {
                         showLabelList = false
                     }
                 }
+                .help("Show Info View")
                 
             }
+            
         }
     }
     
@@ -86,27 +108,33 @@ struct SideBar: View {
     
     // core
     @Binding var selection: Annotation.ID?
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     // layout
     @State var isShowingImportDialog = false
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some View {
         
         List(selection: $selection) {
-            ForEach(annotations) { annotation in
+            ForEach(document.annotations) { annotation in
                 SideBarItem(annotation: annotation)
                     .contextMenu {
                         Button("Remove") {
-                            withAnimation {
-                                _ = annotations.remove(at: annotations.firstIndex(of: annotation)!)
-                            }
+                            document.delete(item: annotation, undoManager: undoManager)
                         }
                         
                         Button("Add") {
                             isShowingImportDialog = true
                         }
                     }
+            }
+            .onMove { fromIndex, toIndex in
+                document.moveItemsAt(offsets: fromIndex, toOffset: toIndex, undoManager: undoManager)
+            }
+            .onDelete { index in
+                document.delete(offsets: index, undoManager: undoManager)
             }
             
             GroupBox {
@@ -139,23 +167,21 @@ struct SideBar: View {
             }
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
-            withAnimation {
-                for i in providers {
-                    i.loadItem(forTypeIdentifier: "public.file-url", options: nil) { urlData, error in
-                        
-                        guard error == nil else { return }
-                        guard let urlData = urlData as? Data else { return }
-                        guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                        
-                        annotations.importForm(urls: [url])
-                    }
+            for i in providers {
+                Task {
+                    guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
+                    guard let urlData = result as? Data else { return }
+                    guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+                    await document.addItems(from: [url], undoManager: undoManager)
                 }
             }
             return true
         }
-        .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
+        .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
             guard let urls = try? result.get() else { return }
-            annotations.importForm(urls: urls)
+            Task {
+                await document.addItems(from: urls, undoManager: undoManager)
+            }
         }
         
     }
@@ -177,11 +203,13 @@ struct DetailView: View {
     
     // core
     @Binding var annotation: Annotation
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     // layout
     @State var showLabelSheet = false
     @State var currentLabel: String = "New Label"
+    
+    @Environment(\.undoManager) var undoManager
     
     var body: some View {
         GeometryReader { reader in
@@ -191,7 +219,7 @@ struct DetailView: View {
                 HStack {
                     VStack {
                         Menu {
-                            ForEach(annotations.labels, id: \.self) { label in
+                            ForEach(document.annotations.labels, id: \.self) { label in
                                 Button(label) {
                                     currentLabel = label
                                 }
@@ -244,11 +272,10 @@ struct InfoView: View {
     
     // core
     @Binding var annotation: Annotation
-    @Binding var annotations: [Annotation]
     
     var body: some View {
         List($annotation.annotations, id: \.self) { item in
-            InfoViewItem(item: item, annotation: $annotation, annotations: $annotations)
+            InfoViewItem(item: item, annotation: $annotation)
             Divider()
         }
     }
@@ -258,11 +285,13 @@ struct InfoViewItem: View {
     
     @Binding var item: Annotation.Annotations
     @Binding var annotation: Annotation
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     @State var onEdit = false
     @State var showLabelSheet = false
     @State var newLabel = ""
+    
+    @Environment(\.undoManager) var undoManager
     
     var body: some View {
         HStack {
@@ -274,9 +303,11 @@ struct InfoViewItem: View {
                             .font(.title3)
                     } else {
                         Menu {
-                            ForEach(annotations.labels, id: \.self) { label in
+                            ForEach(document.annotations.labels, id: \.self) { label in
                                 Button(label) {
-                                    item.label = label
+                                    document.apply(undoManager: undoManager) {
+                                        item.label = label
+                                    }
                                 }
                             }
                             
@@ -303,7 +334,9 @@ struct InfoViewItem: View {
                     Image(systemName: "trash")
                         .onTapGesture {
                             withAnimation {
-                                annotation.annotations.removeAll(where: { $0 == item })
+                                document.apply(undoManager: undoManager) {
+                                    annotation.annotations.removeAll(where: { $0 == item })
+                                }
                             }
                         }
                 }
@@ -318,15 +351,22 @@ struct InfoViewItem: View {
                 }
                 TextField("Name for label", text: $newLabel)
                     .onSubmit {
-                        item.label = newLabel
-                        showLabelSheet = false
+                        document.apply(undoManager: undoManager) {
+                            item.label = newLabel
+                            showLabelSheet = false
+                        }
+                    }
+                    .onAppear {
+                        newLabel = item.label
                     }
                 HStack {
                     Spacer()
                     
                     Button("Done") {
-                        item.label = newLabel
-                        showLabelSheet = false
+                        document.apply(undoManager: undoManager) {
+                            item.label = newLabel
+                            showLabelSheet = false
+                        }
                     }
                     .keyboardShortcut(.defaultAction)
                 }
@@ -361,10 +401,8 @@ struct InfoViewImage: View {
                 }
             }
             .frame(width: 75, height: 75)
-            .onAppear {
-                DispatchQueue(label: "image").async {
-                    image = trimImage(from: annotation.image, at: coordinate)
-                }
+            .task {
+                image = await trimImage(from: annotation.image, at: coordinate)
             }
         }
     }
@@ -373,7 +411,7 @@ struct InfoViewImage: View {
 struct LabelList: View {
     
     // core
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     
     @Binding var leftSideBarSelectedItem: Annotation.ID?
     
@@ -381,9 +419,10 @@ struct LabelList: View {
     @State var oldName: String = ""
     @State var newLabel: String = ""
     
+    @Environment(\.undoManager) var undoManager
     
     var body: some View {
-        List(annotations.labels, id: \.self) { label in
+        List(document.annotations.labels, id: \.self) { label in
             VStack {
                 HStack {
                     Text(label)
@@ -395,15 +434,15 @@ struct LabelList: View {
                     Spacer()
                     Image(systemName: "trash")
                         .onTapGesture {
-                            withAnimation {
-                                for index in 0..<annotations.count {
-                                    annotations[index].annotations.removeAll(where: { $0.label == label })
+                            document.apply(undoManager: undoManager) {
+                                for index in 0..<document.annotations.count {
+                                    document.annotations[index].annotations.removeAll(where: { $0.label == label })
                                 }
                             }
                         }
                 }
                 
-                LabelListItems(annotations: $annotations, leftSideBarSelectedItem: $leftSideBarSelectedItem, label: label)
+                LabelListItems(leftSideBarSelectedItem: $leftSideBarSelectedItem, label: label)
                 
                 Divider()
             }
@@ -417,28 +456,35 @@ struct LabelList: View {
                 }
                 TextField(oldName, text: $newLabel)
                     .onSubmit {
-                        //                        allLabels[allLabels.lastIndex(of: oldName)!] = newLabel
-                        for i in 0..<annotations.count {
-                            for ii in 0..<annotations[i].annotations.count {
-                                if annotations[i].annotations[ii].label == oldName {
-                                    annotations[i].annotations[ii].label = newLabel
+                        document.apply(undoManager: undoManager) {
+                            for i in 0..<document.annotations.count {
+                                for ii in 0..<document.annotations[i].annotations.count {
+                                    if document.annotations[i].annotations[ii].label == oldName {
+                                        document.annotations[i].annotations[ii].label = newLabel
+                                    }
                                 }
                             }
                         }
+                        
                         showLabelSheet = false
+                    }
+                    .onAppear {
+                        newLabel = oldName
                     }
                 HStack {
                     Spacer()
                     
                     Button("Done") {
-                        //                        allLabels[allLabels.lastIndex(of: oldName)!] = newLabel
-                        for i in 0..<annotations.count {
-                            for ii in 0..<annotations[i].annotations.count {
-                                if annotations[i].annotations[ii].label == oldName {
-                                    annotations[i].annotations[ii].label = newLabel
+                        document.apply(undoManager: undoManager) {
+                            for i in 0..<document.annotations.count {
+                                for ii in 0..<document.annotations[i].annotations.count {
+                                    if document.annotations[i].annotations[ii].label == oldName {
+                                        document.annotations[i].annotations[ii].label = newLabel
+                                    }
                                 }
                             }
                         }
+                        
                         showLabelSheet = false
                     }
                     .keyboardShortcut(.defaultAction)
@@ -452,20 +498,20 @@ struct LabelList: View {
 
 struct LabelListItems: View {
     
-    @Binding var annotations: [Annotation]
+    @EnvironmentObject var document: AnnotationDocument
     @Binding var leftSideBarSelectedItem: Annotation.ID?
     @State var label: String
     
     var body: some View {
         
-        if let labelsDictionary = annotations.labelDictionary[label] {
+        if let labelsDictionary = document.annotations.labelDictionary[label] {
             ScrollView(.horizontal) {
                 HStack {
                     ForEach(labelsDictionary, id: \.1.description) { item in
                         LabelListItem(item: item)
                             .onTapGesture(count: 2) {
-                                guard let index = annotations.firstIndex(where: { $0.image == item.0 }) else { return }
-                                leftSideBarSelectedItem = annotations[index].id
+                                guard let index = document.annotations.firstIndex(where: { $0.image == item.0 }) else { return }
+                                leftSideBarSelectedItem = document.annotations[index].id
                             }
                     }
                 }
@@ -497,20 +543,9 @@ struct LabelListItem: View {
                 }
             }
             .frame(width: 50, height: 50)
-            .onAppear {
-                DispatchQueue(label: "image").async {
-                    image = trimImage(from: item.0, at: item.1)
-                }
+            .task {
+                image = await trimImage(from: item.0, at: item.1)
             }
-        }
-    }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            ContentView(annotations: .constant([]))
-            
         }
     }
 }
