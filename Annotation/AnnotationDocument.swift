@@ -14,8 +14,11 @@ extension UTType {
     }
 }
 
-struct AnnotationDocument: FileDocument {
-    var annotations: [Annotation]
+final class AnnotationDocument: ReferenceFileDocument {
+    
+    typealias Snapshot = Array<Annotation>
+    
+    @Published var annotations: [Annotation]
 
     init(annotations: [Annotation] = []) {
         self.annotations = annotations
@@ -45,16 +48,19 @@ struct AnnotationDocument: FileDocument {
         self.annotations = annotations
     }
 
-    init(configuration: ReadConfiguration) throws {
+    convenience init(configuration: ReadConfiguration) throws {
         let wrapper = configuration.file
         try self.init(from: wrapper)
     }
     
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        
+    func snapshot(contentType: UTType) throws -> [Annotation] {
+        annotations
+    }
+    
+    func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
         // create AnnotationDocument.AnnotationExport
         var annotationsExport: [AnnotationExport] = []
-        for i in self.annotations {
+        for i in snapshot {
             annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations))
         }
         
