@@ -211,6 +211,8 @@ struct DetailView: View {
     @State var showLabelSheet = false
     @State var currentLabel: String = "New Label"
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some View {
         GeometryReader { reader in
             ZStack {
@@ -305,9 +307,9 @@ struct InfoViewItem: View {
                         Menu {
                             ForEach(document.annotations.labels, id: \.self) { label in
                                 Button(label) {
-                                    document.apply(action: {
+                                    document.apply(undoManager: undoManager) {
                                         item.label = label
-                                    }, undoManager: undoManager)
+                                    }
                                 }
                             }
                             
@@ -334,7 +336,9 @@ struct InfoViewItem: View {
                     Image(systemName: "trash")
                         .onTapGesture {
                             withAnimation {
-                                annotation.annotations.removeAll(where: { $0 == item })
+                                document.apply(undoManager: undoManager) {
+                                    annotation.annotations.removeAll(where: { $0 == item })
+                                }
                             }
                         }
                 }
@@ -349,8 +353,10 @@ struct InfoViewItem: View {
                 }
                 TextField("Name for label", text: $newLabel)
                     .onSubmit {
-                        item.label = newLabel
-                        showLabelSheet = false
+                        document.apply(undoManager: undoManager) {
+                            item.label = newLabel
+                            showLabelSheet = false
+                        }
                     }
                     .onAppear {
                         newLabel = item.label
@@ -359,8 +365,10 @@ struct InfoViewItem: View {
                     Spacer()
                     
                     Button("Done") {
-                        item.label = newLabel
-                        showLabelSheet = false
+                        document.apply(undoManager: undoManager) {
+                            item.label = newLabel
+                            showLabelSheet = false
+                        }
                     }
                     .keyboardShortcut(.defaultAction)
                 }
@@ -415,6 +423,8 @@ struct LabelList: View {
     @State var oldName: String = ""
     @State var newLabel: String = ""
     
+    @Environment(\.undoManager) var undoManager
+    
     var body: some View {
         List(document.annotations.labels, id: \.self) { label in
             VStack {
@@ -428,7 +438,7 @@ struct LabelList: View {
                     Spacer()
                     Image(systemName: "trash")
                         .onTapGesture {
-                            withAnimation {
+                            document.apply(undoManager: undoManager) {
                                 for index in 0..<document.annotations.count {
                                     document.annotations[index].annotations.removeAll(where: { $0.label == label })
                                 }
@@ -450,14 +460,16 @@ struct LabelList: View {
                 }
                 TextField(oldName, text: $newLabel)
                     .onSubmit {
-                        //                        allLabels[allLabels.lastIndex(of: oldName)!] = newLabel
-                        for i in 0..<document.annotations.count {
-                            for ii in 0..<document.annotations[i].annotations.count {
-                                if document.annotations[i].annotations[ii].label == oldName {
-                                    document.annotations[i].annotations[ii].label = newLabel
+                        document.apply(undoManager: undoManager) {
+                            for i in 0..<document.annotations.count {
+                                for ii in 0..<document.annotations[i].annotations.count {
+                                    if document.annotations[i].annotations[ii].label == oldName {
+                                        document.annotations[i].annotations[ii].label = newLabel
+                                    }
                                 }
                             }
                         }
+                        
                         showLabelSheet = false
                     }
                     .onAppear {
@@ -467,14 +479,16 @@ struct LabelList: View {
                     Spacer()
                     
                     Button("Done") {
-                        //                        allLabels[allLabels.lastIndex(of: oldName)!] = newLabel
-                        for i in 0..<document.annotations.count {
-                            for ii in 0..<document.annotations[i].annotations.count {
-                                if document.annotations[i].annotations[ii].label == oldName {
-                                    document.annotations[i].annotations[ii].label = newLabel
+                        document.apply(undoManager: undoManager) {
+                            for i in 0..<document.annotations.count {
+                                for ii in 0..<document.annotations[i].annotations.count {
+                                    if document.annotations[i].annotations[ii].label == oldName {
+                                        document.annotations[i].annotations[ii].label = newLabel
+                                    }
                                 }
                             }
                         }
+                        
                         showLabelSheet = false
                     }
                     .keyboardShortcut(.defaultAction)

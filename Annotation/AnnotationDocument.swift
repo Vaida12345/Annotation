@@ -204,7 +204,7 @@ extension AnnotationDocument {
         }
     }
     
-    func apply(action: (()->Void), undoManager: UndoManager?) {
+    func apply(undoManager: UndoManager?, action: (()->Void)) {
         let oldItems = annotations
         withAnimation {
             action()
