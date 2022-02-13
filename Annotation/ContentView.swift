@@ -403,10 +403,8 @@ struct InfoViewImage: View {
                 }
             }
             .frame(width: 75, height: 75)
-            .onAppear {
-                DispatchQueue(label: "image").async {
-                    image = trimImage(from: annotation.image, at: coordinate)
-                }
+            .task {
+                image = await trimImage(from: annotation.image, at: coordinate)
             }
         }
     }
@@ -547,10 +545,8 @@ struct LabelListItem: View {
                 }
             }
             .frame(width: 50, height: 50)
-            .onAppear {
-                DispatchQueue(label: "image").async {
-                    image = trimImage(from: item.0, at: item.1)
-                }
+            .task {
+                image = await trimImage(from: item.0, at: item.1)
             }
         }
     }
