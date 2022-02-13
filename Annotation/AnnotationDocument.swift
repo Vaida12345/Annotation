@@ -81,8 +81,8 @@ final class AnnotationDocument: ReferenceFileDocument {
             if let existingFile = configuration.existingFile {
                 for index in 0..<snapshot.count {
                     let item = snapshot[index]
-                    guard existingFile.fileWrappers?.keys.contains(item.id.description) == false else {
-                        mediaWrapper.addFileWrapper(existingFile.fileWrappers![item.id.description]!)
+                    guard existingFile.fileWrappers?["Media"]?.fileWrappers?.keys.contains("\(item.id.description).png") == false else {
+                        mediaWrapper.addFileWrapper(existingFile.fileWrappers!["Media"]!.fileWrappers!["\(item.id.description).png"]!)
                         continue
                     }
                     let image = item.image
@@ -125,8 +125,8 @@ final class AnnotationDocument: ReferenceFileDocument {
             if let existingFile = configuration.existingFile {
                 for index in 0..<snapshot.count {
                     let item = snapshot[index]
-                    guard existingFile.fileWrappers?.keys.contains(item.id.description) == false else {
-                        mediaWrapper.addFileWrapper(existingFile.fileWrappers![item.id.description]!)
+                    guard existingFile.fileWrappers?["Media"]?.fileWrappers?.keys.contains("\(item.id.description).png") == false else {
+                        mediaWrapper.addFileWrapper(existingFile.fileWrappers!["Media"]!.fileWrappers!["\(item.id.description).png"]!)
                         continue
                     }
                     let image = item.image
