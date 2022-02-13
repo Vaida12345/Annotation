@@ -40,6 +40,7 @@ struct AnnotationApp: App {
                     Button("Export...") {
                         isShowingExportDialog = true
                     }
+                    .keyboardShortcut("e")
                     .fileExporter(isPresented: $isShowingExportDialog, document: file, contentType: .folder, defaultFilename: "Annotation Export") { result in
                         guard let url = try? result.get() else { return }
                         FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))

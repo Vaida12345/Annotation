@@ -58,39 +58,77 @@ final class AnnotationDocument: ReferenceFileDocument {
     }
     
     func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
-        // create AnnotationDocument.AnnotationExport
-        var annotationsExport: [AnnotationExport] = []
-        for i in snapshot {
-            annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations))
-        }
-        
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-        let data = try encoder.encode(annotationsExport)
-        let wrapper = FileWrapper(directoryWithFileWrappers: [:])
-        let mainWrapper = FileWrapper(regularFileWithContents: data)
-        mainWrapper.preferredFilename = "annotations.json"
-        wrapper.addFileWrapper(mainWrapper)
-        
-        let mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
-        mediaWrapper.preferredFilename = "Media"
-        wrapper.addFileWrapper(mediaWrapper)
-        
-        for index in 0..<annotations.count {
-            let item = annotations[index]
-            let image = item.image
-            let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-            imageWrapper.preferredFilename = "\(item.id).png"
+        if configuration.contentType == .annotationProject {
+            // create AnnotationDocument.AnnotationExport
+            var annotationsExport: [AnnotationExport] = []
+            for i in snapshot {
+                annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations))
+            }
             
-            mediaWrapper.addFileWrapper(imageWrapper)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(annotationsExport)
+            let wrapper = FileWrapper(directoryWithFileWrappers: [:])
+            let mainWrapper = FileWrapper(regularFileWithContents: data)
+            mainWrapper.preferredFilename = "annotations.json"
+            wrapper.addFileWrapper(mainWrapper)
+            
+            let mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
+            mediaWrapper.preferredFilename = "Media"
+            wrapper.addFileWrapper(mediaWrapper)
+            
+            for index in 0..<annotations.count {
+                let item = annotations[index]
+                let image = item.image
+                let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                imageWrapper.preferredFilename = "\(item.id).png"
+                
+                mediaWrapper.addFileWrapper(imageWrapper)
+            }
+            
+            return wrapper
+        } else {
+            // create AnnotationDocument.AnnotationExport
+            var annotationsExport: [AnnotationExportFolder] = []
+            for i in snapshot.filter({ !$0.annotations.isEmpty }) {
+                annotationsExport.append(AnnotationExportFolder(image: "Media/\(i.id.description).png", annotations: i.annotations))
+            }
+            
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(annotationsExport)
+            let wrapper = FileWrapper(directoryWithFileWrappers: [:])
+            let mainWrapper = FileWrapper(regularFileWithContents: data)
+            mainWrapper.preferredFilename = "annotations.json"
+            wrapper.addFileWrapper(mainWrapper)
+            
+            let mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
+            mediaWrapper.preferredFilename = "Media"
+            wrapper.addFileWrapper(mediaWrapper)
+            
+            for index in 0..<annotations.count {
+                let item = annotations[index]
+                let image = item.image
+                let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                imageWrapper.preferredFilename = "\(item.id).png"
+                
+                mediaWrapper.addFileWrapper(imageWrapper)
+            }
+            
+            return wrapper
         }
-        
-        return wrapper
     }
     
     struct AnnotationExport: Codable {
         
         var id: UUID
+        var image: String
+        var annotations: [Annotation.Annotations]
+        
+    }
+    
+    struct AnnotationExportFolder: Codable {
+        
         var image: String
         var annotations: [Annotation.Annotations]
         
@@ -163,12 +201,10 @@ extension AnnotationDocument {
                 guard let frames = item.frames else { return }
                 newItems.formUnion(frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
                 
-            case .image:
-                guard let image = item.image else { return }
-                newItems.append(Annotation(id: UUID(), image: image, annotations: []))
-                
             default:
                 print("Unknown type: \(String(describing: item.type?.description))")
+                guard let image = item.image else { return }
+                newItems.append(Annotation(id: UUID(), image: image, annotations: []))
             }
         }
         
