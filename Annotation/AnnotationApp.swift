@@ -30,9 +30,11 @@ struct AnnotationApp: App {
                         isShowingImportDialog = true
                     }
                     .keyboardShortcut("i")
-                    .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .image], allowsMultipleSelection: true) { result in
+                    .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .movie, .quickTimeMovie, .folder, .image], allowsMultipleSelection: true) { result in
                         guard let urls = try? result.get() else { return }
-                        file.addItems(from: urls, undoManager: undoManager)
+                        Task {
+                            await file.addItems(from: urls, undoManager: undoManager)
+                        }
                     }
                     
                     Button("Export...") {
@@ -47,5 +49,3 @@ struct AnnotationApp: App {
         }
     }
 }
-
-

@@ -128,7 +128,7 @@ extension AnnotationDocument {
         
     }
     
-    func addItems(from urls: [URL?], undoManager: UndoManager?) {
+    func addItems(from urls: [URL?], undoManager: UndoManager?) async {
         
         let oldItems = annotations
         var newItems: [Annotation] = []
@@ -159,13 +159,16 @@ extension AnnotationDocument {
                     newItems.append(Annotation(id: UUID(), image: image, annotations: []))
                 }
                 
-            case .quickTimeMovie:
+            case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
                 guard let frames = item.frames else { return }
                 newItems.formUnion(frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
                 
-            default:
+            case .image:
                 guard let image = item.image else { return }
                 newItems.append(Annotation(id: UUID(), image: image, annotations: []))
+                
+            default:
+                print("Unknown type: \(String(describing: item.type?.description))")
             }
         }
         

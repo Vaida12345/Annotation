@@ -67,7 +67,7 @@ struct ContentView: View {
                         guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
                         guard let urlData = result as? Data else { return }
                         guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                        document.addItems(from: [url], undoManager: undoManager)
+                        await document.addItems(from: [url], undoManager: undoManager)
                     }
                 }
                 
@@ -172,14 +172,16 @@ struct SideBar: View {
                     guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
                     guard let urlData = result as? Data else { return }
                     guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                    document.addItems(from: [url], undoManager: undoManager)
+                    await document.addItems(from: [url], undoManager: undoManager)
                 }
             }
             return true
         }
-        .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
+        .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
             guard let urls = try? result.get() else { return }
-            document.addItems(from: urls, undoManager: undoManager)
+            Task {
+                await document.addItems(from: urls, undoManager: undoManager)
+            }
         }
         
     }
