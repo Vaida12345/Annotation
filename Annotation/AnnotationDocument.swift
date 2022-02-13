@@ -58,6 +58,7 @@ final class AnnotationDocument: ReferenceFileDocument {
     }
     
     func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
+        
         if configuration.contentType == .annotationProject {
             // create AnnotationDocument.AnnotationExport
             var annotationsExport: [AnnotationExport] = []
@@ -77,13 +78,28 @@ final class AnnotationDocument: ReferenceFileDocument {
             mediaWrapper.preferredFilename = "Media"
             wrapper.addFileWrapper(mediaWrapper)
             
-            for index in 0..<snapshot.count {
-                let item = snapshot[index]
-                let image = item.image
-                let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                imageWrapper.preferredFilename = "\(item.id).png"
-                
-                mediaWrapper.addFileWrapper(imageWrapper)
+            if let existingFile = configuration.existingFile {
+                for index in 0..<snapshot.count {
+                    let item = snapshot[index]
+                    guard existingFile.fileWrappers?.keys.contains(item.id.description) == false else {
+                        mediaWrapper.addFileWrapper(existingFile.fileWrappers![item.id.description]!)
+                        continue
+                    }
+                    let image = item.image
+                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                    imageWrapper.preferredFilename = "\(item.id).png"
+                    
+                    mediaWrapper.addFileWrapper(imageWrapper)
+                }
+            } else {
+                for index in 0..<snapshot.count {
+                    let item = snapshot[index]
+                    let image = item.image
+                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                    imageWrapper.preferredFilename = "\(item.id).png"
+                    
+                    mediaWrapper.addFileWrapper(imageWrapper)
+                }
             }
             
             return wrapper
@@ -106,14 +122,28 @@ final class AnnotationDocument: ReferenceFileDocument {
             mediaWrapper.preferredFilename = "Media"
             wrapper.addFileWrapper(mediaWrapper)
             
-            for index in 0..<snapshot.count {
-                let item = snapshot[index]
-                guard !item.annotations.isEmpty else { continue }
-                let image = item.image
-                let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                imageWrapper.preferredFilename = "\(item.id).png"
-                
-                mediaWrapper.addFileWrapper(imageWrapper)
+            if let existingFile = configuration.existingFile {
+                for index in 0..<snapshot.count {
+                    let item = snapshot[index]
+                    guard existingFile.fileWrappers?.keys.contains(item.id.description) == false else {
+                        mediaWrapper.addFileWrapper(existingFile.fileWrappers![item.id.description]!)
+                        continue
+                    }
+                    let image = item.image
+                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                    imageWrapper.preferredFilename = "\(item.id).png"
+                    
+                    mediaWrapper.addFileWrapper(imageWrapper)
+                }
+            } else {
+                for index in 0..<snapshot.count {
+                    let item = snapshot[index]
+                    let image = item.image
+                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                    imageWrapper.preferredFilename = "\(item.id).png"
+                    
+                    mediaWrapper.addFileWrapper(imageWrapper)
+                }
             }
             
             return wrapper

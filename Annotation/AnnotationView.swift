@@ -120,7 +120,7 @@ struct AnnotationView: NSViewRepresentable {
                 recognizerView.frame = CGRect(x: [recognizer.location(in: self.view).x, recognizerStartingPoint.x].sorted(by: <).first!, y: [recognizer.location(in: self.view).y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(recognizer.translation(in: self.view).x), height: abs(recognizer.translation(in: self.view).y))
                 print(recognizerView.frame)
             }, mouseUp: { [self] in
-                if self.recognizerView.frame.size != .zero {
+                if self.recognizerView.frame.width >= 10 && self.recognizerView.frame.height >= 10 {
                     document.apply(undoManager: undoManager, action: {
                         self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
                     })

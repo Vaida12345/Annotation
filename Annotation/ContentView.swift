@@ -119,16 +119,21 @@ struct SideBar: View {
         
         List(selection: $selection) {
             ForEach(document.annotations) { annotation in
-                SideBarItem(annotation: annotation)
-                    .contextMenu {
-                        Button("Remove") {
-                            document.delete(item: annotation, undoManager: undoManager)
+                autoreleasepool {
+                    Image(nsImage: annotation.image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .cornerRadius(5)
+                        .contextMenu {
+                            Button("Remove") {
+                                document.delete(item: annotation, undoManager: undoManager)
+                            }
+                            
+                            Button("Add") {
+                                isShowingImportDialog = true
+                            }
                         }
-                        
-                        Button("Add") {
-                            isShowingImportDialog = true
-                        }
-                    }
+                }
             }
             .onMove { fromIndex, toIndex in
                 document.moveItemsAt(offsets: fromIndex, toOffset: toIndex, undoManager: undoManager)
@@ -184,18 +189,6 @@ struct SideBar: View {
             }
         }
         
-    }
-}
-
-struct SideBarItem: View {
-    
-    @State var annotation: Annotation
-    
-    var body: some View {
-        Image(nsImage: annotation.image)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .cornerRadius(5)
     }
 }
 
