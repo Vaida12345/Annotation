@@ -37,14 +37,22 @@ final class AnnotationDocument: ReferenceFileDocument {
         }
         
         // create Annotation
-        var annotations: [Annotation] = []
-        for i in 0..<document.count {
-            let documentItem = document[i]
-            let mediaItem = mediaFileWrapper.fileWrappers!["\(documentItem.id.description).png"]!
-            
-            annotations.append(Annotation(id: documentItem.id, image: NSImage(data: mediaItem.regularFileContents!)!, annotations: documentItem.annotations))
-        }
+        let id = UUID()
+        var annotations = [Annotation](repeating: Annotation(id: id, image: NSImage(), annotations: []), count: document.count)
+        let container = mediaFileWrapper.fileWrappers!
         
+        DispatchQueue.concurrentPerform(iterations: document.count) { index in
+            autoreleasepool {
+                let documentItem = document[index]
+                guard let mediaItem = container["\(documentItem.id.description).png"] else { return }
+                let image = NSImage(data: mediaItem.regularFileContents!)!
+                
+                DispatchQueue.main.async {
+                    annotations.insert(Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations), at: index)
+                }
+            }
+        }
+        annotations.removeAll(where: { $0.id == id })
         self.annotations = annotations
     }
 
@@ -57,97 +65,135 @@ final class AnnotationDocument: ReferenceFileDocument {
         annotations
     }
     
+    
     func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
         
+        var data: Data
+        
         if configuration.contentType == .annotationProject {
-            // create AnnotationDocument.AnnotationExport
             var annotationsExport: [AnnotationExport] = []
-            for i in snapshot {
+            var index = 0
+            while index < snapshot.count {
+                let i = snapshot[index]
                 annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations))
+                index += 1
             }
             
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
-            let data = try encoder.encode(annotationsExport)
-            let wrapper = FileWrapper(directoryWithFileWrappers: [:])
-            let mainWrapper = FileWrapper(regularFileWithContents: data)
-            mainWrapper.preferredFilename = "annotations.json"
-            wrapper.addFileWrapper(mainWrapper)
-            
-            let mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
-            mediaWrapper.preferredFilename = "Media"
-            wrapper.addFileWrapper(mediaWrapper)
-            
-            if let existingFile = configuration.existingFile {
-                for index in 0..<snapshot.count {
-                    let item = snapshot[index]
-                    guard existingFile.fileWrappers?["Media"]?.fileWrappers?.keys.contains("\(item.id.description).png") == false else {
-                        mediaWrapper.addFileWrapper(existingFile.fileWrappers!["Media"]!.fileWrappers!["\(item.id.description).png"]!)
-                        continue
-                    }
-                    let image = item.image
-                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                    imageWrapper.preferredFilename = "\(item.id).png"
-                    
-                    mediaWrapper.addFileWrapper(imageWrapper)
-                }
-            } else {
-                for index in 0..<snapshot.count {
-                    let item = snapshot[index]
-                    let image = item.image
-                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                    imageWrapper.preferredFilename = "\(item.id).png"
-                    
-                    mediaWrapper.addFileWrapper(imageWrapper)
-                }
-            }
-            
-            return wrapper
+            data = try encoder.encode(annotationsExport)
         } else {
             // create AnnotationDocument.AnnotationExport
             var annotationsExport: [AnnotationExportFolder] = []
-            for i in snapshot.filter({ !$0.annotations.isEmpty }) {
+            var index = 0
+            while index < snapshot.count {
+                let i = snapshot[index]
                 annotationsExport.append(AnnotationExportFolder(image: "Media/\(i.id.description).png", annotations: i.annotations))
+                index += 1
             }
             
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
-            let data = try encoder.encode(annotationsExport)
-            let wrapper = FileWrapper(directoryWithFileWrappers: [:])
-            let mainWrapper = FileWrapper(regularFileWithContents: data)
-            mainWrapper.preferredFilename = "annotations.json"
-            wrapper.addFileWrapper(mainWrapper)
+            data = try encoder.encode(annotationsExport)
+        }
+        
+        let wrapper = FileWrapper(directoryWithFileWrappers: [:])
+        let mainWrapper = FileWrapper(regularFileWithContents: data)
+        mainWrapper.preferredFilename = "annotations.json"
+        wrapper.addFileWrapper(mainWrapper)
+        
+        var mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
+        mediaWrapper.preferredFilename = "Media"
+        
+        if let existingFile = configuration.existingFile, let container = existingFile.fileWrappers!["Media"]?.fileWrappers, configuration.contentType == .annotationProject {
             
-            let mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
-            mediaWrapper.preferredFilename = "Media"
-            wrapper.addFileWrapper(mediaWrapper)
+            let oldItems = Array(container.keys)
+            let newItems = snapshot.map{ $0.id.description + ".png" }
+            let commonItems = oldItems.intersection(newItems)
+            var addedItems = newItems
+            addedItems.removeAll(where: { commonItems.contains($0) })
+            var removedItems = oldItems
+            removedItems.removeAll(where: { commonItems.contains($0) })
             
-            if let existingFile = configuration.existingFile {
-                for index in 0..<snapshot.count {
-                    let item = snapshot[index]
-                    guard existingFile.fileWrappers?["Media"]?.fileWrappers?.keys.contains("\(item.id.description).png") == false else {
-                        mediaWrapper.addFileWrapper(existingFile.fileWrappers!["Media"]!.fileWrappers!["\(item.id.description).png"]!)
-                        continue
+            if removedItems.count <= addedItems.count {
+                
+                mediaWrapper = existingFile.fileWrappers!["Media"]!
+                
+                if !removedItems.isEmpty {
+                    var index = 0
+                    while index < removedItems.count {
+                        autoreleasepool {
+                            let item = container.filter({ $0.key == removedItems[index] }).first!
+                            mediaWrapper.removeFileWrapper(item.value)
+                            
+                            index += 1
+                        }
                     }
-                    let image = item.image
-                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                    imageWrapper.preferredFilename = "\(item.id).png"
-                    
-                    mediaWrapper.addFileWrapper(imageWrapper)
+                }
+                
+                DispatchQueue.concurrentPerform(iterations: snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count) { index  in
+                    autoreleasepool {
+                        let item = snapshot.filter({ addedItems.contains($0.id.description + ".png" ) })[index]
+                        
+                        let image = item.image
+                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                        imageWrapper.preferredFilename = "\(item.id).png"
+                        
+                        DispatchQueue.main.async {
+                            mediaWrapper.addFileWrapper(imageWrapper)
+                        }
+                    }
                 }
             } else {
-                for index in 0..<snapshot.count {
-                    let item = snapshot[index]
-                    let image = item.image
-                    let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                    imageWrapper.preferredFilename = "\(item.id).png"
-                    
-                    mediaWrapper.addFileWrapper(imageWrapper)
+                DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
+                    autoreleasepool {
+                        let item = snapshot[index]
+                        let image = item.image
+                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                        imageWrapper.preferredFilename = "\(item.id).png"
+                        
+                        DispatchQueue.main.async {
+                            mediaWrapper.addFileWrapper(imageWrapper)
+                        }
+                    }
                 }
             }
-            
-            return wrapper
+        } else {
+            if configuration.contentType == .annotationProject {
+                DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
+                    autoreleasepool {
+                        let item = snapshot[index]
+                        let image = item.image
+                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                        imageWrapper.preferredFilename = "\(item.id).png"
+                        
+                        DispatchQueue.main.async {
+                            mediaWrapper.addFileWrapper(imageWrapper)
+                        }
+                    }
+                }
+            } else {
+                DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
+                    autoreleasepool {
+                        let item = snapshot[index]
+                        guard !item.annotations.isEmpty else { return }
+                        let image = item.image
+                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                        imageWrapper.preferredFilename = "\(item.id).png"
+                        
+                        DispatchQueue.main.async {
+                            mediaWrapper.addFileWrapper(imageWrapper)
+                        }
+                    }
+                }
+            }
         }
+        DispatchQueue.main.async {
+            wrapper.addFileWrapper(mediaWrapper)
+        }
+        
+        return wrapper
+        
     }
     
     struct AnnotationExport: Codable {
@@ -233,7 +279,6 @@ extension AnnotationDocument {
                 newItems.formUnion(frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
                 
             default:
-                print("Unknown type: \(String(describing: item.type?.description))")
                 guard let image = item.image else { return }
                 newItems.append(Annotation(id: UUID(), image: image, annotations: []))
             }
