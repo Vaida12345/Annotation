@@ -15,7 +15,7 @@ struct ContentView: View {
     @EnvironmentObject var document: AnnotationDocument
     
     // layout
-    @State var leftSideBarSelectedItem: Annotation.ID? = nil
+    @Binding var leftSideBarSelectedItem: Annotation.ID?
     @State var showInfoView = false
     @State var showLabelList = false
     @State var showPopover = false

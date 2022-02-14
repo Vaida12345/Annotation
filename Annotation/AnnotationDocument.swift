@@ -77,7 +77,10 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
         
-        DispatchQueue.main.async {
+        print("saving file")
+        let exporter = DispatchQueue.main
+        
+        exporter.async {
             self.isExporting = true
             self.exportingProgress = 0.0
         }
@@ -112,7 +115,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             data = try encoder.encode(annotationsExport)
         }
         
-        DispatchQueue.main.async {
+        exporter.async {
             self.exportingProgress = 0.1
         }
         
@@ -134,22 +137,26 @@ final class AnnotationDocument: ReferenceFileDocument {
             var removedItems = oldItems
             removedItems.removeAll(where: { commonItems.contains($0) })
             
-            if removedItems.count <= addedItems.count {
+            print("result", commonItems.count, addedItems.count, removedItems.count)
+            
+            if removedItems.count <= addedItems.count || removedItems.count < commonItems.count {
                 
-                DispatchQueue.main.async {
+                exporter.async {
                     mediaWrapper = FileWrapper(directoryWithFileWrappers: container)
                     mediaWrapper.preferredFilename = "Media"
                     wrapper.addFileWrapper(mediaWrapper)
                 }
                 
+                
                 if !removedItems.isEmpty {
                     var index = 0
+                    let stepper = 0.9 / Double(removedItems.count)
                     while index < removedItems.count {
                         autoreleasepool {
                             let item = container.filter({ $0.key == removedItems[index] }).first!
-                            DispatchQueue.main.async {
+                            exporter.async {
                                 mediaWrapper.removeFileWrapper(item.value)
-                                self.exportingProgress += 0.9 / Double(removedItems.count)
+                                self.exportingProgress += stepper
                             }
                             
                             index += 1
@@ -158,38 +165,47 @@ final class AnnotationDocument: ReferenceFileDocument {
                     }
                 }
                 
-                DispatchQueue.concurrentPerform(iterations: snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count) { index  in
-                    autoreleasepool {
-                        let item = snapshot.filter({ addedItems.contains($0.id.description + ".png" ) })[index]
-                        
-                        let image = item.image
-                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                        imageWrapper.preferredFilename = "\(item.id).png"
-                        
-                        DispatchQueue.main.async {
-                            mediaWrapper.addFileWrapper(imageWrapper)
-                            self.exportingProgress += 0.9 / Double(snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count)
+                if !addedItems.isEmpty {
+                    let stepper = 0.9 / Double(snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count)
+                    DispatchQueue.concurrentPerform(iterations: snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count) { index  in
+                        autoreleasepool {
+                            let item = snapshot.filter({ addedItems.contains($0.id.description + ".png" ) })[index]
+                            
+                            let image = item.image
+                            let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
+                            imageWrapper.preferredFilename = "\(item.id).png"
+                            
+                            print(index)
+                            exporter.async {
+                                mediaWrapper.addFileWrapper(imageWrapper)
+                                self.exportingProgress += stepper
+                            }
                         }
                     }
                 }
+                print("done")
             } else {
+                let stepper = 0.9 / Double(snapshot.count)
                 DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
                     autoreleasepool {
                         let item = snapshot[index]
                         let image = item.image
                         let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
                         imageWrapper.preferredFilename = "\(item.id).png"
+                        print(index)
                         
-                        DispatchQueue.main.async {
+                        exporter.async {
                             mediaWrapper.addFileWrapper(imageWrapper)
-                            self.exportingProgress += 0.9 / Double(snapshot.count)
+                            self.exportingProgress += stepper
                         }
                     }
                 }
             }
         } else {
+            print("performing save without old data")
             wrapper.addFileWrapper(mediaWrapper)
             if configuration.contentType == .annotationProject {
+                let stepper = 0.9 / Double(snapshot.count)
                 DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
                     autoreleasepool {
                         let item = snapshot[index]
@@ -197,19 +213,20 @@ final class AnnotationDocument: ReferenceFileDocument {
                         let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
                         imageWrapper.preferredFilename = "\(item.id).png"
                         
-                        DispatchQueue.main.async {
+                        exporter.async {
                             mediaWrapper.addFileWrapper(imageWrapper)
-                            self.exportingProgress += 0.9 / Double(snapshot.count)
+                            self.exportingProgress += stepper
                         }
                     }
                 }
             } else {
+                let stepper = 0.9 / Double(snapshot.count)
                 DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
                     autoreleasepool {
                         let item = snapshot[index]
                         guard !item.annotations.isEmpty else {
-                            DispatchQueue.main.async {
-                                self.exportingProgress += 0.9 / Double(snapshot.count)
+                            exporter.async {
+                                self.exportingProgress += stepper
                             }
                             return
                         }
@@ -217,20 +234,22 @@ final class AnnotationDocument: ReferenceFileDocument {
                         let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
                         imageWrapper.preferredFilename = "\(item.id).png"
                         
-                        DispatchQueue.main.async {
+                        exporter.async {
                             mediaWrapper.addFileWrapper(imageWrapper)
-                            self.exportingProgress += 0.9 / Double(snapshot.count)
+                            self.exportingProgress += stepper
                         }
                     }
                 }
             }
         }
         
-        DispatchQueue.main.sync {
+        print("here")
+        exporter.sync {
             mediaWrapper.preferredFilename = "Media"
             self.isExporting = false
             self.exportingProgress = 1.0
         }
+        print("file saved")
         
         return wrapper
         
@@ -393,6 +412,13 @@ extension AnnotationDocument {
         }
     }
     
+    func apply(undoManager: UndoManager?, oldItems: [Annotation]) {
+        
+        undoManager?.registerUndo(withTarget: self) { document in
+            // Use the replaceItems symmetric undoable-redoable function.
+            document.replaceItems(with: oldItems, undoManager: undoManager)
+        }
+    }
     
 }
 
