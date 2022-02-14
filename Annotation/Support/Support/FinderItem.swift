@@ -1145,6 +1145,50 @@ struct FinderItem: Codable, Copyable, CustomStringConvertible, Equatable, Hashab
         }
     }
     
+    func getFrames(updater: ()->()) -> [NSImage]? {
+        guard let asset = self.avAsset else { return nil }
+        let vidLength: CMTime = asset.duration
+        let seconds: Double = CMTimeGetSeconds(vidLength)
+        let frameRate = Double(asset.tracks(withMediaType: .video).first!.nominalFrameRate)
+        
+        var requiredFramesCount = Int(seconds * frameRate)
+        
+        if requiredFramesCount == 0 {
+            requiredFramesCount = 1
+        }
+        
+        let step = Int((vidLength.value / Int64(requiredFramesCount)))
+        var value: Int = 0
+        
+        var counter = 0
+        var images: [NSImage] = []
+        
+        while counter < requiredFramesCount {
+            autoreleasepool {
+                let imageGenerator = AVAssetImageGenerator(asset: asset)
+                imageGenerator.requestedTimeToleranceAfter = CMTime.zero
+                imageGenerator.requestedTimeToleranceBefore = CMTime.zero
+                let time: CMTime = CMTimeMake(value: Int64(value), timescale: vidLength.timescale)
+                var imageRef: CGImage?
+                do {
+                    imageRef = try imageGenerator.copyCGImage(at: time, actualTime: nil)
+                } catch {
+                    print(error)
+                }
+                guard let ref = imageRef else { return }
+                let thumbnail = NSImage(cgImage: ref, size: NSSize(width: ref.width, height: ref.height))
+                
+                images.append(thumbnail)
+                
+                value += Int(step)
+                counter += 1
+                updater()
+            }
+        }
+        
+        return images
+    }
+    
     /// merge videos from videos
     ///
     /// from [stackoverflow](https://stackoverflow.com/questions/38972829/swift-merge-avasset-videos-array)

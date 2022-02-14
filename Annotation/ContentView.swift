@@ -18,6 +18,7 @@ struct ContentView: View {
     @State var leftSideBarSelectedItem: Annotation.ID? = nil
     @State var showInfoView = false
     @State var showLabelList = false
+    @State var showPopover = false
     
     @Environment(\.undoManager) var undoManager
     
@@ -62,8 +63,9 @@ struct ContentView: View {
                 }
             }
             .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
-                for i in providers {
-                    Task {
+                Task {
+                    for i in providers {
+                        // the priority doesn't work, as load item is recommended to run on main thread.
                         guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
                         guard let urlData = result as? Data else { return }
                         guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
@@ -74,6 +76,32 @@ struct ContentView: View {
                 return true
             }
             .toolbar {
+                
+                Group {
+                    if document.isExporting {
+                        ProgressView(value: document.exportingProgress)
+                            .progressViewStyle(.circular)
+                    } else if document.isImporting {
+                        ProgressView(value: document.importingProgress)
+                            .progressViewStyle(.circular)
+                    }
+                }
+                .onTapGesture {
+                    showPopover.toggle()
+                }
+                .popover(isPresented: $showPopover) {
+                    VStack {
+                        HStack {
+                            Text(document.isImporting ? "Importing..." : "Exporting..")
+                            
+                            Spacer()
+                        }
+                        
+                        ProgressView(value: document.isImporting ? document.importingProgress : document.exportingProgress)
+                    }
+                    .padding()
+                    .frame(width: 300)
+                }
                 
                 Toggle(isOn: $showLabelList.animation()) {
                     Image(systemName: "tag")
@@ -119,16 +147,21 @@ struct SideBar: View {
         
         List(selection: $selection) {
             ForEach(document.annotations) { annotation in
-                SideBarItem(annotation: annotation)
-                    .contextMenu {
-                        Button("Remove") {
-                            document.delete(item: annotation, undoManager: undoManager)
+                autoreleasepool {
+                    Image(nsImage: annotation.image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .cornerRadius(5)
+                        .contextMenu {
+                            Button("Remove") {
+                                document.delete(item: annotation, undoManager: undoManager)
+                            }
+                            
+                            Button("Add") {
+                                isShowingImportDialog = true
+                            }
                         }
-                        
-                        Button("Add") {
-                            isShowingImportDialog = true
-                        }
-                    }
+                }
             }
             .onMove { fromIndex, toIndex in
                 document.moveItemsAt(offsets: fromIndex, toOffset: toIndex, undoManager: undoManager)
@@ -167,8 +200,8 @@ struct SideBar: View {
             }
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
-            for i in providers {
-                Task {
+            Task {
+                for i in providers {
                     guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
                     guard let urlData = result as? Data else { return }
                     guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
@@ -179,23 +212,11 @@ struct SideBar: View {
         }
         .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
             guard let urls = try? result.get() else { return }
-            Task {
+            Task.detached(priority: .background) {
                 await document.addItems(from: urls, undoManager: undoManager)
             }
         }
         
-    }
-}
-
-struct SideBarItem: View {
-    
-    @State var annotation: Annotation
-    
-    var body: some View {
-        Image(nsImage: annotation.image)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .cornerRadius(5)
     }
 }
 
@@ -401,8 +422,10 @@ struct InfoViewImage: View {
                 }
             }
             .frame(width: 75, height: 75)
-            .task {
-                image = await trimImage(from: annotation.image, at: coordinate)
+            .onAppear {
+                DispatchQueue(label: "trim image").async {
+                    image = trimImage(from: annotation.image, at: coordinate)
+                }
             }
         }
     }
@@ -543,8 +566,10 @@ struct LabelListItem: View {
                 }
             }
             .frame(width: 50, height: 50)
-            .task {
-                image = await trimImage(from: item.0, at: item.1)
+            .onAppear {
+                DispatchQueue(label: "trim image").async {
+                    image = trimImage(from: item.0, at: item.1)
+                }
             }
         }
     }
