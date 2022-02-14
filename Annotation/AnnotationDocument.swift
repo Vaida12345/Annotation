@@ -18,7 +18,12 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     typealias Snapshot = Array<Annotation>
     
+    // core
     @Published var annotations: [Annotation]
+    
+    // layout
+    @Published var isExporting = false
+    @Published var exportingProgress = 0.0
 
     init(annotations: [Annotation] = []) {
         self.annotations = annotations
@@ -68,6 +73,10 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
         
+        DispatchQueue.main.async {
+            self.isExporting = true
+        }
+        
         var data: Data
         
         if configuration.contentType == .annotationProject {
@@ -97,6 +106,10 @@ final class AnnotationDocument: ReferenceFileDocument {
             data = try encoder.encode(annotationsExport)
         }
         
+        DispatchQueue.main.async {
+            self.exportingProgress = 0.1
+        }
+        
         let wrapper = FileWrapper(directoryWithFileWrappers: [:])
         let mainWrapper = FileWrapper(regularFileWithContents: data)
         mainWrapper.preferredFilename = "annotations.json"
@@ -117,16 +130,24 @@ final class AnnotationDocument: ReferenceFileDocument {
             
             if removedItems.count <= addedItems.count {
                 
-                mediaWrapper = existingFile.fileWrappers!["Media"]!
+                DispatchQueue.main.async {
+                    mediaWrapper = FileWrapper(directoryWithFileWrappers: container)
+                    mediaWrapper.preferredFilename = "Media"
+                    wrapper.addFileWrapper(mediaWrapper)
+                }
                 
                 if !removedItems.isEmpty {
                     var index = 0
                     while index < removedItems.count {
                         autoreleasepool {
                             let item = container.filter({ $0.key == removedItems[index] }).first!
-                            mediaWrapper.removeFileWrapper(item.value)
+                            DispatchQueue.main.async {
+                                mediaWrapper.removeFileWrapper(item.value)
+                                self.exportingProgress += 0.9 / Double(removedItems.count)
+                            }
                             
                             index += 1
+                            
                         }
                     }
                 }
@@ -141,6 +162,7 @@ final class AnnotationDocument: ReferenceFileDocument {
                         
                         DispatchQueue.main.async {
                             mediaWrapper.addFileWrapper(imageWrapper)
+                            self.exportingProgress += 0.9 / Double(snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count)
                         }
                     }
                 }
@@ -154,11 +176,13 @@ final class AnnotationDocument: ReferenceFileDocument {
                         
                         DispatchQueue.main.async {
                             mediaWrapper.addFileWrapper(imageWrapper)
+                            self.exportingProgress += 0.9 / Double(snapshot.count)
                         }
                     }
                 }
             }
         } else {
+            wrapper.addFileWrapper(mediaWrapper)
             if configuration.contentType == .annotationProject {
                 DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
                     autoreleasepool {
@@ -169,6 +193,7 @@ final class AnnotationDocument: ReferenceFileDocument {
                         
                         DispatchQueue.main.async {
                             mediaWrapper.addFileWrapper(imageWrapper)
+                            self.exportingProgress += 0.9 / Double(snapshot.count)
                         }
                     }
                 }
@@ -183,13 +208,16 @@ final class AnnotationDocument: ReferenceFileDocument {
                         
                         DispatchQueue.main.async {
                             mediaWrapper.addFileWrapper(imageWrapper)
+                            self.exportingProgress += 0.9 / Double(snapshot.count)
                         }
                     }
                 }
             }
         }
-        DispatchQueue.main.async {
-            wrapper.addFileWrapper(mediaWrapper)
+        
+        DispatchQueue.main.sync {
+            mediaWrapper.preferredFilename = "Media"
+            self.isExporting = false
         }
         
         return wrapper

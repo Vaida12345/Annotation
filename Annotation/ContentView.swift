@@ -75,6 +75,11 @@ struct ContentView: View {
             }
             .toolbar {
                 
+                if document.isExporting {
+                    ProgressView(value: document.exportingProgress)
+                        .progressViewStyle(.circular)
+                }
+                
                 Toggle(isOn: $showLabelList.animation()) {
                     Image(systemName: "tag")
                 }
