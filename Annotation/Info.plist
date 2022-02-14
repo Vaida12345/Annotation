@@ -18,7 +18,6 @@
 			<key>NSUbiquitousDocumentUserActivityType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).example-document</string>
 		</dict>
-		<dict/>
 	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>

@@ -176,7 +176,7 @@ extension Array where Element == Annotation {
     
 }
 
-func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) async -> NSImage? {
+func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
     autoreleasepool {
         guard image.pixelSize != .zero else { return nil }
         let rect = CGRect(from: coordinate, by: image)

@@ -24,6 +24,9 @@ final class AnnotationDocument: ReferenceFileDocument {
     // layout
     @Published var isExporting = false
     @Published var exportingProgress = 0.0
+    
+    @Published var isImporting = false
+    @Published var importingProgress = 0.0
 
     init(annotations: [Annotation] = []) {
         self.annotations = annotations
@@ -52,8 +55,9 @@ final class AnnotationDocument: ReferenceFileDocument {
                 guard let mediaItem = container["\(documentItem.id.description).png"] else { return }
                 let image = NSImage(data: mediaItem.regularFileContents!)!
                 
-                DispatchQueue.main.async {
-                    annotations.insert(Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations), at: index)
+                print(annotations.count)
+                DispatchQueue.main.sync {
+                    annotations[index] = Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations)
                 }
             }
         }
@@ -75,6 +79,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         
         DispatchQueue.main.async {
             self.isExporting = true
+            self.exportingProgress = 0.0
         }
         
         var data: Data
@@ -97,6 +102,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             var index = 0
             while index < snapshot.count {
                 let i = snapshot[index]
+                guard !i.annotations.isEmpty else { index += 1; continue }
                 annotationsExport.append(AnnotationExportFolder(image: "Media/\(i.id.description).png", annotations: i.annotations))
                 index += 1
             }
@@ -201,7 +207,12 @@ final class AnnotationDocument: ReferenceFileDocument {
                 DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
                     autoreleasepool {
                         let item = snapshot[index]
-                        guard !item.annotations.isEmpty else { return }
+                        guard !item.annotations.isEmpty else {
+                            DispatchQueue.main.async {
+                                self.exportingProgress += 0.9 / Double(snapshot.count)
+                            }
+                            return
+                        }
                         let image = item.image
                         let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
                         imageWrapper.preferredFilename = "\(item.id).png"
@@ -218,6 +229,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         DispatchQueue.main.sync {
             mediaWrapper.preferredFilename = "Media"
             self.isExporting = false
+            self.exportingProgress = 1.0
         }
         
         return wrapper
@@ -273,6 +285,11 @@ extension AnnotationDocument {
     
     func addItems(from urls: [URL?], undoManager: UndoManager?) async {
         
+        DispatchQueue.main.async {
+            self.isImporting = true
+            self.importingProgress = 0.0
+        }
+        
         let oldItems = annotations
         var newItems: [Annotation] = []
         
@@ -283,7 +300,7 @@ extension AnnotationDocument {
             switch item.type! {
             case .annotationProject, .folder:
                 guard let file = try? AnnotationDocument(from: FileWrapper(url: item.url, options: [])) else { fallthrough }
-                newItems.formUnion(file.annotations)
+                newItems.append(contentsOf: file.annotations)
                 
             case .folder:
                 do {
@@ -291,7 +308,12 @@ extension AnnotationDocument {
                     let mainWrapper = wrapper.fileWrappers!["annotations.json"]
                     guard let value = mainWrapper?.regularFileContents else { fallthrough }
                     let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: value)
-                    newItems.formUnion(annotationImport.map{ Annotation(id: UUID(), image: FinderItem(at: item.url.path + "/" + $0.image).image!, annotations: $0.annotations) })
+                    newItems.append(contentsOf: annotationImport.map{
+                        DispatchQueue.main.async {
+                            self.importingProgress += 1 / Double(annotationImport.count)
+                        }
+                        return Annotation(id: UUID(), image: FinderItem(at: item.url.path + "/" + $0.image).image!, annotations: $0.annotations)
+                    })
                 } catch {
                     fallthrough
                 }
@@ -299,12 +321,19 @@ extension AnnotationDocument {
             case .folder:
                 item.iteratedOver { child in
                     guard let image = child.image else { return }
+                    DispatchQueue.main.async {
+                        self.importingProgress += 1 / Double(item.allChildren!.count)
+                    }
                     newItems.append(Annotation(id: UUID(), image: image, annotations: []))
                 }
                 
             case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
-                guard let frames = item.frames else { return }
-                newItems.formUnion(frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
+                guard let frames = item.getFrames( updater: {
+                    DispatchQueue.main.async {
+                        self.importingProgress += 1 / Double(item.frameRate!) / item.avAsset!.duration.seconds
+                    }
+                }) else { return }
+                newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
                 
             default:
                 guard let image = item.image else { return }
@@ -314,6 +343,11 @@ extension AnnotationDocument {
         
         withAnimation {
             annotations.formUnion(newItems)
+        }
+        
+        DispatchQueue.main.async {
+            self.isImporting = false
+            self.importingProgress = 1.0
         }
         
         undoManager?.registerUndo(withTarget: self, handler: { document in

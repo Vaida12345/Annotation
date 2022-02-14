@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct AnnotationApp: App {
     
-    @State var file: AnnotationDocument = AnnotationDocument()
+    @State var document: AnnotationDocument = AnnotationDocument()
     @State var isShowingExportDialog = false
     @State var isShowingImportDialog = false
     
@@ -20,7 +20,7 @@ struct AnnotationApp: App {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in
             ContentView()
                 .onAppear {
-                    self.file = file.document
+                    self.document = file.document
                 }
         }
         .commands {
@@ -32,8 +32,9 @@ struct AnnotationApp: App {
                     .keyboardShortcut("i")
                     .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .movie, .quickTimeMovie, .folder, .image], allowsMultipleSelection: true) { result in
                         guard let urls = try? result.get() else { return }
-                        Task {
-                            await file.addItems(from: urls, undoManager: undoManager)
+                        Task.detached(priority: .background) {
+                            print("import")
+                            await document.addItems(from: urls, undoManager: undoManager)
                         }
                     }
                     
@@ -41,7 +42,7 @@ struct AnnotationApp: App {
                         isShowingExportDialog = true
                     }
                     .keyboardShortcut("e")
-                    .fileExporter(isPresented: $isShowingExportDialog, document: file, contentType: .folder, defaultFilename: "Annotation Export") { result in
+                    .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                         guard let url = try? result.get() else { return }
                         FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
                     }
