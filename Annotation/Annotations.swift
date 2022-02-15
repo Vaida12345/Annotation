@@ -8,6 +8,7 @@
 import Foundation
 import Cocoa
 import SwiftUI
+import Vision
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
@@ -41,6 +42,13 @@ struct Annotation: Equatable, Hashable, Identifiable {
             private init(fromUpperLeftCornerY: Double, x: Double, width: Double, height: Double) {
                 self.x = x + width / 2
                 self.y = fromUpperLeftCornerY + height / 2
+                self.width = width
+                self.height = height
+            }
+            
+            private init(fromLowerLeftCornerY: Double, x: Double, width: Double, height: Double) {
+                self.x = x + width / 2
+                self.y = fromLowerLeftCornerY - height / 2
                 self.width = width
                 self.height = height
             }
@@ -89,6 +97,26 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let y = (imageView.frame.height - (frame.origin.y + frame.height / 2) - heightMargin) / scaleFactor
                 let width = frame.width / scaleFactor
                 let height = frame.height / scaleFactor
+                
+                self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+            }
+            
+            // init from the coordinate from that of a observation
+            /// Initializes the coordinate from Object Observation and coordinate in a `NSView`.
+            init(from observation: VNRecognizedObjectObservation, in image: NSImage) {
+                
+                let pixelSize = image.pixelSize!
+                
+                var frame = observation.boundingBox
+                frame.origin.x *= pixelSize.width
+                frame.size.width *= pixelSize.width
+                frame.origin.y *= pixelSize.height
+                frame.size.height *= pixelSize.height
+                
+                let x = (frame.origin.x + frame.width / 2)
+                let y = pixelSize.height - (frame.origin.y + frame.height / 2)
+                let width = frame.width
+                let height = frame.height
                 
                 self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
             }
