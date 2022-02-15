@@ -55,14 +55,15 @@ final class AnnotationDocument: ReferenceFileDocument {
                 guard let mediaItem = container["\(documentItem.id.description).png"] else { return }
                 let image = NSImage(data: mediaItem.regularFileContents!)!
                 
-                print(annotations.count)
                 DispatchQueue.main.sync {
+                    print("\(index) / \(document.count)")
                     annotations[index] = Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations)
                 }
             }
         }
         annotations.removeAll(where: { $0.id == id })
         self.annotations = annotations
+        print("import: finished")
     }
 
     convenience init(configuration: ReadConfiguration) throws {

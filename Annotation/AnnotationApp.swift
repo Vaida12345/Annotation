@@ -15,7 +15,7 @@ struct AnnotationApp: App {
     @State var document: AnnotationDocument = AnnotationDocument()
     @State var isShowingExportDialog = false
     @State var isShowingImportDialog = false
-    @State var leftSideBarSelectedItem: Annotation.ID? = nil
+    @State var leftSideBarSelectedItem: Set<Annotation.ID> = []
     
     @State var isShowingModelImportDialog = false
     @State var isShowingModelDialog = false
@@ -152,8 +152,8 @@ struct AnnotationApp: App {
         DispatchQueue(label: "annotator").async {
             for i in 0..<document.annotations.count {
                 print(i)
-                guard document.annotations[i].annotations.isEmpty else { DispatchQueue.main.async{ leftSideBarSelectedItem = document.annotations[i].id }; continue }
-                guard let result = applyObjectDetectionML(to: document.annotations[i].image, model: model) else { DispatchQueue.main.async{ leftSideBarSelectedItem = document.annotations[i].id }; continue }
+                guard document.annotations[i].annotations.isEmpty else { DispatchQueue.main.async{ leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
+                guard let result = applyObjectDetectionML(to: document.annotations[i].image, model: model) else { DispatchQueue.main.async{ leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
                 var staticConfidence = 0.8
                 if let userConfidence = Double(confidence), userConfidence <= 1, userConfidence >= 0 {
                     staticConfidence = userConfidence
@@ -163,7 +163,7 @@ struct AnnotationApp: App {
                         Annotation.Annotations.init(label: $0.labels.first!.identifier, coordinates: Annotation.Annotations.Coordinate(from: $0, in: document.annotations[i].image))
                     }
                     
-                    leftSideBarSelectedItem = document.annotations[i].id
+                    leftSideBarSelectedItem = [document.annotations[i].id]
                 }
             }
         }

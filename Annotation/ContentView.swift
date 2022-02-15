@@ -15,7 +15,7 @@ struct ContentView: View {
     @EnvironmentObject var document: AnnotationDocument
     
     // layout
-    @Binding var leftSideBarSelectedItem: Annotation.ID?
+    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     @State var showInfoView = false
     @State var showLabelList = false
     @State var showPopover = false
@@ -27,7 +27,7 @@ struct ContentView: View {
             SideBar(selection: $leftSideBarSelectedItem)
             
             ZStack {
-                if let item = $document.annotations.first(where: {$0.id == leftSideBarSelectedItem}) {
+                if leftSideBarSelectedItem.count == 1, let selection = leftSideBarSelectedItem.first, let item = $document.annotations.first(where: {$0.id == selection}) {
                     DetailView(annotation: item)
                 } else {
                     VStack {
@@ -44,22 +44,24 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 
-                if showInfoView {
-                    HStack {
-                        Spacer()
-                        if document.annotations.first(where: {$0.id == leftSideBarSelectedItem}) != nil {
-                            InfoView(annotation: $document.annotations.first(where: {$0.id == leftSideBarSelectedItem})!)
+                if leftSideBarSelectedItem.count == 1, let selection = leftSideBarSelectedItem.first {
+                    if showInfoView {
+                        HStack {
+                            Spacer()
+                            if document.annotations.first(where: {$0.id == selection}) != nil {
+                                InfoView(annotation: $document.annotations.first(where: {$0.id == selection})!)
+                                    .frame(width: 300)
+                            }
+                        }
+                        .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+                    } else if showLabelList {
+                        HStack {
+                            Spacer()
+                            LabelList(leftSideBarSelectedItem: $leftSideBarSelectedItem)
                                 .frame(width: 300)
                         }
+                        .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
                     }
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
-                } else if showLabelList {
-                    HStack {
-                        Spacer()
-                        LabelList(leftSideBarSelectedItem: $leftSideBarSelectedItem)
-                            .frame(width: 300)
-                    }
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
                 }
             }
             .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
@@ -135,7 +137,7 @@ struct ContentView: View {
 struct SideBar: View {
     
     // core
-    @Binding var selection: Annotation.ID?
+    @Binding var selection: Set<Annotation.ID>
     @EnvironmentObject var document: AnnotationDocument
     
     // layout
@@ -154,13 +156,33 @@ struct SideBar: View {
                         .cornerRadius(5)
                         .contextMenu {
                             Button("Remove") {
-                                document.delete(item: annotation, undoManager: undoManager)
+                                document.apply(undoManager: undoManager) {
+                                    document.annotations.removeAll(where: { selection.contains($0.id) })
+                                }
+                                selection = []
                             }
                             
-                            Button("Add") {
-                                isShowingImportDialog = true
+                            Menu {
+                                Button("All") {
+                                    document.apply(undoManager: undoManager) {
+                                        for i in selection {
+                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
+                                        }
+                                    }
+                                }
+                                
+                                ForEach(document.annotations.filter({ selection.contains($0.id) }).labels, id: \.self) { item in
+                                    Button(item) {
+                                        for i in selection {
+                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
+                                        }
+                                    }
+                                }
+                            } label: {
+                                Text("Remove annotations")
                             }
                         }
+                        .disabled(!selection.contains(annotation.id))
                 }
             }
             .onMove { fromIndex, toIndex in
@@ -215,6 +237,12 @@ struct SideBar: View {
             Task.detached(priority: .background) {
                 await document.addItems(from: urls, undoManager: undoManager)
             }
+        }
+        .onDeleteCommand {
+            document.apply(undoManager: undoManager) {
+                document.annotations.removeAll(where: { selection.contains($0.id) })
+            }
+            selection = []
         }
         
     }
@@ -436,7 +464,7 @@ struct LabelList: View {
     // core
     @EnvironmentObject var document: AnnotationDocument
     
-    @Binding var leftSideBarSelectedItem: Annotation.ID?
+    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     
     @State var showLabelSheet = false
     @State var oldName: String = ""
@@ -522,7 +550,7 @@ struct LabelList: View {
 struct LabelListItems: View {
     
     @EnvironmentObject var document: AnnotationDocument
-    @Binding var leftSideBarSelectedItem: Annotation.ID?
+    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     @State var label: String
     
     var body: some View {
@@ -534,7 +562,7 @@ struct LabelListItems: View {
                         LabelListItem(item: item)
                             .onTapGesture(count: 2) {
                                 guard let index = document.annotations.firstIndex(where: { $0.image == item.0 }) else { return }
-                                leftSideBarSelectedItem = document.annotations[index].id
+                                leftSideBarSelectedItem = [document.annotations[index].id]
                             }
                     }
                 }
