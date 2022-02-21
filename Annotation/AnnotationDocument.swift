@@ -57,7 +57,7 @@ final class AnnotationDocument: ReferenceFileDocument {
                 
                 DispatchQueue.main.sync {
                     print("\(index) / \(document.count)")
-                    annotations[index] = Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations)
+                    annotations[index] = Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations.map({ $0.annotations }))
                 }
             }
         }
@@ -93,7 +93,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             var index = 0
             while index < snapshot.count {
                 let i = snapshot[index]
-                annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations))
+                annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations.map{ $0.export }))
                 index += 1
             }
             
@@ -107,7 +107,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             while index < snapshot.count {
                 let i = snapshot[index]
                 guard !i.annotations.isEmpty else { index += 1; continue }
-                annotationsExport.append(AnnotationExportFolder(image: "Media/\(i.id.description).png", annotations: i.annotations))
+                annotationsExport.append(AnnotationExportFolder(image: "Media/\(i.id.description).png", annotations: i.annotations.map{ $0.export }))
                 index += 1
             }
             
@@ -256,18 +256,18 @@ final class AnnotationDocument: ReferenceFileDocument {
         
     }
     
-    struct AnnotationExport: Codable {
+    fileprivate struct AnnotationExport: Codable {
         
         var id: UUID
         var image: String
-        var annotations: [Annotation.Annotations]
+        var annotations: [AnnotationImport.Annotations]
         
     }
     
-    struct AnnotationExportFolder: Codable {
+    fileprivate struct AnnotationExportFolder: Codable {
         
         var image: String
-        var annotations: [Annotation.Annotations]
+        var annotations: [AnnotationImport.Annotations]
         
     }
 }
@@ -332,7 +332,7 @@ extension AnnotationDocument {
                         DispatchQueue.main.async {
                             self.importingProgress += 1 / Double(annotationImport.count)
                         }
-                        return Annotation(id: UUID(), image: FinderItem(at: item.url.path + "/" + $0.image).image!, annotations: $0.annotations)
+                        return Annotation(id: UUID(), image: FinderItem(at: item.url.path + "/" + $0.image).image!, annotations: $0.annotations.map{ $0.annotations })
                     })
                 } catch {
                     fallthrough
@@ -424,9 +424,28 @@ extension AnnotationDocument {
 }
 
 
-private struct AnnotationImport: Codable {
+struct AnnotationImport: Codable {
     
     let image: String
-    let annotations: [Annotation.Annotations]
+    let annotations: [Annotations]
+    
+    struct Annotations: Equatable, Hashable, Encodable, Decodable {
+        
+        var label: String
+        var coordinates: Coordinate
+        
+        var annotations: Annotation.Annotations {
+            return Annotation.Annotations(label: label, coordinates: Annotation.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
+        }
+        
+        struct Coordinate: Equatable, Hashable, Encodable, Decodable {
+            
+            var x: Double
+            var y: Double
+            var width: Double
+            var height: Double
+            
+        }
+    }
     
 }

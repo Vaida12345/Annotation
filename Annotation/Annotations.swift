@@ -16,13 +16,25 @@ struct Annotation: Equatable, Hashable, Identifiable {
     var image: NSImage
     var annotations: [Annotations]
     
-    struct Annotations: Equatable, Hashable, Encodable, Decodable {
+    struct Annotations: Equatable, Hashable, Encodable, Decodable, Identifiable {
         
+        var id: UUID
         var label: String
         var coordinates: Coordinate
         
-        struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible {
+        init(label: String, coordinates: Coordinate) {
+            self.id = UUID()
+            self.label = label
+            self.coordinates = coordinates
+        }
+        
+        var export: AnnotationImport.Annotations {
+            return .init(label: label, coordinates: AnnotationImport.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
+        }
+        
+        struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible, Identifiable {
             
+            var id: UUID
             var x: Double
             var y: Double
             var width: Double
@@ -32,11 +44,20 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 return "(\(x), \(y), \(width), \(height))"
             }
             
+            init(x: Double, y: Double, width: Double, height: Double) {
+                self.x = x
+                self.y = y
+                self.width = width
+                self.height = height
+                self.id = UUID()
+            }
+            
             private init(center: CGPoint, size: CGSize) {
                 self.x = center.x
                 self.y = center.y
                 self.width = size.width
                 self.height = size.height
+                self.id = UUID()
             }
             
             private init(fromUpperLeftCornerY: Double, x: Double, width: Double, height: Double) {
@@ -44,6 +65,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 self.y = fromUpperLeftCornerY + height / 2
                 self.width = width
                 self.height = height
+                self.id = UUID()
             }
             
             private init(fromLowerLeftCornerY: Double, x: Double, width: Double, height: Double) {
@@ -51,6 +73,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 self.y = fromLowerLeftCornerY - height / 2
                 self.width = width
                 self.height = height
+                self.id = UUID()
             }
             
             /// change the coordinate from that of a imageView to that of an image.

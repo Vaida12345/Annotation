@@ -14,7 +14,7 @@ struct AnnotationView: NSViewRepresentable {
     typealias NSViewType = NSView
 
     // core
-    @Binding var annotation: Annotation
+    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     /// The current label used
     @Binding var label: String
     
@@ -23,27 +23,32 @@ struct AnnotationView: NSViewRepresentable {
     
     @EnvironmentObject var document: AnnotationDocument
     
+    var annotations: [Annotation] {
+        return document.annotations.filter({ leftSideBarSelectedItem.contains($0.id) })
+    }
+    
 //    var textField = NSTextField()
 //    var annotationsViews: [NSView] = []
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: NSRect(origin: .zero, size: size))
-        let imageView: NSImageView = NSImageView()
-//        imageView.imageScaling = .scaleProportionallyUpOrDown
-        let image = annotation.image
-        image.size = image.aspectRatioFit(in: size)
-        imageView.frame = CGRect(origin: .zero, size: size)
-        imageView.image = image
+        for image in annotations.map({ $0.image }) {
+            let imageView: NSImageView = NSImageView()
+            image.size = image.aspectRatioFit(in: size)
+            imageView.frame = CGRect(origin: .zero, size: size)
+            imageView.image = image
+            imageView.alphaValue = 1.0 / CGFloat(annotations.count)
+            view.addSubview(imageView)
+        }
         
         let viewController = ViewController(document: document)
         viewController.viewDidLoad()
-        imageView.addSubview(viewController.view)
+        view.addSubview(viewController.view)
         
         viewController.view.frame = CGRect(origin: .zero, size: size)
         viewController.label = label
         viewController.annotationView = self
         
-        view.addSubview(imageView)
         return view
     }
 
@@ -61,24 +66,22 @@ struct AnnotationView: NSViewRepresentable {
         viewController.annotationView = self
         viewController.document = document
         
-//        nsView.imageScaling = .scaleProportionallyUpOrDown
-        let image = annotation.image
-        nsView.frame = CGRect(origin: .zero, size: size)
-        image.size = image.aspectRatioFit(in: size)
-        
-        let imageView: NSImageView = NSImageView()
-        //        imageView.imageScaling = .scaleProportionallyUpOrDown
-        image.size = annotation.image.aspectRatioFit(in: size)
-        imageView.frame = CGRect(origin: .zero, size: size)
-        imageView.image =  annotation.image
-        nsView.addSubview(imageView)
+        for annotation in annotations {
+            let image = annotation.image
+            let imageView: NSImageView = NSImageView()
+            image.size = image.aspectRatioFit(in: size)
+            imageView.frame = CGRect(origin: .zero, size: size)
+            imageView.image = image
+            imageView.alphaValue = 1.0 / CGFloat(annotations.count)
+            nsView.addSubview(imageView)
+            
+            for i in annotation.annotations {
+                drawAnnotation(annotation: i, on: imageView)
+            }
+        }
         
         viewController.view.frame = CGRect(origin: .zero, size: size)
         viewController.label = label
-        
-        for i in annotation.annotations {
-            drawAnnotation(annotation: i, on: imageView)
-        }
         nsView.addSubview(viewController.view)
     }
     
@@ -122,7 +125,11 @@ struct AnnotationView: NSViewRepresentable {
             }, mouseUp: { [self] in
                 if self.recognizerView.frame.width >= 10 && self.recognizerView.frame.height >= 10 {
                     document.apply(undoManager: undoManager, action: {
-                        self.annotationView!.annotation.annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: self.annotationView!.annotation.image)))
+                        for i in self.annotationView!.leftSideBarSelectedItem {
+                            let index = document.annotations.firstIndex(where: { $0.id == i })!
+                            document.annotations[index].annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: document.annotations[index].image)))
+                        }
+                        
                     })
                 }
                 

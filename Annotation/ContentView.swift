@@ -27,8 +27,8 @@ struct ContentView: View {
             SideBar(selection: $leftSideBarSelectedItem)
             
             ZStack {
-                if leftSideBarSelectedItem.count == 1, let selection = leftSideBarSelectedItem.first, let item = $document.annotations.first(where: {$0.id == selection}) {
-                    DetailView(annotation: item)
+                if !document.annotations.isEmpty {
+                    DetailView(leftSideBarSelectedItem: $leftSideBarSelectedItem)
                 } else {
                     VStack {
                         Image(systemName: "square.and.arrow.down.fill")
@@ -251,7 +251,7 @@ struct SideBar: View {
 struct DetailView: View {
     
     // core
-    @Binding var annotation: Annotation
+    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     @EnvironmentObject var document: AnnotationDocument
     
     // layout
@@ -263,7 +263,7 @@ struct DetailView: View {
     var body: some View {
         GeometryReader { reader in
             ZStack {
-                AnnotationView(annotation: $annotation, label: $currentLabel, size: reader.size)
+                AnnotationView(leftSideBarSelectedItem: $leftSideBarSelectedItem, label: $currentLabel, size: reader.size)
                 
                 HStack {
                     VStack {
@@ -323,7 +323,7 @@ struct InfoView: View {
     @Binding var annotation: Annotation
     
     var body: some View {
-        List($annotation.annotations, id: \.self) { item in
+        List($annotation.annotations) { item in
             InfoViewItem(item: item, annotation: $annotation)
             Divider()
         }
@@ -558,7 +558,7 @@ struct LabelListItems: View {
         if let labelsDictionary = document.annotations.labelDictionary[label] {
             ScrollView(.horizontal) {
                 HStack {
-                    ForEach(labelsDictionary, id: \.1.description) { item in
+                    ForEach(labelsDictionary, id: \.1.id) { item in
                         LabelListItem(item: item)
                             .onTapGesture(count: 2) {
                                 guard let index = document.annotations.firstIndex(where: { $0.image == item.0 }) else { return }
