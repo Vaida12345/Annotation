@@ -116,6 +116,7 @@ struct ContentView: View {
                     }
                 }
                 .help("Show Label List")
+                .disabled(leftSideBarSelectedItem.count != 1)
                 
                 Toggle(isOn: $showInfoView.animation()) {
                     Image(systemName: "list.bullet")
@@ -127,6 +128,7 @@ struct ContentView: View {
                     }
                 }
                 .help("Show Info View")
+                .disabled(leftSideBarSelectedItem.count != 1)
                 
             }
             
