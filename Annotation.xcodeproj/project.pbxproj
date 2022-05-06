@@ -14,30 +14,11 @@
 		B416911027B53B020029AB97 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B416910F27B53B020029AB97 /* Preview Assets.xcassets */; };
 		B416911A27B53B2B0029AB97 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = B416911827B53B2B0029AB97 /* LICENSE */; };
 		B416911B27B53B2B0029AB97 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B416911927B53B2B0029AB97 /* README.md */; };
-		B416913627B53B590029AB97 /* Fraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912027B53B590029AB97 /* Fraction.swift */; };
-		B416913727B53B590029AB97 /* Int10.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912127B53B590029AB97 /* Int10.swift */; };
-		B416913827B53B590029AB97 /* Complex.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912227B53B590029AB97 /* Complex.swift */; };
-		B416913927B53B590029AB97 /* PreciseFloat.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912327B53B590029AB97 /* PreciseFloat.swift */; };
-		B416913A27B53B590029AB97 /* Arithmetical.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912427B53B590029AB97 /* Arithmetical.swift */; };
-		B416913B27B53B590029AB97 /* CommentCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912627B53B590029AB97 /* CommentCreator.swift */; };
-		B416913C27B53B590029AB97 /* Table.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912727B53B590029AB97 /* Table.swift */; };
-		B416913D27B53B590029AB97 /* Bechmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912827B53B590029AB97 /* Bechmark.swift */; };
-		B416913E27B53B590029AB97 /* Point.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912927B53B590029AB97 /* Point.swift */; };
-		B416913F27B53B590029AB97 /* Compiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912A27B53B590029AB97 /* Compiler.swift */; };
-		B416914027B53B590029AB97 /* Canvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912B27B53B590029AB97 /* Canvas.swift */; };
-		B416914127B53B590029AB97 /* MachineLearning.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912C27B53B590029AB97 /* MachineLearning.swift */; };
-		B416914227B53B590029AB97 /* FinderItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912D27B53B590029AB97 /* FinderItem.swift */; };
-		B416914327B53B590029AB97 /* Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416912E27B53B590029AB97 /* Support.swift */; };
-		B416914427B53B590029AB97 /* LinearTransformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416913027B53B590029AB97 /* LinearTransformation.swift */; };
-		B416914527B53B590029AB97 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416913127B53B590029AB97 /* Expression.swift */; };
-		B416914627B53B590029AB97 /* Polynomial.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416913227B53B590029AB97 /* Polynomial.swift */; };
-		B416914727B53B590029AB97 /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416913327B53B590029AB97 /* Matrix.swift */; };
-		B416914827B53B590029AB97 /* Plane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416913427B53B590029AB97 /* Plane.swift */; };
-		B416914927B53B590029AB97 /* Algebra.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416913527B53B590029AB97 /* Algebra.swift */; };
 		B416914B27B53B6C0029AB97 /* Annotations.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914A27B53B6C0029AB97 /* Annotations.swift */; };
 		B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914C27B53B740029AB97 /* AnnotationView.swift */; };
 		B416914F27B53FB20029AB97 /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B416914E27B53FB20029AB97 /* icon.icns */; };
 		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
+		B4C716FB2824D3CF00D19A9D /* Support in Frameworks */ = {isa = PBXBuildFile; productRef = B4C716FA2824D3CF00D19A9D /* Support */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,30 +32,11 @@
 		B416911227B53B020029AB97 /* Annotation.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Annotation.entitlements; sourceTree = "<group>"; };
 		B416911827B53B2B0029AB97 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		B416911927B53B2B0029AB97 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		B416912027B53B590029AB97 /* Fraction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Fraction.swift; sourceTree = "<group>"; };
-		B416912127B53B590029AB97 /* Int10.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Int10.swift; sourceTree = "<group>"; };
-		B416912227B53B590029AB97 /* Complex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Complex.swift; sourceTree = "<group>"; };
-		B416912327B53B590029AB97 /* PreciseFloat.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PreciseFloat.swift; sourceTree = "<group>"; };
-		B416912427B53B590029AB97 /* Arithmetical.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Arithmetical.swift; sourceTree = "<group>"; };
-		B416912627B53B590029AB97 /* CommentCreator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CommentCreator.swift; sourceTree = "<group>"; };
-		B416912727B53B590029AB97 /* Table.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Table.swift; sourceTree = "<group>"; };
-		B416912827B53B590029AB97 /* Bechmark.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Bechmark.swift; sourceTree = "<group>"; };
-		B416912927B53B590029AB97 /* Point.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Point.swift; sourceTree = "<group>"; };
-		B416912A27B53B590029AB97 /* Compiler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Compiler.swift; sourceTree = "<group>"; };
-		B416912B27B53B590029AB97 /* Canvas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Canvas.swift; sourceTree = "<group>"; };
-		B416912C27B53B590029AB97 /* MachineLearning.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MachineLearning.swift; sourceTree = "<group>"; };
-		B416912D27B53B590029AB97 /* FinderItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FinderItem.swift; sourceTree = "<group>"; };
-		B416912E27B53B590029AB97 /* Support.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
-		B416913027B53B590029AB97 /* LinearTransformation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LinearTransformation.swift; sourceTree = "<group>"; };
-		B416913127B53B590029AB97 /* Expression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
-		B416913227B53B590029AB97 /* Polynomial.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Polynomial.swift; sourceTree = "<group>"; };
-		B416913327B53B590029AB97 /* Matrix.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Matrix.swift; sourceTree = "<group>"; };
-		B416913427B53B590029AB97 /* Plane.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Plane.swift; sourceTree = "<group>"; };
-		B416913527B53B590029AB97 /* Algebra.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Algebra.swift; sourceTree = "<group>"; };
 		B416914A27B53B6C0029AB97 /* Annotations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Annotations.swift; sourceTree = "<group>"; };
 		B416914C27B53B740029AB97 /* AnnotationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnnotationView.swift; sourceTree = "<group>"; };
 		B416914E27B53FB20029AB97 /* icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icon.icns; sourceTree = "<group>"; };
 		B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Folder Icon.icns"; sourceTree = "<group>"; };
+		B4C716F92824D3CC00D19A9D /* DataBase */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DataBase; path = ../../Packages/DataBase; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B4C716FB2824D3CF00D19A9D /* Support in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +57,7 @@
 				B416910527B53B020029AB97 /* Annotation */,
 				B416911C27B53B300029AB97 /* Assets */,
 				B416910427B53B020029AB97 /* Products */,
+				B4C716F82824D3CC00D19A9D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -113,7 +77,6 @@
 				B416914A27B53B6C0029AB97 /* Annotations.swift */,
 				B416910A27B53B020029AB97 /* ContentView.swift */,
 				B416914C27B53B740029AB97 /* AnnotationView.swift */,
-				B416911E27B53B590029AB97 /* Support */,
 				B416911D27B53B450029AB97 /* Assets */,
 			);
 			path = Annotation;
@@ -149,55 +112,12 @@
 			name = Assets;
 			sourceTree = "<group>";
 		};
-		B416911E27B53B590029AB97 /* Support */ = {
+		B4C716F82824D3CC00D19A9D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B416911F27B53B590029AB97 /* Numerics */,
-				B416912527B53B590029AB97 /* Support */,
-				B416912E27B53B590029AB97 /* Support.swift */,
-				B416912F27B53B590029AB97 /* Algebra */,
+				B4C716F92824D3CC00D19A9D /* DataBase */,
 			);
-			path = Support;
-			sourceTree = "<group>";
-		};
-		B416911F27B53B590029AB97 /* Numerics */ = {
-			isa = PBXGroup;
-			children = (
-				B416912027B53B590029AB97 /* Fraction.swift */,
-				B416912127B53B590029AB97 /* Int10.swift */,
-				B416912227B53B590029AB97 /* Complex.swift */,
-				B416912327B53B590029AB97 /* PreciseFloat.swift */,
-				B416912427B53B590029AB97 /* Arithmetical.swift */,
-			);
-			path = Numerics;
-			sourceTree = "<group>";
-		};
-		B416912527B53B590029AB97 /* Support */ = {
-			isa = PBXGroup;
-			children = (
-				B416912627B53B590029AB97 /* CommentCreator.swift */,
-				B416912727B53B590029AB97 /* Table.swift */,
-				B416912827B53B590029AB97 /* Bechmark.swift */,
-				B416912927B53B590029AB97 /* Point.swift */,
-				B416912A27B53B590029AB97 /* Compiler.swift */,
-				B416912B27B53B590029AB97 /* Canvas.swift */,
-				B416912C27B53B590029AB97 /* MachineLearning.swift */,
-				B416912D27B53B590029AB97 /* FinderItem.swift */,
-			);
-			path = Support;
-			sourceTree = "<group>";
-		};
-		B416912F27B53B590029AB97 /* Algebra */ = {
-			isa = PBXGroup;
-			children = (
-				B416913027B53B590029AB97 /* LinearTransformation.swift */,
-				B416913127B53B590029AB97 /* Expression.swift */,
-				B416913227B53B590029AB97 /* Polynomial.swift */,
-				B416913327B53B590029AB97 /* Matrix.swift */,
-				B416913427B53B590029AB97 /* Plane.swift */,
-				B416913527B53B590029AB97 /* Algebra.swift */,
-			);
-			path = Algebra;
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -216,6 +136,9 @@
 			dependencies = (
 			);
 			name = Annotation;
+			packageProductDependencies = (
+				B4C716FA2824D3CF00D19A9D /* Support */,
+			);
 			productName = Annotation;
 			productReference = B416910327B53B020029AB97 /* Annotation.app */;
 			productType = "com.apple.product-type.application";
@@ -228,7 +151,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1320;
-				LastUpgradeCheck = 1320;
+				LastUpgradeCheck = 1330;
 				TargetAttributes = {
 					B416910227B53B020029AB97 = {
 						CreatedOnToolsVersion = 13.2.1;
@@ -275,30 +198,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				B416910727B53B020029AB97 /* AnnotationApp.swift in Sources */,
-				B416914127B53B590029AB97 /* MachineLearning.swift in Sources */,
 				B416914B27B53B6C0029AB97 /* Annotations.swift in Sources */,
-				B416914227B53B590029AB97 /* FinderItem.swift in Sources */,
 				B416910927B53B020029AB97 /* AnnotationDocument.swift in Sources */,
-				B416914527B53B590029AB97 /* Expression.swift in Sources */,
-				B416913727B53B590029AB97 /* Int10.swift in Sources */,
-				B416913B27B53B590029AB97 /* CommentCreator.swift in Sources */,
-				B416913F27B53B590029AB97 /* Compiler.swift in Sources */,
 				B416910B27B53B020029AB97 /* ContentView.swift in Sources */,
-				B416914927B53B590029AB97 /* Algebra.swift in Sources */,
-				B416913A27B53B590029AB97 /* Arithmetical.swift in Sources */,
-				B416914827B53B590029AB97 /* Plane.swift in Sources */,
-				B416914027B53B590029AB97 /* Canvas.swift in Sources */,
-				B416914627B53B590029AB97 /* Polynomial.swift in Sources */,
-				B416913C27B53B590029AB97 /* Table.swift in Sources */,
-				B416913827B53B590029AB97 /* Complex.swift in Sources */,
 				B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */,
-				B416914727B53B590029AB97 /* Matrix.swift in Sources */,
-				B416913E27B53B590029AB97 /* Point.swift in Sources */,
-				B416913927B53B590029AB97 /* PreciseFloat.swift in Sources */,
-				B416913627B53B590029AB97 /* Fraction.swift in Sources */,
-				B416914327B53B590029AB97 /* Support.swift in Sources */,
-				B416913D27B53B590029AB97 /* Bechmark.swift in Sources */,
-				B416914427B53B590029AB97 /* LinearTransformation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,11 +329,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Annotation/Annotation.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Annotation/Preview Content\"";
-				DEVELOPMENT_TEAM = 3PH93LN984;
+				DEVELOPMENT_TEAM = UJK52W4D7G;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -455,11 +359,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Annotation/Annotation.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Annotation/Preview Content\"";
-				DEVELOPMENT_TEAM = 3PH93LN984;
+				DEVELOPMENT_TEAM = UJK52W4D7G;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -500,6 +405,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B4C716FA2824D3CF00D19A9D /* Support */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Support;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B41690FB27B53B020029AB97 /* Project object */;
 }

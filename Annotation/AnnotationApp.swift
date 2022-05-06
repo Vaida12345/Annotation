@@ -8,6 +8,8 @@
 import SwiftUI
 import CoreML
 import UniformTypeIdentifiers
+import Vision
+import Support
 
 @main
 struct AnnotationApp: App {
@@ -168,4 +170,40 @@ struct AnnotationApp: App {
             }
         }
     }
+}
+
+/// Returns the ML result by applying an Object Detection ML model to an image.
+///
+/// **Example**
+///
+///     applyML(to: NSImage(), model: Normal_Image_Classifier_2().model)
+///
+/// - Important: The class would be returned only if the confidence is greater than the threshold.
+///
+/// - Note: By default, the threshold, ie. confidence, was set to 0.8.
+///
+/// - Attention: The return value is `nil` if the size of `image` is `zero`, the `MLModel` is invalid, or no item reaches the threshold.
+///
+/// - Parameters:
+///     - confidence: The threshold.
+///     - model: The Object Detection ML Classifier model.
+///     - image: The image on which performs the ML.
+///
+/// - Returns: The observations in the image; `nil` otherwise.
+func applyObjectDetectionML(to image: NSImage, model: MLModel) -> [VNRecognizedObjectObservation]? {
+    guard image.size != NSSize.zero else { print("skip \(image)"); return nil }
+    guard let image = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { print("skip \(image)"); return nil }
+    
+    let orientation = CGImagePropertyOrientation.up
+    let handler = VNImageRequestHandler(cgImage: image, orientation: orientation, options: [:])
+    
+    let model = try! VNCoreMLModel(for: model)
+    let request = VNCoreMLRequest(model: model)
+    try! handler.perform([request])
+    
+    guard let results = request.results else { print("skip \(image): can not form request from current model"); return nil }
+    let observations = results as! [VNRecognizedObjectObservation]
+    guard !observations.isEmpty else { print("skip \(image): the classification array of \(observations) is empty"); return nil }
+    
+    return observations
 }

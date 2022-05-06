@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import Support
 
 extension UTType {
     static var annotationProject: UTType {
@@ -339,20 +340,16 @@ extension AnnotationDocument {
                 }
                 
             case .folder:
-                item.iteratedOver { child in
+                item.iterated { child in
                     guard let image = child.image else { return }
                     DispatchQueue.main.async {
-                        self.importingProgress += 1 / Double(item.allChildren!.count)
+                        self.importingProgress += 1 / Double(item.children(range: .enumeration)!.count)
                     }
                     newItems.append(Annotation(id: UUID(), image: image, annotations: []))
                 }
                 
             case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
-                guard let frames = item.getFrames( updater: {
-                    DispatchQueue.main.async {
-                        self.importingProgress += 1 / Double(item.frameRate!) / item.avAsset!.duration.seconds
-                    }
-                }) else { return }
+                guard let frames = await item.avAsset?.getFrames() else { return }
                 newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
                 
             default:

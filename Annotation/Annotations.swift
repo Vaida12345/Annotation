@@ -9,6 +9,7 @@ import Foundation
 import Cocoa
 import SwiftUI
 import Vision
+import Support
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
