@@ -349,7 +349,11 @@ extension AnnotationDocument {
                 }
                 
             case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
-                guard let frames = await item.avAsset?.getFrames() else { return }
+                guard let frames = await item.avAsset?.getFrames(onProgressChanged: { progress in
+                    DispatchQueue.main.async {
+                        self.importingProgress = progress
+                    }
+                }) else { return }
                 newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
                 
             default:
