@@ -12,16 +12,16 @@ import Support
 struct ContentView: View {
     
     // core
-    @State var label = "label"
-    @EnvironmentObject var document: AnnotationDocument
+    @State private var label = "label"
+    @EnvironmentObject private var document: AnnotationDocument
     
     // layout
     @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
-    @State var showInfoView = false
-    @State var showLabelList = false
-    @State var showPopover = false
+    @State private var showInfoView = false
+    @State private var showLabelList = false
+    @State private var showPopover = false
     
-    @Environment(\.undoManager) var undoManager
+    @Environment(\.undoManager) private var undoManager
     
     var body: some View {
         NavigationView {
@@ -31,18 +31,11 @@ struct ContentView: View {
                 if !document.annotations.isEmpty {
                     DetailView(leftSideBarSelectedItem: $leftSideBarSelectedItem)
                 } else {
-                    VStack {
-                        Image(systemName: "square.and.arrow.down.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .padding(.all)
-                            .frame(width: 100, height: 100, alignment: .center)
-                        Text("Drag files or folder.")
-                            .font(.title)
-                            .multilineTextAlignment(.center)
-                            .padding(.all)
+                    DropView { items in
+                        Task {
+                            await document.addItems(from: items.map(\.url), undoManager: undoManager)
+                        }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 
                 if leftSideBarSelectedItem.count == 1, let selection = leftSideBarSelectedItem.first {
@@ -66,15 +59,12 @@ struct ContentView: View {
                 }
             }
             .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                DispatchQueue(label: "adder").async {
-                    Task {
-                        for i in providers {
-                            // the priority doesn't work, as load item is recommended to run on main thread.
-                            guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
-                            guard let urlData = result as? Data else { return }
-                            guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                            await document.addItems(from: [url], undoManager: undoManager)
-                        }
+                Task {
+                    for i in providers {
+                        guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
+                        guard let urlData = result as? Data else { return }
+                        guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
+                        await document.addItems(from: [url], undoManager: undoManager)
                     }
                 }
                 

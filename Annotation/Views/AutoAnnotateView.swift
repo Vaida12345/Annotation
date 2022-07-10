@@ -26,7 +26,7 @@ struct AutoaAnnotateView: View {
     var body: some View {
         
         VStack {
-            DropView { items in
+            DropView("Drag a CoreML model here.") { items in
                 guard let firstItem = items.first else { return }
                 do {
                     try model = MLModel(contentsOf: MLModel.compileModel(at: firstItem.url))
