@@ -30,6 +30,10 @@ struct AnnotationApp: App {
                 .onAppear {
                     self.document = file.document
                 }
+                .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
+                    guard let url = try? result.get() else { return }
+                    FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+                }
                 .sheet(isPresented: $isShowingModelDialog, onDismiss: nil) {
                     VStack {
                         VStack {
@@ -124,10 +128,6 @@ struct AnnotationApp: App {
                         isShowingExportDialog = true
                     }
                     .keyboardShortcut("e")
-                    .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
-                        guard let url = try? result.get() else { return }
-                        FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
-                    }
                 }
             }
             
