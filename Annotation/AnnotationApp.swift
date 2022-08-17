@@ -33,6 +33,10 @@ struct AnnotationApp: App {
                 .sheet(isPresented: $isShowingModelDialog) {
                     AutoaAnnotateView(isShowingModelDialog: $isShowingModelDialog, confidence: $confidence, model: $model, leftSideBarSelectedItem: $leftSideBarSelectedItem)
                 }
+                .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
+                    guard let url = try? result.get() else { return }
+                    FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+                }
         }
         .commands {
             CommandGroup(replacing: .importExport) {
@@ -53,10 +57,6 @@ struct AnnotationApp: App {
                         isShowingExportDialog = true
                     }
                     .keyboardShortcut("e")
-                    .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
-                        guard let url = try? result.get() else { return }
-                        FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
-                    }
                 }
             }
             

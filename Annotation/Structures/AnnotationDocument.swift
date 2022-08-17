@@ -316,9 +316,9 @@ extension AnnotationDocument {
         
         for i in urls {
             guard let item = FinderItem(at: i) else { continue }
-            guard item.type != nil else { continue }
+            guard item.contentType != nil else { continue }
             
-            switch item.type! {
+            switch item.contentType! {
             case .annotationProject, .folder:
                 guard let file = try? AnnotationDocument(from: FileWrapper(url: item.url, options: [])) else { fallthrough }
                 newItems.append(contentsOf: file.annotations)
@@ -354,7 +354,7 @@ extension AnnotationDocument {
                         self.importingProgress = progress
                     }
                 }) else { return }
-                newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: $0, annotations: []) })
+                newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: NativeImage(cgImage: $0), annotations: []) })
                 
             default:
                 guard let image = item.image else { return }
