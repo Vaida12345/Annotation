@@ -7,8 +7,13 @@ Generate createML annotations which can be trained by createML.
 ## How to import to CreateML
 Go to `File > Export` to export the file as a folder.
 
+## Feature: Annotate based on a trained model
+Go to `Edit > Annotate > based on model...` and drag a trained model. (`.mlmodel` or `.mlpackage`)
+
 ## Install
 Files and source code could be found in [releases](https://github.com/Vaida12345/Annotation/releases).
+
+Or, download from [App Store](https://apps.apple.com/au/app/annotationcreater/id1623375683?mt=12)!
 
 Note: If mac says the app was damaged / unknown developer, please go to `System Preferences > Security & Privacy > General`, and click `Open Anyway`. [Show Details.](https://github.com/Vaida12345/Annotation/wiki#why-i-cant-open-the-app)
 

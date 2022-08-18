@@ -9,6 +9,7 @@ import Foundation
 import Cocoa
 import SwiftUI
 import Vision
+import Support
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
@@ -16,13 +17,25 @@ struct Annotation: Equatable, Hashable, Identifiable {
     var image: NSImage
     var annotations: [Annotations]
     
-    struct Annotations: Equatable, Hashable, Encodable, Decodable {
+    struct Annotations: Equatable, Hashable, Encodable, Decodable, Identifiable {
         
+        var id: UUID
         var label: String
         var coordinates: Coordinate
         
-        struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible {
+        init(label: String, coordinates: Coordinate) {
+            self.id = UUID()
+            self.label = label
+            self.coordinates = coordinates
+        }
+        
+        var export: AnnotationImport.Annotations {
+            return .init(label: label, coordinates: AnnotationImport.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
+        }
+        
+        struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible, Identifiable {
             
+            var id: UUID
             var x: Double
             var y: Double
             var width: Double
@@ -32,11 +45,20 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 return "(\(x), \(y), \(width), \(height))"
             }
             
+            init(x: Double, y: Double, width: Double, height: Double) {
+                self.x = x
+                self.y = y
+                self.width = width
+                self.height = height
+                self.id = UUID()
+            }
+            
             private init(center: CGPoint, size: CGSize) {
                 self.x = center.x
                 self.y = center.y
                 self.width = size.width
                 self.height = size.height
+                self.id = UUID()
             }
             
             private init(fromUpperLeftCornerY: Double, x: Double, width: Double, height: Double) {
@@ -44,6 +66,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 self.y = fromUpperLeftCornerY + height / 2
                 self.width = width
                 self.height = height
+                self.id = UUID()
             }
             
             private init(fromLowerLeftCornerY: Double, x: Double, width: Double, height: Double) {
@@ -51,6 +74,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 self.y = fromLowerLeftCornerY - height / 2
                 self.width = width
                 self.height = height
+                self.id = UUID()
             }
             
             /// change the coordinate from that of a imageView to that of an image.
@@ -180,7 +204,7 @@ extension CGRect {
 extension Array where Element == Annotation {
     
     var labels: [String] {
-        return self.reduce([String](), { $0.union($1.annotations.map{ $0.label }) })
+        self.flatMap { $0.annotations.map(\.label) }.removingRepeatedElements()
     }
     
     /// \[label: \[(Image Name, Coordinate)\]\]
@@ -209,7 +233,8 @@ func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordi
         guard image.pixelSize != .zero else { return nil }
         let rect = CGRect(from: coordinate, by: image)
         guard rect.size != .zero else { return nil }
-        let result = NSImage(data: image.tiffRepresentation!)!.trimmed(rect: rect)
+        guard let rep = image.tiffRepresentation else { return nil }
+        guard let result = NSImage(data: rep)?.cropped(to: rect) else { return nil }
         return result
     }
 }
