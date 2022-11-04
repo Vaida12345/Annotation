@@ -8,6 +8,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import Support
+import AVFoundation
 
 extension UTType {
     static var annotationProject: UTType {
@@ -340,7 +341,7 @@ extension AnnotationDocument {
                 }
                 
             case .folder:
-                item.iterated { child in
+                item.forEach(range: .enumeration) { child in
                     guard let image = child.image else { return }
                     DispatchQueue.main.async {
                         self.importingProgress += 1 / Double(item.children(range: .enumeration)!.count)
@@ -349,7 +350,7 @@ extension AnnotationDocument {
                 }
                 
             case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
-                guard let frames = await item.avAsset?.getFrames(onProgressChanged: { progress in
+                guard let frames = await AVAsset(at: item)?.getFrames(onProgressChanged: { progress in
                     DispatchQueue.main.async {
                         self.importingProgress = progress
                     }

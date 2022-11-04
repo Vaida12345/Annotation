@@ -204,7 +204,7 @@ extension CGRect {
 extension Array where Element == Annotation {
     
     var labels: [String] {
-        self.flatMap { $0.annotations.map(\.label) }.removingRepeatedElements()
+        self.flatMap { $0.annotations.map(\.label) }.removingDuplicates()
     }
     
     /// \[label: \[(Image Name, Coordinate)\]\]
@@ -229,12 +229,11 @@ extension Array where Element == Annotation {
 }
 
 func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
-    autoreleasepool {
+    autoreleasepool { () -> NSImage? in
         guard image.pixelSize != .zero else { return nil }
         let rect = CGRect(from: coordinate, by: image)
         guard rect.size != .zero else { return nil }
-        guard let rep = image.tiffRepresentation else { return nil }
-        guard let result = NSImage(data: rep)?.cropped(to: rect) else { return nil }
-        return result
+        guard let result = image.cgImage?.cropping(to: rect) else { return nil }
+        return NSImage(cgImage: result)
     }
 }

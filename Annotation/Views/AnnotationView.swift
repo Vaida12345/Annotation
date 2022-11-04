@@ -35,7 +35,7 @@ struct AnnotationView: NSViewRepresentable {
         let view = NSView(frame: NSRect(origin: .zero, size: size))
         for image in annotations.map({ $0.image }) {
             let imageView: NSImageView = NSImageView()
-            image.size = image.aspectRatioFit(in: size)
+            image.size = image.pixelSize!.aspectRatio(.fit, in: size)
             imageView.frame = CGRect(origin: .zero, size: size)
             imageView.image = image
             imageView.alphaValue = 1.0 / CGFloat(annotations.count)
@@ -70,7 +70,7 @@ struct AnnotationView: NSViewRepresentable {
         for annotation in annotations {
             let image = annotation.image
             let imageView: NSImageView = NSImageView()
-            image.size = image.aspectRatioFit(in: size)
+            image.size = image.pixelSize!.aspectRatio(.fit, in: size)
             imageView.frame = CGRect(origin: .zero, size: size)
             imageView.image = image
             imageView.alphaValue = 1.0 / CGFloat(annotations.count)
