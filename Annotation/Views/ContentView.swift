@@ -106,26 +106,22 @@ struct ContentView: View {
                     .frame(width: 300)
                 }
                 
-                Toggle(isOn: $showLabelList.animation()) {
+                Toggle(isOn: $showLabelList) {
                     Image(systemName: "tag")
                 }
                 .onChange(of: showLabelList) { newValue in
-                    withAnimation {
-                        guard newValue else { return }
-                        showInfoView = false
-                    }
+                    guard newValue else { return }
+                    showInfoView = false
                 }
                 .help("Show Label List")
                 .disabled(leftSideBarSelectedItem.count != 1)
                 
-                Toggle(isOn: $showInfoView.animation()) {
+                Toggle(isOn: $showInfoView) {
                     Image(systemName: "list.bullet")
                 }
                 .onChange(of: showInfoView) { newValue in
-                    withAnimation {
-                        guard newValue else { return }
-                        showLabelList = false
-                    }
+                    guard newValue else { return }
+                    showLabelList = false
                 }
                 .help("Show Info View")
                 .disabled(leftSideBarSelectedItem.count != 1)

@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Support
 
 struct LabelList: View {
     
@@ -123,31 +124,18 @@ struct LabelListItems: View {
 
 struct LabelListItem: View {
     
-    @State var image: NSImage? = nil
     @State var item: (NSImage, Annotation.Annotations.Coordinate)
     
     var body: some View {
-        if let image = image {
+        AsyncView {
+            trimImage(from: item.0, at: item.1) ?? NSImage()
+        } content: { image in
             Image(nsImage: image)
                 .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 50, height: 50)
                 .cornerRadius(5)
-        } else {
-            GroupBox{
-                VStack {
-                    HStack {
-                        Spacer()
-                    }
-                    Spacer()
-                }
-            }
-            .frame(width: 50, height: 50)
-            .onAppear {
-                DispatchQueue(label: "trim image").async {
-                    image = trimImage(from: item.0, at: item.1)
-                }
-            }
+                .aspectRatio(contentMode: .fit)
+                .frame(height: 50)
         }
+        .frame(height: 50)
     }
 }

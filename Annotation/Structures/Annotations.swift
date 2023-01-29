@@ -39,6 +39,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
             return .init(label: label, coordinates: AnnotationImport.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
         }
         
+        /// Coordinate relative to image, origin at center.
         struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible, Identifiable {
             
             var id: UUID
@@ -180,30 +181,9 @@ extension CGRect {
         self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
     }
     
-    /// change the coordinate from that of an image to that of an image pixel.
-    init(from coordinate: Annotation.Annotations.Coordinate, by image: NSImage) {
-        var scaleFactor: Double // image rep size / image pixel size
-        var heightMargin: Double = 0
-        var widthMargin: Double = 0
-        
-        let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
-        
-        let firstSize = NSImage(data: image.tiffRepresentation!)!.size // image rep size
-        
-        if Double(cgImage.width) / Double(cgImage.height) >= firstSize.width / firstSize.height {
-            scaleFactor = firstSize.width / Double(cgImage.width)
-            heightMargin = (firstSize.height - Double(cgImage.height) * scaleFactor) / 2
-        } else {
-            scaleFactor = firstSize.height / Double(cgImage.height)
-            widthMargin = (firstSize.width - Double(cgImage.width) * scaleFactor) / 2
-        }
-        
-        let x = coordinate.x * scaleFactor + widthMargin
-        let y = -1 * (coordinate.y * scaleFactor + heightMargin - firstSize.height)
-        let width = coordinate.width * scaleFactor
-        let height = coordinate.height * scaleFactor
-        
-        self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+    /// change the coordinate from createML image to CGImage. ie, center to bottom-left
+    init(from coordinate: Annotation.Annotations.Coordinate) {
+        self.init(x: coordinate.x - coordinate.width / 2, y: coordinate.y - coordinate.height / 2, width: coordinate.width, height: coordinate.height)
     }
 }
 
@@ -235,11 +215,12 @@ extension Array where Element == Annotation {
 }
 
 func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
-    autoreleasepool { () -> NSImage? in
-        guard image.pixelSize != .zero else { return nil }
-        let rect = CGRect(from: coordinate, by: image)
-        guard rect.size != .zero else { return nil }
-        guard let result = image.cgImage?.cropping(to: rect) else { return nil }
-        return NSImage(cgImage: result)
-    }
+    guard image.pixelSize != .zero else { return nil }
+    let rect = CGRect(from: coordinate)
+    guard rect.size != .zero else { return nil }
+    print(image.size, coordinate, rect)
+    
+    guard let result = image.cgImage?.cropping(to: rect) else { return nil }
+    print(result.size)
+    return NSImage(cgImage: result)
 }

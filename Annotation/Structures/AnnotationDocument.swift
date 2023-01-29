@@ -109,8 +109,6 @@ final class AnnotationDocument: ReferenceFileDocument {
         wrapper.addFileWrapper(mainWrapper)
         
         var mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
-        mediaWrapper.preferredFilename = "Media"
-        wrapper.addFileWrapper(mediaWrapper)
         
         if let existingFile = configuration.existingFile, let container = existingFile.fileWrappers!["Media"]?.fileWrappers, configuration.contentType == .annotationProject {
             print("performing save with old data")
@@ -225,6 +223,8 @@ final class AnnotationDocument: ReferenceFileDocument {
             }
         }
         
+        mediaWrapper.preferredFilename = "Media"
+        wrapper.addFileWrapper(mediaWrapper)
         Task { @MainActor in
             self.isExporting = false
         }
@@ -356,7 +356,7 @@ func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> 
                 let _newItems = await withTaskGroup(of: Annotation.self) { group in
                     for item in annotationImport {
                         group.addTask {
-                            let annotation = Annotation(image: NSImage(at: source.with(subPath: item.image))!)
+                            let annotation = Annotation(image: NSImage(at: source.with(subPath: item.image))!, annotations: item.annotations.map(\.annotations))
                             await childReporter.advance()
                             return annotation
                         }
@@ -367,6 +367,7 @@ func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> 
                 
                 newItems.append(contentsOf: _newItems)
             } catch {
+                print(error)
                 fallthrough
             }
             

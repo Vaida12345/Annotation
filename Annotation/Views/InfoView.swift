@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Support
 
 struct InfoView: View {
     
@@ -66,7 +67,7 @@ struct InfoViewItem: View {
                 Spacer()
                 
                 HStack(alignment: .center) {
-                    Image(systemName: "pencil")
+                    Image(systemName: onEdit ? "checkmark" : "pencil")
                         .onTapGesture {
                             onEdit.toggle()
                         }
@@ -122,30 +123,16 @@ struct InfoViewImage: View {
     @State var annotation: Annotation
     @State var coordinate: Annotation.Annotations.Coordinate
     
-    @State var image: NSImage? = nil
-    
     var body: some View {
-        if let image = image {
+        AsyncView {
+            trimImage(from: annotation.image, at: coordinate) ?? NSImage()
+        } content: { image in
             Image(nsImage: image)
                 .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 75, height: 75)
                 .cornerRadius(5)
-        } else {
-            GroupBox{
-                VStack {
-                    HStack {
-                        Spacer()
-                    }
-                    Spacer()
-                }
-            }
-            .frame(width: 75, height: 75)
-            .onAppear {
-                DispatchQueue(label: "trim image").async {
-                    image = trimImage(from: annotation.image, at: coordinate)
-                }
-            }
+                .aspectRatio(contentMode: .fit)
+                .frame(height: 75)
         }
+        .frame(height: 75)
     }
 }
