@@ -85,12 +85,12 @@ struct Annotation: Equatable, Hashable, Identifiable {
             }
             
             /// change the coordinate from that of a imageView to that of an image.
-            init(from frame: CGRect, by imageView: NSImageView) {
+            init?(from frame: CGRect, by imageView: NSImageView) {
                 var scaleFactor: Double // imageView / image
                 var heightMargin: Double = 0
                 var widthMargin: Double = 0
                 
-                let cgImage = imageView.image!.cgImage(forProposedRect: nil, context: nil, hints: nil)!
+                guard let cgImage = imageView.image?.cgImage else { return nil }
                 
                 if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
                     scaleFactor = imageView.frame.width / Double(cgImage.width)
@@ -114,7 +114,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 var heightMargin: Double = 0
                 var widthMargin: Double = 0
                 
-                let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
+                let cgImage = image.cgImage!
                 
                 if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
                     scaleFactor = imageView.frame.width / Double(cgImage.width)

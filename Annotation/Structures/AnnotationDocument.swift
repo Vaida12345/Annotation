@@ -38,20 +38,21 @@ final class AnnotationDocument: ReferenceFileDocument {
     static nonisolated var writableContentTypes: [UTType] { [.annotationProject, .folder] }
     
     init(from wrapper: FileWrapper) throws {
-        let mainWrapper = wrapper.fileWrappers!["annotations.json"]
-        guard let mediaFileWrapper = wrapper.fileWrappers!["Media"] else { throw CocoaError(.fileReadCorruptFile) }
-        guard let data = mainWrapper?.regularFileContents,
+        guard let mainWrapper = wrapper.fileWrappers?["annotations.json"] else { throw CocoaError(.fileReadCorruptFile) }
+        guard let mediaFileWrapper = wrapper.fileWrappers?["Media"] else { throw CocoaError(.fileReadCorruptFile) }
+        guard let data = mainWrapper.regularFileContents,
               let document = try? JSONDecoder().decode([AnnotationExport].self, from: data)
         else {
             throw CocoaError(.fileReadCorruptFile)
         }
         
         // create Annotation
-        let container = mediaFileWrapper.fileWrappers!
+        guard let container = mediaFileWrapper.fileWrappers else { throw CocoaError(.fileReadCorruptFile) }
         
         self.annotations = document.concurrent.compactMap { documentItem in
             guard let mediaItem = container["\(documentItem.id.description).png"] else { return nil }
-            let image = NSImage(data: mediaItem.regularFileContents!)!
+            guard let data = mediaItem.regularFileContents else { return nil }
+            guard let image = NSImage(data: data) else { return nil }
             
             return Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations.map(\.annotations))
         }
@@ -110,7 +111,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         
         var mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
         
-        if let existingFile = configuration.existingFile, let container = existingFile.fileWrappers!["Media"]?.fileWrappers, configuration.contentType == .annotationProject {
+        if let existingFile = configuration.existingFile, let container = existingFile.fileWrappers?["Media"]?.fileWrappers, configuration.contentType == .annotationProject {
             print("performing save with old data")
             
             let oldItems = Array(container.keys)
@@ -132,7 +133,7 @@ final class AnnotationDocument: ReferenceFileDocument {
                 if !removedItems.isEmpty {
                     var index = 0
                     while index < removedItems.count {
-                        let item = container.first{ $0.key == removedItems[index] }!
+                        guard let item = container.first(where: { $0.key == removedItems[index] }) else { index += 1; continue }
                         
                         mediaWrapper.removeFileWrapper(item.value)
                         Task {
@@ -347,16 +348,17 @@ func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> 
         case .folder:
             do {
                 let wrapper = try FileWrapper(url: source.url, options: [])
-                let mainWrapper = wrapper.fileWrappers!["annotations.json"]
-                guard let value = mainWrapper?.regularFileContents else { fallthrough }
+                guard let mainWrapper = wrapper.fileWrappers?["annotations.json"] else { fallthrough }
+                guard let value = mainWrapper.regularFileContents else { fallthrough }
                 let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: value)
                 
                 let childReporter = ProgressReporter(totalUnitCount: annotationImport.count, parent: reporter)
                 
-                let _newItems = await withTaskGroup(of: Annotation.self) { group in
+                let _newItems = await withTaskGroup(of: Annotation?.self) { group in
                     for item in annotationImport {
                         group.addTask {
-                            let annotation = Annotation(image: NSImage(at: source.with(subPath: item.image))!, annotations: item.annotations.map(\.annotations))
+                            guard let image = NSImage(at: source.with(subPath: item.image)) else { return nil }
+                            let annotation = Annotation(image: image, annotations: item.annotations.map(\.annotations))
                             await childReporter.advance()
                             return annotation
                         }
@@ -365,7 +367,7 @@ func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> 
                     return await group.makeAsyncIterator().allObjects(reservingCapacity: annotationImport.count)
                 }
                 
-                newItems.append(contentsOf: _newItems)
+                newItems.append(contentsOf: _newItems.compacted())
             } catch {
                 print(error)
                 fallthrough
@@ -390,7 +392,7 @@ func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> 
             
             newItems.append(contentsOf: _newItems)
             
-        case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
+        case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video"):
             guard let asset = AVAsset(at: source) else { fallthrough }
             guard let frameCount = asset.framesCount else { fallthrough }
             let childReporter = ProgressReporter(totalUnitCount: frameCount, parent: reporter)
