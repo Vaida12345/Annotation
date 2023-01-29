@@ -74,8 +74,10 @@ struct AutoaAnnotateView: View {
                     staticConfidence = userConfidence
                 }
                 DispatchQueue.main.async {
-                    document.annotations[i].annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).map{
-                        Annotation.Annotations.init(label: $0.labels.first!.identifier, coordinates: Annotation.Annotations.Coordinate(from: $0, in: document.annotations[i].image))
+                    document.apply(undoManager: undoManager) {
+                        document.annotations[i].annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).map{
+                            Annotation.Annotations.init(label: $0.labels.first!.identifier, coordinates: Annotation.Annotations.Coordinate(from: $0, in: document.annotations[i].image))
+                        }
                     }
                     
                     leftSideBarSelectedItem = [document.annotations[i].id]

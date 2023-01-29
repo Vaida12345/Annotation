@@ -48,8 +48,10 @@ struct SideBar: View {
                             
                             ForEach(document.annotations.filter({ selection.contains($0.id) }).labels, id: \.self) { item in
                                 Button(item) {
-                                    for i in selection {
-                                        document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
+                                    document.apply(undoManager: undoManager) {
+                                        for i in selection {
+                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
+                                        }
                                     }
                                 }
                             }
