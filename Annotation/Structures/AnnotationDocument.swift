@@ -34,8 +34,8 @@ final class AnnotationDocument: ReferenceFileDocument {
         self.annotations = annotations
     }
 
-    static var readableContentTypes: [UTType] { [.annotationProject] }
-    static var writableContentTypes: [UTType] { [.annotationProject, .folder] }
+    static nonisolated var readableContentTypes: [UTType] { [.annotationProject] }
+    static nonisolated var writableContentTypes: [UTType] { [.annotationProject, .folder] }
     
     init(from wrapper: FileWrapper) throws {
         let mainWrapper = wrapper.fileWrappers!["annotations.json"]
@@ -47,24 +47,14 @@ final class AnnotationDocument: ReferenceFileDocument {
         }
         
         // create Annotation
-        let id = UUID()
-        var annotations = [Annotation](repeating: Annotation(id: id, image: NSImage(), annotations: []), count: document.count)
         let container = mediaFileWrapper.fileWrappers!
         
-        DispatchQueue.concurrentPerform(iterations: document.count) { index in
-            autoreleasepool {
-                let documentItem = document[index]
-                guard let mediaItem = container["\(documentItem.id.description).png"] else { return }
-                let image = NSImage(data: mediaItem.regularFileContents!)!
-                
-                DispatchQueue.main.sync {
-                    print("\(index) / \(document.count)")
-                    annotations[index] = Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations.map({ $0.annotations }))
-                }
-            }
+        self.annotations = document.concurrent.compactMap { documentItem in
+            guard let mediaItem = container["\(documentItem.id.description).png"] else { return nil }
+            let image = NSImage(data: mediaItem.regularFileContents!)!
+            
+            return Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations.map(\.annotations))
         }
-        annotations.removeAll(where: { $0.id == id })
-        self.annotations = annotations
         print("import: finished")
     }
 
@@ -81,22 +71,21 @@ final class AnnotationDocument: ReferenceFileDocument {
     func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
         
         print("saving file")
-        let exporter = DispatchQueue.main
-        
-        exporter.async {
+        Task { @MainActor in
             self.isExporting = true
-            self.exportingProgress = 0.0
         }
         
-        var data: Data
+        let reporter = ProgressReporter(totalUnitCount: 1) { progress in
+            Task { @MainActor in
+                self.exportingProgress = progress
+            }
+        }
+        
+        let data: Data
         
         if configuration.contentType == .annotationProject {
-            var annotationsExport: [AnnotationExport] = []
-            var index = 0
-            while index < snapshot.count {
-                let i = snapshot[index]
-                annotationsExport.append(AnnotationExport(id: i.id, image: "Media/\(i.id.description).png", annotations: i.annotations.map{ $0.export }))
-                index += 1
+            let annotationsExport: [AnnotationExport] = snapshot.concurrent.map {
+                AnnotationExport(id: $0.id, image: "Media/\($0.id).png", annotations: $0.annotations.map(\.export))
             }
             
             let encoder = JSONEncoder()
@@ -104,22 +93,14 @@ final class AnnotationDocument: ReferenceFileDocument {
             data = try encoder.encode(annotationsExport)
         } else {
             // create AnnotationDocument.AnnotationExport
-            var annotationsExport: [AnnotationExportFolder] = []
-            var index = 0
-            while index < snapshot.count {
-                let i = snapshot[index]
-                guard !i.annotations.isEmpty else { index += 1; continue }
-                annotationsExport.append(AnnotationExportFolder(image: "Media/\(i.id.description).png", annotations: i.annotations.map{ $0.export }))
-                index += 1
+            let annotationsExport: [AnnotationExportFolder] = snapshot.concurrent.compactMap {
+                guard !$0.annotations.isEmpty else { return nil }
+                return AnnotationExportFolder(image: "Media/\($0.id).png", annotations: $0.annotations.map(\.export))
             }
             
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
             data = try encoder.encode(annotationsExport)
-        }
-        
-        exporter.async {
-            self.exportingProgress = 0.1
         }
         
         let wrapper = FileWrapper(directoryWithFileWrappers: [:])
@@ -129,12 +110,15 @@ final class AnnotationDocument: ReferenceFileDocument {
         
         var mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
         mediaWrapper.preferredFilename = "Media"
+        wrapper.addFileWrapper(mediaWrapper)
         
         if let existingFile = configuration.existingFile, let container = existingFile.fileWrappers!["Media"]?.fileWrappers, configuration.contentType == .annotationProject {
+            print("performing save with old data")
             
             let oldItems = Array(container.keys)
             let newItems = snapshot.map{ $0.id.description + ".png" }
             let commonItems = oldItems.intersection(newItems)
+            
             var addedItems = newItems
             addedItems.removeAll(where: { commonItems.contains($0) })
             var removedItems = oldItems
@@ -143,114 +127,106 @@ final class AnnotationDocument: ReferenceFileDocument {
             print("result", commonItems.count, addedItems.count, removedItems.count)
             
             if removedItems.count <= addedItems.count || removedItems.count < commonItems.count {
+                mediaWrapper = FileWrapper(directoryWithFileWrappers: container)
                 
-                exporter.async {
-                    mediaWrapper = FileWrapper(directoryWithFileWrappers: container)
-                    mediaWrapper.preferredFilename = "Media"
-                    wrapper.addFileWrapper(mediaWrapper)
-                }
-                
+                let childReporter = ProgressReporter(totalUnitCount: removedItems.count + addedItems.count, parent: reporter)
                 
                 if !removedItems.isEmpty {
                     var index = 0
-                    let stepper = 0.9 / Double(removedItems.count)
                     while index < removedItems.count {
-                        autoreleasepool {
-                            let item = container.filter({ $0.key == removedItems[index] }).first!
-                            exporter.async {
-                                mediaWrapper.removeFileWrapper(item.value)
-                                self.exportingProgress += stepper
-                            }
-                            
-                            index += 1
-                            
+                        let item = container.first{ $0.key == removedItems[index] }!
+                        
+                        mediaWrapper.removeFileWrapper(item.value)
+                        Task {
+                            await childReporter.advance()
                         }
+                        
+                        index += 1
                     }
                 }
                 
                 if !addedItems.isEmpty {
-                    let stepper = 0.9 / Double(snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count)
-                    DispatchQueue.concurrentPerform(iterations: snapshot.filter({ addedItems.contains($0.id.description + ".png" )}).count) { index  in
-                        autoreleasepool {
-                            let item = snapshot.filter({ addedItems.contains($0.id.description + ".png" ) })[index]
-                            
-                            let image = item.image
-                            let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                            imageWrapper.preferredFilename = "\(item.id).png"
-                            
-                            print(index)
-                            exporter.async {
-                                mediaWrapper.addFileWrapper(imageWrapper)
-                                self.exportingProgress += stepper
-                            }
+                    let _newItems = snapshot.filter({ addedItems.contains($0.id.description + ".png" )})
+                    let _newWrappers = _newItems.concurrent.map { item in
+                        let image = item.image.data(using: .png)!
+                        let imageWrapper = FileWrapper(regularFileWithContents: image)
+                        imageWrapper.preferredFilename = "\(item.id).png"
+                        
+                        Task {
+                            await childReporter.advance()
                         }
+                        
+                        return imageWrapper
+                    }
+                    
+                    for wrapper in _newWrappers {
+                        mediaWrapper.addFileWrapper(wrapper)
                     }
                 }
                 print("done")
             } else {
-                let stepper = 0.9 / Double(snapshot.count)
-                DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
-                    autoreleasepool {
-                        let item = snapshot[index]
-                        let image = item.image
-                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                        imageWrapper.preferredFilename = "\(item.id).png"
-                        print(index)
-                        
-                        exporter.async {
-                            mediaWrapper.addFileWrapper(imageWrapper)
-                            self.exportingProgress += stepper
-                        }
+                let childReporter = ProgressReporter(totalUnitCount: snapshot.count, parent: reporter)
+                
+                let _newWrappers = snapshot.concurrent.map { item in
+                    let image = item.image.data(using: .png)!
+                    let imageWrapper = FileWrapper(regularFileWithContents: image)
+                    imageWrapper.preferredFilename = "\(item.id).png"
+                    
+                    Task {
+                        await childReporter.advance()
                     }
+                    
+                    return imageWrapper
+                }
+                
+                for wrapper in _newWrappers {
+                    mediaWrapper.addFileWrapper(wrapper)
                 }
             }
         } else {
             print("performing save without old data")
-            wrapper.addFileWrapper(mediaWrapper)
             if configuration.contentType == .annotationProject {
-                let stepper = 0.9 / Double(snapshot.count)
-                DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
-                    autoreleasepool {
-                        let item = snapshot[index]
-                        let image = item.image
-                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                        imageWrapper.preferredFilename = "\(item.id).png"
-                        
-                        exporter.async {
-                            mediaWrapper.addFileWrapper(imageWrapper)
-                            self.exportingProgress += stepper
-                        }
+                let childReporter = ProgressReporter(totalUnitCount: snapshot.count, parent: reporter)
+                
+                let _newWrappers = snapshot.concurrent.map { item in
+                    let image = item.image.data(using: .png)!
+                    let imageWrapper = FileWrapper(regularFileWithContents: image)
+                    imageWrapper.preferredFilename = "\(item.id).png"
+                    
+                    Task {
+                        await childReporter.advance()
                     }
+                    
+                    return imageWrapper
+                }
+                
+                for wrapper in _newWrappers {
+                    mediaWrapper.addFileWrapper(wrapper)
                 }
             } else {
-                let stepper = 0.9 / Double(snapshot.count)
-                DispatchQueue.concurrentPerform(iterations: snapshot.count) { index in
-                    autoreleasepool {
-                        let item = snapshot[index]
-                        guard !item.annotations.isEmpty else {
-                            exporter.async {
-                                self.exportingProgress += stepper
-                            }
-                            return
-                        }
-                        let image = item.image
-                        let imageWrapper = FileWrapper(regularFileWithContents: NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!)
-                        imageWrapper.preferredFilename = "\(item.id).png"
-                        
-                        exporter.async {
-                            mediaWrapper.addFileWrapper(imageWrapper)
-                            self.exportingProgress += stepper
-                        }
+                let source = snapshot.filter { !$0.annotations.isEmpty }
+                let childReporter = ProgressReporter(totalUnitCount: source.count, parent: reporter)
+                
+                let _newWrappers = source.concurrent.map { item in
+                    let image = item.image.data(using: .png)!
+                    let imageWrapper = FileWrapper(regularFileWithContents: image)
+                    imageWrapper.preferredFilename = "\(item.id).png"
+                    
+                    Task {
+                        await childReporter.advance()
                     }
+                    
+                    return imageWrapper
+                }
+                
+                for wrapper in _newWrappers {
+                    mediaWrapper.addFileWrapper(wrapper)
                 }
             }
         }
         
-        print("here")
-        exporter.sync {
-            mediaWrapper.preferredFilename = "Media"
+        Task { @MainActor in
             self.isExporting = false
-            self.exportingProgress = 1.0
         }
         print("file saved")
         
@@ -305,78 +281,6 @@ extension AnnotationDocument {
         
     }
     
-    func addItems(from urls: [URL?], undoManager: UndoManager?) async {
-        
-        DispatchQueue.main.async {
-            self.isImporting = true
-            self.importingProgress = 0.0
-        }
-        
-        let oldItems = annotations
-        var newItems: [Annotation] = []
-        
-        for i in urls {
-            guard let item = FinderItem(at: i) else { continue }
-            guard item.contentType != nil else { continue }
-            
-            switch item.contentType! {
-            case .annotationProject, .folder:
-                guard let file = try? AnnotationDocument(from: FileWrapper(url: item.url, options: [])) else { fallthrough }
-                newItems.append(contentsOf: file.annotations)
-                
-            case .folder:
-                do {
-                    let wrapper = try FileWrapper(url: item.url, options: [])
-                    let mainWrapper = wrapper.fileWrappers!["annotations.json"]
-                    guard let value = mainWrapper?.regularFileContents else { fallthrough }
-                    let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: value)
-                    newItems.append(contentsOf: annotationImport.map{
-                        DispatchQueue.main.async {
-                            self.importingProgress += 1 / Double(annotationImport.count)
-                        }
-                        return Annotation(id: UUID(), image: FinderItem(at: item.url.path + "/" + $0.image).image!, annotations: $0.annotations.map{ $0.annotations })
-                    })
-                } catch {
-                    fallthrough
-                }
-                
-            case .folder:
-                item.forEach(range: .enumeration) { child in
-                    guard let image = child.image else { return }
-                    DispatchQueue.main.async {
-                        self.importingProgress += 1 / Double(item.children(range: .enumeration)!.count)
-                    }
-                    newItems.append(Annotation(id: UUID(), image: image, annotations: []))
-                }
-                
-            case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
-                guard let frames = await AVAsset(at: item)?.getFrames(onProgressChanged: { progress in
-                    DispatchQueue.main.async {
-                        self.importingProgress = progress
-                    }
-                }) else { return }
-                newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: NativeImage(cgImage: $0), annotations: []) })
-                
-            default:
-                guard let image = item.image else { return }
-                newItems.append(Annotation(id: UUID(), image: image, annotations: []))
-            }
-        }
-        
-        withAnimation {
-            annotations.formUnion(newItems)
-        }
-        
-        DispatchQueue.main.async {
-            self.isImporting = false
-            self.importingProgress = 1.0
-        }
-        
-        undoManager?.registerUndo(withTarget: self, handler: { document in
-            document.replaceItems(with: oldItems, undoManager: undoManager)
-        })
-    }
-    
     /// Deletes the items at a specified set of offsets, and registers an undo action.
     func delete(offsets: IndexSet, undoManager: UndoManager? = nil) {
         let oldItems = annotations
@@ -423,6 +327,89 @@ extension AnnotationDocument {
         }
     }
     
+}
+
+
+func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> [Annotation] {
+    
+    var newItems: [Annotation] = []
+    
+    for source in sources {
+        
+        guard let contentType = source.contentType else { continue }
+        
+        switch contentType {
+        case .annotationProject, .folder:
+            guard let file = try? AnnotationDocument(from: FileWrapper(url: source.url, options: [])) else { fallthrough }
+            newItems.append(contentsOf: file.annotations)
+            await reporter.advance()
+            
+        case .folder:
+            do {
+                let wrapper = try FileWrapper(url: source.url, options: [])
+                let mainWrapper = wrapper.fileWrappers!["annotations.json"]
+                guard let value = mainWrapper?.regularFileContents else { fallthrough }
+                let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: value)
+                
+                let childReporter = ProgressReporter(totalUnitCount: annotationImport.count, parent: reporter)
+                
+                let _newItems = await withTaskGroup(of: Annotation.self) { group in
+                    for item in annotationImport {
+                        group.addTask {
+                            let annotation = Annotation(image: NSImage(at: source.with(subPath: item.image))!)
+                            await childReporter.advance()
+                            return annotation
+                        }
+                    }
+                    
+                    return await group.makeAsyncIterator().allObjects(reservingCapacity: annotationImport.count)
+                }
+                
+                newItems.append(contentsOf: _newItems)
+            } catch {
+                fallthrough
+            }
+            
+        case .folder:
+            guard let children = source.children(range: .enumeration) else { continue }
+            let childReporter = ProgressReporter(totalUnitCount: children.count, parent: reporter)
+            
+            let _newItems = await withTaskGroup(of: Annotation?.self) { group in
+                for child in children {
+                    group.addTask {
+                        guard let image = child.image else { return nil }
+                        let annotation = Annotation(image: image)
+                        await childReporter.advance()
+                        return annotation
+                    }
+                }
+                
+                return await group.makeAsyncIterator().allObjects(reservingCapacity: children.count).compacted()
+            }
+            
+            newItems.append(contentsOf: _newItems)
+            
+        case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video")!:
+            guard let asset = AVAsset(at: source) else { fallthrough }
+            guard let frameCount = asset.framesCount else { fallthrough }
+            let childReporter = ProgressReporter(totalUnitCount: frameCount, parent: reporter)
+            
+            
+            guard let frames = try? await asset.getFrames(onProgressChanged: { _ in
+                Task {
+                    await childReporter.advance()
+                }
+            }) else { continue }
+            newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: NativeImage(cgImage: $0), annotations: []) })
+            
+        default:
+            guard let image = source.image else { continue }
+            newItems.append(Annotation(id: UUID(), image: image, annotations: []))
+        }
+    }
+    
+    await reporter.complete()
+    return newItems
 }
 
 

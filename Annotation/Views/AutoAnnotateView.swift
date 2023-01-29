@@ -26,19 +26,18 @@ struct AutoaAnnotateView: View {
     var body: some View {
         
         VStack {
-            DropView("Drag a CoreML model here.") { items in
-                guard let firstItem = items.first else { return }
-                do {
-                    try model = MLModel(contentsOf: MLModel.compileModel(at: firstItem.url))
-                } catch {
-                    alertManager = AlertManager(error.localizedDescription)
+            DropHandlerView(prompt: "Drop a CoreML model here")
+                .onDrop { sources in
+                    guard let firstItem = sources.first else { return }
+                    let model = try MLModel(contentsOf: MLModel.compileModel(at: firstItem.url))
+                    
+                    Task { @MainActor in
+                        self.model = model
+                        isShowingModelDialog = false
+                        applyML()
+                    }
                 }
-                if model != nil {
-                    isShowingModelDialog = false
-                    applyML()
-                }
-            }
-            .frame(width: 800, height: 400)
+                .frame(width: 400, height: 200)
             
             HStack {
                 Button("Cancel") {

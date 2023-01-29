@@ -17,6 +17,12 @@ struct Annotation: Equatable, Hashable, Identifiable {
     var image: NSImage
     var annotations: [Annotations]
     
+    init(id: UUID = UUID(), image: NSImage, annotations: [Annotations] = []) {
+        self.id = id
+        self.image = image
+        self.annotations = annotations
+    }
+    
     struct Annotations: Equatable, Hashable, Encodable, Decodable, Identifiable {
         
         var id: UUID
@@ -204,7 +210,7 @@ extension CGRect {
 extension Array where Element == Annotation {
     
     var labels: [String] {
-        self.flatMap { $0.annotations.map(\.label) }.removingDuplicates()
+        self.flatMap { $0.annotations.map(\.label) }.unique()
     }
     
     /// \[label: \[(Image Name, Coordinate)\]\]

@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Support
 
 
 struct SideBar: View {
@@ -24,41 +25,39 @@ struct SideBar: View {
         
         List(selection: $selection) {
             ForEach(document.annotations) { annotation in
-                autoreleasepool {
-                    Image(nsImage: annotation.image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .cornerRadius(5)
-                        .contextMenu {
-                            Button("Remove") {
+                Image(nsImage: annotation.image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .cornerRadius(5)
+                    .contextMenu {
+                        Button("Remove") {
+                            document.apply(undoManager: undoManager) {
+                                document.annotations.removeAll(where: { selection.contains($0.id) })
+                            }
+                            selection = []
+                        }
+                        
+                        Menu {
+                            Button("All") {
                                 document.apply(undoManager: undoManager) {
-                                    document.annotations.removeAll(where: { selection.contains($0.id) })
+                                    for i in selection {
+                                        document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
+                                    }
                                 }
-                                selection = []
                             }
                             
-                            Menu {
-                                Button("All") {
-                                    document.apply(undoManager: undoManager) {
-                                        for i in selection {
-                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
-                                        }
+                            ForEach(document.annotations.filter({ selection.contains($0.id) }).labels, id: \.self) { item in
+                                Button(item) {
+                                    for i in selection {
+                                        document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
                                     }
                                 }
-                                
-                                ForEach(document.annotations.filter({ selection.contains($0.id) }).labels, id: \.self) { item in
-                                    Button(item) {
-                                        for i in selection {
-                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
-                                        }
-                                    }
-                                }
-                            } label: {
-                                Text("Remove annotations")
                             }
+                        } label: {
+                            Text("Remove annotations")
                         }
-                        .disabled(!selection.contains(annotation.id))
-                }
+                    }
+                    .disabled(!selection.contains(annotation.id))
             }
             .onMove { fromIndex, toIndex in
                 document.moveItemsAt(offsets: fromIndex, toOffset: toIndex, undoManager: undoManager)
@@ -97,12 +96,30 @@ struct SideBar: View {
             }
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
-            Task {
-                for i in providers {
-                    guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
-                    guard let urlData = result as? Data else { return }
-                    guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                    await document.addItems(from: [url], undoManager: undoManager)
+            Task.detached {
+                
+                let sources = try await [FinderItem](from: providers)
+                
+                Task { @MainActor in
+                    self.document.isImporting = true
+                }
+                let oldItems = await document.annotations
+                
+                let reporter = ProgressReporter(totalUnitCount: sources.count) { progress in
+                    Task { @MainActor in
+                        self.document.importingProgress = progress
+                    }
+                }
+                let newItems = await loadItems(from: sources, reporter: reporter)
+                
+                let union = oldItems.union(newItems)
+                Task { @MainActor in
+                    self.document.annotations = union
+                    self.document.isImporting = false
+                    
+                    undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                        document.replaceItems(with: oldItems, undoManager: undoManager)
+                    })
                 }
             }
             return true
@@ -110,7 +127,27 @@ struct SideBar: View {
         .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
             guard let urls = try? result.get() else { return }
             Task.detached(priority: .background) {
-                await document.addItems(from: urls, undoManager: undoManager)
+                let oldItems = await document.annotations
+                Task { @MainActor in
+                    self.document.isImporting = true
+                }
+                
+                let reporter = ProgressReporter(totalUnitCount: urls.count) { progress in
+                    Task { @MainActor in
+                        self.document.importingProgress = progress
+                    }
+                }
+                let newItems = await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: reporter)
+                
+                let union = oldItems.union(newItems)
+                Task { @MainActor in
+                    self.document.annotations = union
+                    self.document.isImporting = false
+                    
+                    undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                        document.replaceItems(with: oldItems, undoManager: undoManager)
+                    })
+                }
             }
         }
         .onDeleteCommand {

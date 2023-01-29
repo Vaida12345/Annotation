@@ -31,11 +31,31 @@ struct ContentView: View {
                 if !document.annotations.isEmpty {
                     DetailView(leftSideBarSelectedItem: $leftSideBarSelectedItem)
                 } else {
-                    DropView { items in
-                        Task {
-                            await document.addItems(from: items.map(\.url), undoManager: undoManager)
+                    DropHandlerView()
+                        .onDrop { sources in
+                            Task { @MainActor in
+                                self.document.isImporting = true
+                            }
+                            
+                            let oldItems = await document.annotations
+                            
+                            let reporter = ProgressReporter(totalUnitCount: sources.count) { progress in
+                                Task { @MainActor in
+                                    self.document.importingProgress = progress
+                                }
+                            }
+                            let newItems = await loadItems(from: sources, reporter: reporter)
+                            
+                            let union = oldItems.union(newItems)
+                            Task { @MainActor in
+                                self.document.annotations = union
+                                self.document.isImporting = false
+                                
+                                undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                                    document.replaceItems(with: oldItems, undoManager: undoManager)
+                                })
+                            }
                         }
-                    }
                 }
                 
                 if leftSideBarSelectedItem.count == 1, let selection = leftSideBarSelectedItem.first {
@@ -57,18 +77,6 @@ struct ContentView: View {
                         .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
                     }
                 }
-            }
-            .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                Task {
-                    for i in providers {
-                        guard let result = try? await i.loadItem(forTypeIdentifier: "public.file-url", options: nil) else { return }
-                        guard let urlData = result as? Data else { return }
-                        guard let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                        await document.addItems(from: [url], undoManager: undoManager)
-                    }
-                }
-                
-                return true
             }
             .toolbar {
                 
