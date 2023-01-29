@@ -127,7 +127,7 @@ struct AnnotationView: NSViewRepresentable {
                 if self.recognizerView.frame.width >= 10 && self.recognizerView.frame.height >= 10 {
                     document.apply(undoManager: undoManager, action: {
                         for i in self.annotationView!.leftSideBarSelectedItem {
-                            let index = document.annotations.firstIndex(where: { $0.id == i })!
+                            guard let index = document.annotations.firstIndex(where: { $0.id == i }) else { continue }
                             document.annotations[index].annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: document.annotations[index].image)))
                         }
                         

@@ -29,7 +29,13 @@ struct ContentView: View {
             
             ZStack {
                 if !document.annotations.isEmpty {
-                    DetailView(leftSideBarSelectedItem: $leftSideBarSelectedItem)
+                    if leftSideBarSelectedItem.isEmpty {
+                        ContainerView {
+                            Text("Select an item or items to start")
+                        }
+                    } else {
+                        DetailView(leftSideBarSelectedItem: $leftSideBarSelectedItem)
+                    }
                 } else {
                     DropHandlerView()
                         .onDrop { sources in
