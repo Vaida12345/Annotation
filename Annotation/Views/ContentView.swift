@@ -141,6 +141,7 @@ struct ContentView: View {
                             self.document.annotations = union
                             self.document.isImporting = false
                             
+                            undoManager?.setActionName("import files")
                             undoManager?.registerUndo(withTarget: self.document, handler: { document in
                                 document.replaceItems(with: oldItems, undoManager: undoManager)
                             })

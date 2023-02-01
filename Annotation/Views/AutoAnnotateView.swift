@@ -17,10 +17,10 @@ struct AutoAnnotateView: View {
     @State var model: MLModel?
     
     @EnvironmentObject var document: AnnotationDocument
-    @Environment(\.undoManager) var undoManager
     @Environment(\.dismiss) var dismiss
     
     @State var alertManager = AlertManager()
+    @Binding var undoManager: UndoManager?
     
     var body: some View {
         
@@ -60,36 +60,44 @@ struct AutoAnnotateView: View {
             .frame(width: 200, height: 300)
         }
         .alert(manager: $alertManager)
-        
     }
     
     func applyML() {
         guard let model = model else { return }
-        document.apply(undoManager: undoManager) {
-            let _document = document
-            let staticConfidence = confidence
-            
-            Task.detached {
-                for i in 0..<_document.annotations.count {
-                    guard let result = await applyObjectDetectionML(to: _document.annotations[i].image, model: model) else {
-                        Task { @MainActor in document.leftSideBarSelectedItem = [document.annotations[i].id] }
-                        continue
-                    }
-                    let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
-                        guard let label = item.labels.first?.identifier else { return nil }
-                        let coordinate = Annotation.Annotations.Coordinate(from: item, in: _document.annotations[i].image)
-                        return Annotation.Annotations.init(label: label, coordinates: coordinate)
-                    }
+        let oldItems = document.annotations
+        
+        let _document = document
+        let staticConfidence = confidence
+        
+        Task.detached {
+            for i in 0..<_document.annotations.count {
+                guard let result = await applyObjectDetectionML(to: _document.annotations[i].image, model: model) else {
+                    Task { @MainActor in document.leftSideBarSelectedItem = [document.annotations[i].id] }
+                    continue
+                }
+                let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
+                    guard let label = item.labels.first?.identifier else { return nil }
+                    let coordinate = Annotation.Annotations.Coordinate(from: item, in: _document.annotations[i].image)
+                    return Annotation.Annotations.init(label: label, coordinates: coordinate)
+                }
+                
+                Task { @MainActor in
+                    document.annotations[i].annotations.append(contentsOf: annotations)
                     
-                    Task { @MainActor in
-                        document.annotations[i].annotations.append(contentsOf: annotations)
-                        
-                        document.leftSideBarSelectedItem = [document.annotations[i].id]
-                        document.scrollProxy?.scrollTo(document.annotations[i].id)
-                    }
+                    document.leftSideBarSelectedItem = [document.annotations[i].id]
+                    document.scrollProxy?.scrollTo(document.annotations[i].id)
                 }
             }
+            
+            Task { @MainActor in
+                undoManager?.setActionName("Auto Annotate")
+                undoManager?.registerUndo(withTarget: document) { document in
+                    document.replaceItems(with: oldItems, undoManager: undoManager)
+                }
+                print(undoManager)
+            }
         }
+        
     }
 }
 

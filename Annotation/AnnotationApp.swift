@@ -18,15 +18,18 @@ struct AnnotationApp: App {
     
     @State var isShowingModelDialog = false
     
-    @Environment(\.undoManager) var undoManager
+    @State private var undoManager: UndoManager?
     @FocusedValue(\.document) var document
     
     var body: some Scene {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in
             ContentView()
+                .withHostingWindow { window in
+                    undoManager = window?.undoManager
+                }
                 .focusedSceneValue(\.document, file.document)
                 .sheet(isPresented: $isShowingModelDialog) {
-                    AutoAnnotateView()
+                    AutoAnnotateView(undoManager: $undoManager)
                 }
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }
@@ -53,6 +56,7 @@ struct AnnotationApp: App {
                             document.annotations = union
                             document.isImporting = false
                             
+                            undoManager?.setActionName("import files")
                             undoManager?.registerUndo(withTarget: document, handler: { document in
                                 document.replaceItems(with: oldItems, undoManager: undoManager)
                             })
@@ -98,4 +102,25 @@ extension FocusedValues {
             self[DocumentFocusedValues.self] = newValue
         }
     }
+}
+
+
+extension View {
+    func withHostingWindow(_ callback: @escaping (_ window: NSWindow?) -> Void) -> some View {
+        self.background(HostingWindowFinder(callback: callback))
+    }
+}
+
+struct HostingWindowFinder: NSViewRepresentable {
+    var callback: (NSWindow?) -> ()
+    
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { [weak view] in
+            self.callback(view?.window)
+        }
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) { }
 }
