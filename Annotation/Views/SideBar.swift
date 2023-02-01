@@ -40,6 +40,7 @@ struct SideBar: View {
                         
                         Menu {
                             Button("All") {
+                                undoManager?.setActionName("Remove all annotations")
                                 document.apply(undoManager: undoManager) {
                                     for i in document.leftSideBarSelectedItem {
                                         document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
@@ -49,6 +50,7 @@ struct SideBar: View {
                             
                             ForEach(document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) }).labels, id: \.self) { item in
                                 Button(item) {
+                                    undoManager?.setActionName("Remove annotation \"\(item)\"")
                                     document.apply(undoManager: undoManager) {
                                         for i in document.leftSideBarSelectedItem {
                                             document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })

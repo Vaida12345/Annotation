@@ -50,6 +50,7 @@ struct InfoViewItem: View {
                     Menu {
                         ForEach(document.annotations.labels, id: \.self) { label in
                             Button(label) {
+                                undoManager?.setActionName("Rename to \"\(label)\"")
                                 document.apply(undoManager: undoManager) {
                                     item.label = label
                                 }
@@ -77,6 +78,7 @@ struct InfoViewItem: View {
                         Image(systemName: "trash")
                             .onTapGesture {
                                 withAnimation {
+                                    undoManager?.setActionName("Remove item")
                                     document.apply(undoManager: undoManager) {
                                         annotation.annotations.removeAll(where: { $0 == item })
                                     }
@@ -99,6 +101,7 @@ struct InfoViewItem: View {
                 }
                 TextField("Name for label", text: $newLabel)
                     .onSubmit {
+                        undoManager?.setActionName("Rename to \"\(newLabel)\"")
                         document.apply(undoManager: undoManager) {
                             item.label = newLabel
                             showLabelSheet = false
@@ -111,6 +114,7 @@ struct InfoViewItem: View {
                     Spacer()
                     
                     Button("Done") {
+                        undoManager?.setActionName("Rename to \"\(newLabel)\"")
                         document.apply(undoManager: undoManager) {
                             item.label = newLabel
                             showLabelSheet = false
