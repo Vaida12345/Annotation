@@ -13,7 +13,6 @@ import Support
 struct SideBar: View {
     
     // core
-    @Binding var selection: Set<Annotation.ID>
     @EnvironmentObject var document: AnnotationDocument
     
     // layout
@@ -23,7 +22,7 @@ struct SideBar: View {
     
     var body: some View {
         
-        List(selection: $selection) {
+        List(selection: $document.leftSideBarSelectedItem) {
             ForEach(document.annotations) { annotation in
                 Image(nsImage: annotation.image)
                     .resizable()
@@ -31,25 +30,27 @@ struct SideBar: View {
                     .cornerRadius(5)
                     .contextMenu {
                         Button("Remove") {
-                            document.apply(undoManager: undoManager) {
-                                document.annotations.removeAll(where: { selection.contains($0.id) })
+                            undoManager?.beginUndoGrouping()
+                            for id in document.leftSideBarSelectedItem {
+                                document.removeAnnotation(undoManager: undoManager, annotationID: id)
                             }
-                            selection = []
+                            undoManager?.endUndoGrouping()
+                            document.leftSideBarSelectedItem = []
                         }
                         
                         Menu {
                             Button("All") {
                                 document.apply(undoManager: undoManager) {
-                                    for i in selection {
+                                    for i in document.leftSideBarSelectedItem {
                                         document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
                                     }
                                 }
                             }
                             
-                            ForEach(document.annotations.filter({ selection.contains($0.id) }).labels, id: \.self) { item in
+                            ForEach(document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) }).labels, id: \.self) { item in
                                 Button(item) {
                                     document.apply(undoManager: undoManager) {
-                                        for i in selection {
+                                        for i in document.leftSideBarSelectedItem {
                                             document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
                                         }
                                     }
@@ -59,7 +60,7 @@ struct SideBar: View {
                             Text("Remove annotations")
                         }
                     }
-                    .disabled(!selection.contains(annotation.id))
+                    .disabled(!document.leftSideBarSelectedItem.contains(annotation.id))
             }
             .onMove { fromIndex, toIndex in
                 document.moveItemsAt(offsets: fromIndex, toOffset: toIndex, undoManager: undoManager)
@@ -85,18 +86,6 @@ struct SideBar: View {
             
         }
         .frame(minWidth: 200)
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button {
-                    // It turned out that Appkit should be used to toggle sidebar
-                    // https://sarunw.com/posts/how-to-toggle-sidebar-in-macos/
-                    NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)
-                } label: {
-                    Image(systemName: "sidebar.leading")
-                }
-                
-            }
-        }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
             Task.detached {
                 
@@ -153,10 +142,11 @@ struct SideBar: View {
             }
         }
         .onDeleteCommand {
-            document.apply(undoManager: undoManager) {
-                document.annotations.removeAll(where: { selection.contains($0.id) })
-            }
-            selection = []
+            let sequence = document.annotations.indexes(where: { document.leftSideBarSelectedItem.contains($0.id) })
+            let indexSet = IndexSet(sequence)
+            document.delete(offsets: indexSet, undoManager: undoManager)
+            
+            document.leftSideBarSelectedItem = []
         }
         
     }

@@ -15,7 +15,6 @@ struct AnnotationApp: App {
     
     @State var isShowingExportDialog = false
     @State var isShowingImportDialog = false
-    @State var leftSideBarSelectedItem: Set<Annotation.ID> = []
     
     @State var isShowingModelDialog = false
     @State var model: MLModel? = nil
@@ -26,10 +25,10 @@ struct AnnotationApp: App {
     
     var body: some Scene {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in
-            ContentView(leftSideBarSelectedItem: $leftSideBarSelectedItem)
+            ContentView()
                 .focusedSceneValue(\.document, file.document)
                 .sheet(isPresented: $isShowingModelDialog) {
-                    AutoaAnnotateView(isShowingModelDialog: $isShowingModelDialog, confidence: $confidence, model: $model, leftSideBarSelectedItem: $leftSideBarSelectedItem)
+                    AutoaAnnotateView(isShowingModelDialog: $isShowingModelDialog, confidence: $confidence, model: $model)
                 }
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }

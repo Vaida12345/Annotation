@@ -16,7 +16,6 @@ struct AutoaAnnotateView: View {
     @Binding var isShowingModelDialog: Bool
     @Binding var confidence: String
     @Binding var model: MLModel?
-    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     
     @EnvironmentObject var document: AnnotationDocument
     @Environment(\.undoManager) var undoManager
@@ -67,8 +66,8 @@ struct AutoaAnnotateView: View {
         DispatchQueue(label: "annotator").async {
             for i in 0..<document.annotations.count {
                 print(i)
-                guard document.annotations[i].annotations.isEmpty else { DispatchQueue.main.async{ leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
-                guard let result = applyObjectDetectionML(to: document.annotations[i].image, model: model) else { DispatchQueue.main.async{ leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
+                guard document.annotations[i].annotations.isEmpty else { DispatchQueue.main.async{ document.leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
+                guard let result = applyObjectDetectionML(to: document.annotations[i].image, model: model) else { DispatchQueue.main.async{ document.leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
                 var staticConfidence = 0.8
                 if let userConfidence = Double(confidence), userConfidence <= 1, userConfidence >= 0 {
                     staticConfidence = userConfidence
@@ -80,12 +79,12 @@ struct AutoaAnnotateView: View {
                         }
                     }
                     
-                    leftSideBarSelectedItem = [document.annotations[i].id]
+                    document.leftSideBarSelectedItem = [document.annotations[i].id]
                 }
             }
             
             DispatchQueue.main.async {
-                leftSideBarSelectedItem.removeAll()
+                document.leftSideBarSelectedItem.removeAll()
             }
         }
     }

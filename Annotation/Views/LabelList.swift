@@ -13,12 +13,9 @@ struct LabelList: View {
     
     // core
     @EnvironmentObject var document: AnnotationDocument
-    
-    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
+    @Binding var showLabelList: Bool
     
     @State var showLabelSheet = false
-    @State var oldName: String = ""
-    @State var newLabel: String = ""
     
     @Environment(\.undoManager) var undoManager
     
@@ -27,72 +24,25 @@ struct LabelList: View {
             VStack {
                 HStack {
                     Text(label)
+                        .font(.title)
                     Image(systemName: "pencil")
                         .onTapGesture {
-                            oldName = label
                             showLabelSheet = true
+                        }
+                        .sheet(isPresented: $showLabelSheet) {
+                            RenameLabelView(oldName: label)
                         }
                     Spacer()
                     Image(systemName: "trash")
                         .onTapGesture {
-                            document.apply(undoManager: undoManager) {
-                                for index in 0..<document.annotations.count {
-                                    document.annotations[index].annotations.removeAll(where: { $0.label == label })
-                                }
-                            }
+                            document.remove(undoManager: undoManager, label: label)
                         }
                 }
                 
-                LabelListItems(leftSideBarSelectedItem: $leftSideBarSelectedItem, label: label)
+                LabelListItems(label: label, showLabelList: $showLabelList)
                 
                 Divider()
             }
-        }
-        .sheet(isPresented: $showLabelSheet) {
-            VStack {
-                HStack {
-                    Text("Name for label: ")
-                    
-                    Spacer()
-                }
-                TextField(oldName, text: $newLabel)
-                    .onSubmit {
-                        document.apply(undoManager: undoManager) {
-                            for i in 0..<document.annotations.count {
-                                for ii in 0..<document.annotations[i].annotations.count {
-                                    if document.annotations[i].annotations[ii].label == oldName {
-                                        document.annotations[i].annotations[ii].label = newLabel
-                                    }
-                                }
-                            }
-                        }
-                        
-                        showLabelSheet = false
-                    }
-                    .onAppear {
-                        newLabel = oldName
-                    }
-                HStack {
-                    Spacer()
-                    
-                    Button("Done") {
-                        document.apply(undoManager: undoManager) {
-                            for i in 0..<document.annotations.count {
-                                for ii in 0..<document.annotations[i].annotations.count {
-                                    if document.annotations[i].annotations[ii].label == oldName {
-                                        document.annotations[i].annotations[ii].label = newLabel
-                                    }
-                                }
-                            }
-                        }
-                        
-                        showLabelSheet = false
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .frame(width: 400)
-            }
-            .padding()
         }
     }
 }
@@ -100,20 +50,16 @@ struct LabelList: View {
 struct LabelListItems: View {
     
     @EnvironmentObject var document: AnnotationDocument
-    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     @State var label: String
+    @Binding var showLabelList: Bool
     
     var body: some View {
         
         if let labelsDictionary = document.annotations.labelDictionary[label] {
             ScrollView(.horizontal) {
                 HStack {
-                    ForEach(labelsDictionary, id: \.1.id) { item in
-                        LabelListItem(item: item)
-                            .onTapGesture(count: 2) {
-                                guard let index = document.annotations.firstIndex(where: { $0.image == item.0 }) else { return }
-                                leftSideBarSelectedItem = [document.annotations[index].id]
-                            }
+                    ForEach(labelsDictionary, id: \.annotationsID) { item in
+                        LabelListItem(showLabelList: $showLabelList, item: item)
                     }
                 }
             }
@@ -124,18 +70,59 @@ struct LabelListItems: View {
 
 struct LabelListItem: View {
     
-    @State var item: (NSImage, Annotation.Annotations.Coordinate)
+    // core
+    @EnvironmentObject var document: AnnotationDocument
+    @Binding var showLabelList: Bool
+    
+    let item: Array<Annotation>.LabelDictionaryValue
+    
+    @Environment(\.undoManager) var undoManager
+    @Environment(\.dismiss) var dismiss
+    
+    var contextMenu: some View {
+        Menu {
+            Button("Show Image") {
+                withAnimation {
+                    document.leftSideBarSelectedItem = [item.annotationID]
+                    showLabelList = false
+                }
+            }
+            
+            Divider()
+            
+            Button("Remove") {
+                withAnimation {
+                    document.removeAnnotations(undoManager: undoManager, annotationID: item.annotationID, annotationsID: item.annotationsID)
+                }
+            }
+        } label: {
+            
+        }
+    }
     
     var body: some View {
-        AsyncView {
-            trimImage(from: item.0, at: item.1) ?? NSImage()
+        AsyncView { () -> NSImage? in
+            guard let annotation = await document.annotations.first(where: { $0.id == item.annotationID }) else { return nil }
+            guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
+            
+            return trimImage(from: annotation.image, at: annotations.coordinates) ?? NSImage()
         } content: { image in
-            Image(nsImage: image)
+            Image(nsImage: image ?? NSImage())
                 .resizable()
                 .cornerRadius(5)
                 .aspectRatio(contentMode: .fit)
-                .frame(height: 50)
+                .frame(height: 200)
+                .contextMenu {
+                    contextMenu
+                }
+                .overlay(alignment: .topTrailing) {
+                    contextMenu
+                        .menuStyle(.borderlessButton)
+                        .frame(width: 10)
+                        .padding(2)
+                        .foregroundColor(.blue)
+                }
         }
-        .frame(height: 50)
+        .frame(height: 200)
     }
 }

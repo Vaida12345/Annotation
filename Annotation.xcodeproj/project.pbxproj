@@ -17,6 +17,8 @@
 		B416914B27B53B6C0029AB97 /* Annotations.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914A27B53B6C0029AB97 /* Annotations.swift */; };
 		B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914C27B53B740029AB97 /* AnnotationView.swift */; };
 		B416914F27B53FB20029AB97 /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B416914E27B53FB20029AB97 /* icon.icns */; };
+		B41B36AE298A5EC50075DADD /* ChangeLog.md in Resources */ = {isa = PBXBuildFile; fileRef = B41B36AD298A5EC50075DADD /* ChangeLog.md */; };
+		B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41B36AF298A921D0075DADD /* RenameLabelView.swift */; };
 		B45B52F0282A8C4E007C8CCC /* SideBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52EF282A8C4E007C8CCC /* SideBar.swift */; };
 		B45B52F2282A8C7B007C8CCC /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F1282A8C7B007C8CCC /* DetailView.swift */; };
 		B45B52F4282A8C93007C8CCC /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F3282A8C93007C8CCC /* InfoView.swift */; };
@@ -40,6 +42,8 @@
 		B416914A27B53B6C0029AB97 /* Annotations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Annotations.swift; sourceTree = "<group>"; };
 		B416914C27B53B740029AB97 /* AnnotationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnnotationView.swift; sourceTree = "<group>"; };
 		B416914E27B53FB20029AB97 /* icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icon.icns; sourceTree = "<group>"; };
+		B41B36AD298A5EC50075DADD /* ChangeLog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ChangeLog.md; sourceTree = "<group>"; };
+		B41B36AF298A921D0075DADD /* RenameLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenameLabelView.swift; sourceTree = "<group>"; };
 		B45B52EF282A8C4E007C8CCC /* SideBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideBar.swift; sourceTree = "<group>"; };
 		B45B52F1282A8C7B007C8CCC /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 		B45B52F3282A8C93007C8CCC /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
@@ -83,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				B416910627B53B020029AB97 /* AnnotationApp.swift */,
+				B41B36AD298A5EC50075DADD /* ChangeLog.md */,
 				B45B52EE282A8C2E007C8CCC /* Structures */,
 				B45B52ED282A8C04007C8CCC /* Views */,
 				B416911D27B53B450029AB97 /* Assets */,
@@ -125,10 +130,11 @@
 			children = (
 				B416914C27B53B740029AB97 /* AnnotationView.swift */,
 				B416910A27B53B020029AB97 /* ContentView.swift */,
+				B45B52F5282A8CA8007C8CCC /* LabelList.swift */,
+				B41B36AF298A921D0075DADD /* RenameLabelView.swift */,
 				B45B52EF282A8C4E007C8CCC /* SideBar.swift */,
 				B45B52F1282A8C7B007C8CCC /* DetailView.swift */,
 				B45B52F3282A8C93007C8CCC /* InfoView.swift */,
-				B45B52F5282A8CA8007C8CCC /* LabelList.swift */,
 				B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */,
 			);
 			path = Views;
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B41B36AE298A5EC50075DADD /* ChangeLog.md in Resources */,
 				B416914F27B53FB20029AB97 /* icon.icns in Resources */,
 				B416911A27B53B2B0029AB97 /* LICENSE in Resources */,
 				B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */,
@@ -236,6 +243,7 @@
 				B45B52F8282A8CE9007C8CCC /* AutoAnnotateView.swift in Sources */,
 				B45B52F6282A8CA8007C8CCC /* LabelList.swift in Sources */,
 				B45B52F0282A8C4E007C8CCC /* SideBar.swift in Sources */,
+				B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */,
 				B416910B27B53B020029AB97 /* ContentView.swift in Sources */,
 				B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */,
 			);

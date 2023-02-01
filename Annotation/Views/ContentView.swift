@@ -16,76 +16,49 @@ struct ContentView: View {
     @EnvironmentObject private var document: AnnotationDocument
     
     // layout
-    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     @State private var showInfoView = false
     @State private var showLabelList = false
     @State private var showPopover = false
+    @State private var sideBarState = true
+    @State private var isShowingExportDialog = false
+    
     
     @Environment(\.undoManager) private var undoManager
     
     var body: some View {
         NavigationView {
-            SideBar(selection: $leftSideBarSelectedItem)
+            SideBar()
             
-            ZStack {
-                if !document.annotations.isEmpty {
-                    if leftSideBarSelectedItem.isEmpty {
-                        ContainerView {
-                            Text("Select an item or items to start")
-                        }
-                    } else {
-                        DetailView(leftSideBarSelectedItem: $leftSideBarSelectedItem)
-                    }
-                } else {
-                    DropHandlerView()
-                        .onDrop { sources in
-                            Task { @MainActor in
-                                self.document.isImporting = true
-                            }
-                            
-                            let oldItems = await document.annotations
-                            
-                            let reporter = ProgressReporter(totalUnitCount: sources.count) { progress in
-                                Task { @MainActor in
-                                    self.document.importingProgress = progress
-                                }
-                            }
-                            let newItems = await loadItems(from: sources, reporter: reporter)
-                            
-                            let union = oldItems.union(newItems)
-                            Task { @MainActor in
-                                self.document.annotations = union
-                                self.document.isImporting = false
-                                
-                                undoManager?.registerUndo(withTarget: self.document, handler: { document in
-                                    document.replaceItems(with: oldItems, undoManager: undoManager)
-                                })
-                            }
-                        }
-                }
-                
-                if leftSideBarSelectedItem.count == 1, let selection = leftSideBarSelectedItem.first {
-                    if showInfoView {
-                        HStack {
-                            Spacer()
-                            if document.annotations.first(where: {$0.id == selection}) != nil {
-                                InfoView(annotation: $document.annotations.first(where: {$0.id == selection})!)
-                                    .frame(width: 300)
-                            }
-                        }
-                        .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
-                    } else if showLabelList {
-                        HStack {
-                            Spacer()
-                            LabelList(leftSideBarSelectedItem: $leftSideBarSelectedItem)
-                                .frame(width: 300)
-                        }
-                        .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
-                    }
-                }
+            if showLabelList {
+                LabelList(showLabelList: $showLabelList)
+            } else {
+                mainBody
             }
-            .toolbar {
-                
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    toggleSideBar()
+                } label: {
+                    Image(systemName: "sidebar.leading")
+                }
+                .disabled(showLabelList)
+            }
+            
+            ToolbarItem(placement: .navigation) {
+                Toggle(isOn: $showLabelList.animation()) {
+                    Image(systemName: "rectangle.grid.3x2")
+                }
+                .onChange(of: showLabelList) { newValue in
+                    toggleSideBar(to: !newValue)
+                    guard newValue else { return }
+                    showInfoView = false
+                    document.leftSideBarSelectedItem = []
+                }
+                .help("Show Label List")
+            }
+            
+            ToolbarItem(placement: .navigation) {
                 Group {
                     if document.isExporting {
                         ProgressView(value: document.exportingProgress)
@@ -111,30 +84,87 @@ struct ContentView: View {
                     .padding()
                     .frame(width: 300)
                 }
-                
-                Toggle(isOn: $showLabelList) {
-                    Image(systemName: "tag")
+            }
+        }
+        .toolbar {
+            Button {
+                isShowingExportDialog = true
+            } label: {
+                Label("Export", systemImage: "square.and.arrow.up")
+                    .labelStyle(.iconOnly)
+            }
+            .padding(.trailing)
+            
+            Toggle(isOn: $showInfoView) {
+                Image(systemName: "list.bullet")
+            }
+            .help("Show Info View")
+            .disabled(document.leftSideBarSelectedItem.count != 1)
+        }
+        .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
+            guard let url = try? result.get() else { return }
+            FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+        }
+    }
+    
+    var mainBody: some View {
+        ZStack {
+            if !document.annotations.isEmpty {
+                if document.leftSideBarSelectedItem.isEmpty {
+                    ContainerView {
+                        Text("Select an item or items to start")
+                    }
+                } else {
+                    DetailView()
                 }
-                .onChange(of: showLabelList) { newValue in
-                    guard newValue else { return }
-                    showInfoView = false
-                }
-                .help("Show Label List")
-                .disabled(leftSideBarSelectedItem.count != 1)
-                
-                Toggle(isOn: $showInfoView) {
-                    Image(systemName: "list.bullet")
-                }
-                .onChange(of: showInfoView) { newValue in
-                    guard newValue else { return }
-                    showLabelList = false
-                }
-                .help("Show Info View")
-                .disabled(leftSideBarSelectedItem.count != 1)
-                
+            } else {
+                DropHandlerView()
+                    .onDrop { sources in
+                        Task { @MainActor in
+                            self.document.isImporting = true
+                        }
+                        
+                        let oldItems = await document.annotations
+                        
+                        let reporter = ProgressReporter(totalUnitCount: sources.count) { progress in
+                            Task { @MainActor in
+                                self.document.importingProgress = progress
+                            }
+                        }
+                        let newItems = await loadItems(from: sources, reporter: reporter)
+                        
+                        let union = oldItems.union(newItems)
+                        Task { @MainActor in
+                            self.document.annotations = union
+                            self.document.isImporting = false
+                            
+                            undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                                document.replaceItems(with: oldItems, undoManager: undoManager)
+                            })
+                        }
+                    }
             }
             
+            if showInfoView, document.leftSideBarSelectedItem.count == 1, let selection = document.leftSideBarSelectedItem.first {
+                HStack {
+                    Spacer()
+                    if let first = $document.annotations.first(where: {$0.id == selection}) {
+                        InfoView(annotation: first)
+                            .frame(width: 300)
+                    }
+                }
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+            }
         }
+    }
+    
+    func toggleSideBar(to state: Bool? = nil) {
+        if let state, state == sideBarState { return }
+        
+        // It turned out that Appkit should be used to toggle sidebar
+        // https://sarunw.com/posts/how-to-toggle-sidebar-in-macos/
+        NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)
+        sideBarState.toggle()
     }
     
 }

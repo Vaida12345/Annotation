@@ -12,7 +12,6 @@ import SwiftUI
 struct DetailView: View {
     
     // core
-    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     @EnvironmentObject var document: AnnotationDocument
     
     // layout
@@ -24,7 +23,7 @@ struct DetailView: View {
     var body: some View {
         GeometryReader { reader in
             ZStack {
-                AnnotationView(leftSideBarSelectedItem: $leftSideBarSelectedItem, label: $currentLabel, size: reader.size)
+                AnnotationView(label: $currentLabel, size: reader.size)
                 
                 HStack {
                     VStack {

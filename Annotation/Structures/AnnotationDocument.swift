@@ -29,6 +29,8 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     @Published var isImporting = false
     @Published var importingProgress = 0.0
+    
+    @Published var leftSideBarSelectedItem: Set<Annotation.ID> = []
 
     init(annotations: [Annotation] = []) {
         self.annotations = annotations
@@ -270,41 +272,52 @@ extension AnnotationDocument {
     
     /// Relocates the specified items, and registers an undo action.
     func moveItemsAt(offsets: IndexSet, toOffset: Int, undoManager: UndoManager?) {
-        let oldItems = annotations
-        withAnimation {
-            annotations.move(fromOffsets: offsets, toOffset: toOffset)
-        }
+        undoManager?.setActionName("Move items")
+        annotations.move(fromOffsets: offsets, toOffset: toOffset)
         
         undoManager?.registerUndo(withTarget: self) { document in
-            // Use the replaceItems symmetric undoable-redoable function.
-            document.replaceItems(with: oldItems, undoManager: undoManager)
+            guard var newToOffset = offsets.first else { return }
+            
+            let _offset = {
+                toOffset > newToOffset ? -1 * offsets.count : 0
+            }()
+            if toOffset < newToOffset {
+                newToOffset += offsets.count
+            }
+            
+            let newFromOffset = IndexSet((toOffset + _offset)..<((toOffset + _offset) + offsets.count))
+            
+            document.moveItemsAt(offsets: newFromOffset, toOffset: newToOffset, undoManager: undoManager)
         }
         
     }
     
     /// Deletes the items at a specified set of offsets, and registers an undo action.
-    func delete(offsets: IndexSet, undoManager: UndoManager? = nil) {
-        let oldItems = annotations
-        withAnimation {
-            annotations.remove(atOffsets: offsets)
+    func delete(offsets: IndexSet, undoManager: UndoManager?) {
+        undoManager?.setActionName("Delete items")
+        var elements: [Annotation] = []
+        elements.reserveCapacity(offsets.count)
+        
+        for offset in offsets {
+            elements.append(self.annotations[offset])
         }
         
+        self.annotations.remove(atOffsets: offsets)
+        
         undoManager?.registerUndo(withTarget: self) { document in
-            // Use the replaceItems symmetric undoable-redoable function.
-            document.replaceItems(with: oldItems, undoManager: undoManager)
+            document.insert(at: offsets, elements, undoManager: undoManager)
         }
     }
     
-    /// Deletes the items, and registers an undo action.
-    func delete(item: Annotation, undoManager: UndoManager?) {
-        let oldItems = annotations
-        withAnimation {
-            annotations.removeAll(where: { $0 == item })
-        }
+    func insert(at indexes: IndexSet, _ item: [Annotation], undoManager: UndoManager?) {
+        undoManager?.setActionName("insert items")
+        guard let first = indexes.first else { return }
+        guard indexes.count == item.count else { return }
+        
+        self.annotations.insert(contentsOf: item, at: first)
         
         undoManager?.registerUndo(withTarget: self) { document in
-            // Use the replaceItems symmetric undoable-redoable function.
-            document.replaceItems(with: oldItems, undoManager: undoManager)
+            document.delete(offsets: indexes, undoManager: undoManager)
         }
     }
     
@@ -325,6 +338,108 @@ extension AnnotationDocument {
         undoManager?.registerUndo(withTarget: self) { document in
             // Use the replaceItems symmetric undoable-redoable function.
             document.replaceItems(with: oldItems, undoManager: undoManager)
+        }
+    }
+    
+    /// Remove the item given the indexes. Return on not found.
+    func removeAnnotations(undoManager: UndoManager?, annotationID: Annotation.ID, annotationsID: Annotation.Annotations.ID) {
+        guard let annotationIndex = self.annotations.firstIndex(where: { $0.id == annotationID }) else { return }
+        guard let deletedItemIndex = self.annotations[annotationIndex].annotations.firstIndex(where: { $0.id == annotationsID }) else { return }
+        
+        let deletedItem = self.annotations[annotationIndex].annotations[deletedItemIndex]
+        
+        self.annotations[annotationIndex].annotations.remove(at: deletedItemIndex)
+        
+        undoManager?.registerUndo(withTarget: self) { document in
+            document.appendAnnotations(undoManager: undoManager, annotationID: annotationID, item: deletedItem)
+        }
+    }
+    
+    func appendAnnotations(undoManager: UndoManager?, annotationID: Annotation.ID, item: Annotation.Annotations) {
+        guard let annotationIndex = self.annotations.firstIndex(where: { $0.id == annotationID }) else { return }
+        
+        self.annotations[annotationIndex].annotations.append(item)
+        
+        undoManager?.registerUndo(withTarget: self) { document in
+            document.removeAnnotations(undoManager: undoManager, annotationID: annotationID, annotationsID: item.id)
+        }
+    }
+    
+    func removeAnnotation(undoManager: UndoManager?, annotationID: Annotation.ID) {
+        undoManager?.setActionName("Remove an image")
+        guard let index = self.annotations.firstIndex(where : { $0.id == annotationID }) else { return }
+        let removedElement = self.annotations.remove(at: index)
+        
+        undoManager?.registerUndo(withTarget: self) { document in
+            document.annotations.insert(removedElement, at: index)
+            
+            undoManager?.registerUndo(withTarget: self) { document in
+                document.removeAnnotation(undoManager: undoManager, annotationID: annotationID)
+            }
+        }
+    }
+    
+    func remove(undoManager: UndoManager?, label: String) {
+        undoManager?.setActionName("Remove \"\(label)\"")
+        var indexes: [Int: [Int]] = [:] // [Annotation.Index: [Annotation.Annotations.Index]]
+        indexes.reserveCapacity(annotations.count)
+        
+        for annotation in self.annotations.enumerated() {
+            let list = annotation.element.annotations.indexes { $0.label == label }
+            indexes[annotation.offset] = list
+        }
+        
+        var values: [Int: [Annotation.Annotations]] = [:]
+        for (key, value) in indexes {
+            var list: [Annotation.Annotations] = []
+            list.reserveCapacity(value.count)
+            
+            for _value in value {
+                list.append(self.annotations[key].annotations[_value])
+                self.annotations[key].annotations.remove(at: _value)
+            }
+            
+            values[key] = list
+        }
+        
+        undoManager?.registerUndo(withTarget: self) { document in
+            for (key, value) in values {
+                document.annotations[key].annotations.append(contentsOf: value)
+            }
+            
+            undoManager?.registerUndo(withTarget: self) { document in
+                document.remove(undoManager: undoManager, label: label)
+            }
+        }
+    }
+    
+    func rename(label oldName: String, with newName: String, undoManager: UndoManager?) {
+        undoManager?.setActionName("Rename \"\(oldName)\" with \"\(newName)\"")
+        var indexes: [Int: [Int]] = [:] // [Annotation.Index: [Annotation.Annotations.Index]]
+        indexes.reserveCapacity(annotations.count)
+        
+        for annotation in self.annotations.enumerated() {
+            let list = annotation.element.annotations.indexes { $0.label == oldName }
+            indexes[annotation.offset] = list
+        }
+        
+        for (key, value) in indexes {
+            for _value in value {
+                self.annotations[key].annotations[_value].label = newName
+            }
+        }
+        
+        
+        undoManager?.registerUndo(withTarget: self) { document in
+            for (key, value) in indexes {
+                for _value in value {
+                    document.annotations[key].annotations[_value].label = oldName
+                }
+            }
+            
+            undoManager?.registerUndo(withTarget: self) { document in
+                document.rename(label: oldName, with: newName, undoManager: undoManager)
+            }
         }
     }
     

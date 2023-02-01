@@ -13,8 +13,8 @@ import Support
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
-    var id: UUID
-    var image: NSImage
+    let id: UUID
+    let image: NSImage
     var annotations: [Annotations]
     
     init(id: UUID = UUID(), image: NSImage, annotations: [Annotations] = []) {
@@ -25,9 +25,9 @@ struct Annotation: Equatable, Hashable, Identifiable {
     
     struct Annotations: Equatable, Hashable, Encodable, Decodable, Identifiable {
         
-        var id: UUID
+        let id: UUID
         var label: String
-        var coordinates: Coordinate
+        let coordinates: Coordinate
         
         init(label: String, coordinates: Coordinate) {
             self.id = UUID()
@@ -129,7 +129,9 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let width = frame.width / scaleFactor
                 let height = frame.height / scaleFactor
                 
-                self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+                let rawFrame = CGRect(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+                let intersect = rawFrame.intersection(CGRect(origin: .zero, size: cgImage.size))
+                self.init(center: intersect.center, size: intersect.size)
             }
             
             // init from the coordinate from that of a observation
@@ -193,23 +195,30 @@ extension Array where Element == Annotation {
         self.flatMap { $0.annotations.map(\.label) }.unique()
     }
     
-    /// \[label: \[(Image Name, Coordinate)\]\]
-    var labelDictionary: [String: [(NSImage, Annotation.Annotations.Coordinate)]] {
-        var dictionary: [String: [(NSImage, Annotation.Annotations.Coordinate)]] = [:]
+    var labelDictionary: [String: Array<LabelDictionaryValue>] {
+        var dictionary: [String: Array<LabelDictionaryValue>] = [:]
+        dictionary.reserveCapacity(self.map(\.annotations.count).sum())
+        
         for i in self {
-            let image = i.image
             for ii in i.annotations {
                 let label = ii.label
-                let coordinate = ii.coordinates
                 if dictionary[label] == nil {
-                    dictionary[label] = [(image, coordinate)]
+                    dictionary[label] = [LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id)]
                 } else {
-                    dictionary[label]!.append((image, coordinate))
+                    dictionary[label]!.append(LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id))
                 }
             }
         }
         
         return dictionary
+    }
+    
+    struct LabelDictionaryValue {
+        
+        let annotationID: Annotation.ID
+        
+        let annotationsID: Annotation.Annotations.ID
+        
     }
     
 }

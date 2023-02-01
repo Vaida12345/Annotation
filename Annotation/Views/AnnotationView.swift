@@ -15,7 +15,6 @@ struct AnnotationView: NSViewRepresentable {
     typealias NSViewType = NSView
 
     // core
-    @Binding var leftSideBarSelectedItem: Set<Annotation.ID>
     /// The current label used
     @Binding var label: String
     
@@ -25,7 +24,7 @@ struct AnnotationView: NSViewRepresentable {
     @EnvironmentObject var document: AnnotationDocument
     
     var annotations: [Annotation] {
-        return document.annotations.filter({ leftSideBarSelectedItem.contains($0.id) })
+        document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) })
     }
     
 //    var textField = NSTextField()
@@ -63,9 +62,6 @@ struct AnnotationView: NSViewRepresentable {
         viewController.view.frame = CGRect(origin: .zero, size: size)
         viewController.label = label
         viewController.annotationView = self
-        
-        viewController.annotationView = self
-        viewController.document = document
         
         for annotation in annotations {
             let image = annotation.image
@@ -109,7 +105,7 @@ struct AnnotationView: NSViewRepresentable {
         var label = "Label"
         var annotationView: AnnotationView? = nil
         
-        @State var document: AnnotationDocument
+        var document: AnnotationDocument
         
         override func viewDidLoad() {
             super.viewDidLoad()
@@ -117,26 +113,39 @@ struct AnnotationView: NSViewRepresentable {
                 self.view.addSubview(recognizerView)
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 recognizerStartingPoint = recognizer.location(in: self.view)
-            }, mouseDragged: { [self] in
-                recognizerView.layer?.borderWidth = 2
-                recognizerView.layer?.borderColor = NSColor.blue.cgColor
+            }, mouseDragged: { [weak self] in
+                self?.recognizerView.layer?.borderWidth = 2
+                self?.recognizerView.layer?.borderColor = NSColor.blue.cgColor
                 
-                recognizerView.frame = CGRect(x: [recognizer.location(in: self.view).x, recognizerStartingPoint.x].sorted(by: <).first!, y: [recognizer.location(in: self.view).y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(recognizer.translation(in: self.view).x), height: abs(recognizer.translation(in: self.view).y))
-                print(recognizerView.frame)
-            }, mouseUp: { [self] in
-                if self.recognizerView.frame.width >= 10 && self.recognizerView.frame.height >= 10 {
-                    document.apply(undoManager: undoManager, action: {
-                        for i in self.annotationView!.leftSideBarSelectedItem {
-                            guard let index = document.annotations.firstIndex(where: { $0.id == i }) else { continue }
-                            document.annotations[index].annotations.append(Annotation.Annotations(label: self.label, coordinates: Annotation.Annotations.Coordinate(from: self.recognizerView.frame, by: self.view, image: document.annotations[index].image)))
-                        }
-                        
-                    })
+                guard let location = self?.recognizer.location(in: self?.view) else { return }
+                guard let translation = self?.recognizer.translation(in: self?.view) else { return }
+                guard let recognizerStartingPoint = self?.recognizerStartingPoint else { return }
+                
+                self?.recognizerView.frame = CGRect(x: [location.x, recognizerStartingPoint.x].sorted(by: <).first!, y: [location.y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(translation.x), height: abs(translation.y))
+            }, mouseUp: { [weak self] in
+                guard let document = self?.document else { return } // all classes, no cost
+                guard let recognizerView = self?.recognizerView else { return }
+                guard let view = self?.view else { return }
+                guard let label = self?.label else { return }
+                guard let undoManager = self?.undoManager else { return }
+                
+                undoManager.setActionName("Annotate")
+                undoManager.beginUndoGrouping()
+                
+                for item in document.leftSideBarSelectedItem {
+                    guard let index = document.annotations.firstIndex(where: { $0.id == item }) else { continue }
+                    
+                    let coordinate = Annotation.Annotations.Coordinate(from: recognizerView.frame, by: view, image: document.annotations[index].image)
+                    let annotation = Annotation.Annotations(label: label, coordinates: coordinate)
+                    
+                    document.appendAnnotations(undoManager: undoManager, annotationID: item, item: annotation)
                 }
                 
-                self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
-                self.recognizerView.removeFromSuperview()
-                self.recognizerStartingPoint = NSPoint.zero
+                undoManager.endUndoGrouping()
+                
+                self?.recognizerView.frame = CGRect(origin: .zero, size: .zero)
+                self?.recognizerView.removeFromSuperview()
+                self?.recognizerStartingPoint = NSPoint.zero
             })
             self.view = NSView()
             self.view.addGestureRecognizer(recognizer)

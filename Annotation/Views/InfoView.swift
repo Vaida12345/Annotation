@@ -32,56 +32,63 @@ struct InfoViewItem: View {
     @State var showLabelSheet = false
     @State var newLabel = ""
     
+    @State private var isOnHover = false
+    
     @Environment(\.undoManager) var undoManager
     
     var body: some View {
         HStack {
             InfoViewImage(annotation: annotation, coordinate: item.coordinates)
-            HStack {
-                VStack {
-                    if !onEdit {
-                        Text(item.label)
-                            .font(.title3)
-                    } else {
-                        Menu {
-                            ForEach(document.annotations.labels, id: \.self) { label in
-                                Button(label) {
-                                    document.apply(undoManager: undoManager) {
-                                        item.label = label
-                                    }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing) {
+                if !onEdit {
+                    Text(item.label)
+                        .font(.title3)
+                } else {
+                    Menu {
+                        ForEach(document.annotations.labels, id: \.self) { label in
+                            Button(label) {
+                                document.apply(undoManager: undoManager) {
+                                    item.label = label
                                 }
                             }
-                            
-                            Button("New...") {
-                                showLabelSheet = true
-                            }
-                        } label: {
-                            Text(item.label)
                         }
                         
+                        Button("New...") {
+                            showLabelSheet = true
+                        }
+                    } label: {
+                        Text(item.label)
                     }
                     
-                    Spacer()
                 }
                 
                 Spacer()
                 
-                HStack(alignment: .center) {
-                    Image(systemName: onEdit ? "checkmark" : "pencil")
-                        .onTapGesture {
-                            onEdit.toggle()
-                        }
-                    
-                    Image(systemName: "trash")
-                        .onTapGesture {
-                            withAnimation {
-                                document.apply(undoManager: undoManager) {
-                                    annotation.annotations.removeAll(where: { $0 == item })
+                if isOnHover {
+                    HStack {
+                        Image(systemName: onEdit ? "checkmark" : "pencil")
+                            .onTapGesture {
+                                onEdit.toggle()
+                            }
+                        
+                        Image(systemName: "trash")
+                            .onTapGesture {
+                                withAnimation {
+                                    document.apply(undoManager: undoManager) {
+                                        annotation.annotations.removeAll(where: { $0 == item })
+                                    }
                                 }
                             }
-                        }
+                    }
+                    .foregroundColor(.secondary)
                 }
             }
+        }
+        .onHover { hover in
+            self.isOnHover = hover
         }
         .sheet(isPresented: $showLabelSheet) {
             VStack {
