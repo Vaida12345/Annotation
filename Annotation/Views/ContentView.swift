@@ -85,25 +85,28 @@ struct ContentView: View {
                     .frame(width: 300)
                 }
             }
-        }
-        .toolbar {
-            Button {
-                isShowingExportDialog = true
-            } label: {
-                Label("Export", systemImage: "square.and.arrow.up")
-                    .labelStyle(.iconOnly)
-            }
-            .padding(.trailing)
             
-            Toggle(isOn: $showInfoView) {
-                Image(systemName: "list.bullet")
+            ToolbarItem {
+                Button {
+                    isShowingExportDialog = true
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                        .labelStyle(.iconOnly)
+                }
+                .padding(.trailing)
+                .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
+                    guard let url = try? result.get() else { return }
+                    FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+                }
             }
-            .help("Show Info View")
-            .disabled(document.leftSideBarSelectedItem.count != 1)
-        }
-        .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
-            guard let url = try? result.get() else { return }
-            FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+            
+            ToolbarItem {
+                Toggle(isOn: $showInfoView) {
+                    Image(systemName: "list.bullet")
+                }
+                .help("Show Info View")
+                .disabled(document.leftSideBarSelectedItem.count != 1)
+            }
         }
     }
     

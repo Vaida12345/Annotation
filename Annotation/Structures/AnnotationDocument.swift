@@ -31,6 +31,8 @@ final class AnnotationDocument: ReferenceFileDocument {
     @Published var importingProgress = 0.0
     
     @Published var leftSideBarSelectedItem: Set<Annotation.ID> = []
+    
+    @Published var scrollProxy: ScrollViewProxy? = nil
 
     init(annotations: [Annotation] = []) {
         self.annotations = annotations
@@ -333,14 +335,6 @@ extension AnnotationDocument {
         }
     }
     
-    func apply(undoManager: UndoManager?, oldItems: [Annotation]) {
-        
-        undoManager?.registerUndo(withTarget: self) { document in
-            // Use the replaceItems symmetric undoable-redoable function.
-            document.replaceItems(with: oldItems, undoManager: undoManager)
-        }
-    }
-    
     /// Remove the item given the indexes. Return on not found.
     func removeAnnotations(undoManager: UndoManager?, annotationID: Annotation.ID, annotationsID: Annotation.Annotations.ID) {
         guard let annotationIndex = self.annotations.firstIndex(where: { $0.id == annotationID }) else { return }
@@ -394,7 +388,7 @@ extension AnnotationDocument {
             var list: [Annotation.Annotations] = []
             list.reserveCapacity(value.count)
             
-            for _value in value {
+            for _value in value.reversed() {
                 list.append(self.annotations[key].annotations[_value])
                 self.annotations[key].annotations.remove(at: _value)
             }

@@ -11,14 +11,14 @@ import CoreML
 import Vision
 import Support
 
-struct AutoaAnnotateView: View {
+struct AutoAnnotateView: View {
     
-    @Binding var isShowingModelDialog: Bool
-    @Binding var confidence: String
-    @Binding var model: MLModel?
+    @State var confidence: String = "0.8"
+    @State var model: MLModel?
     
     @EnvironmentObject var document: AnnotationDocument
     @Environment(\.undoManager) var undoManager
+    @Environment(\.dismiss) var dismiss
     
     @State var alertManager = AlertManager()
     
@@ -32,7 +32,7 @@ struct AutoaAnnotateView: View {
                     
                     Task { @MainActor in
                         self.model = model
-                        isShowingModelDialog = false
+                        dismiss()
                         applyML()
                     }
                 }
@@ -40,7 +40,7 @@ struct AutoaAnnotateView: View {
             
             HStack {
                 Button("Cancel") {
-                    isShowingModelDialog = false
+                    dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
                 
@@ -60,31 +60,35 @@ struct AutoaAnnotateView: View {
     }
     
     func applyML() {
-        print("start!")
         guard let model = model else { return }
-        document.apply(undoManager: undoManager, oldItems: document.annotations)
-        DispatchQueue(label: "annotator").async {
-            for i in 0..<document.annotations.count {
-                print(i)
-                guard document.annotations[i].annotations.isEmpty else { DispatchQueue.main.async{ document.leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
-                guard let result = applyObjectDetectionML(to: document.annotations[i].image, model: model) else { DispatchQueue.main.async{ document.leftSideBarSelectedItem = [document.annotations[i].id] }; continue }
-                var staticConfidence = 0.8
-                if let userConfidence = Double(confidence), userConfidence <= 1, userConfidence >= 0 {
-                    staticConfidence = userConfidence
-                }
-                DispatchQueue.main.async {
-                    document.apply(undoManager: undoManager) {
-                        document.annotations[i].annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).map{
-                            Annotation.Annotations.init(label: $0.labels.first!.identifier, coordinates: Annotation.Annotations.Coordinate(from: $0, in: document.annotations[i].image))
-                        }
-                    }
-                    
-                    document.leftSideBarSelectedItem = [document.annotations[i].id]
-                }
+        document.apply(undoManager: undoManager) {
+            let _document = document
+            let staticConfidence: Double
+            if let userConfidence = Double(confidence), userConfidence <= 1, userConfidence >= 0 {
+                staticConfidence = userConfidence
+            } else {
+                staticConfidence = 0.8
             }
             
-            DispatchQueue.main.async {
-                document.leftSideBarSelectedItem.removeAll()
+            Task.detached {
+                for i in 0..<_document.annotations.count {
+                    guard let result = await applyObjectDetectionML(to: _document.annotations[i].image, model: model) else {
+                        Task { @MainActor in document.leftSideBarSelectedItem = [document.annotations[i].id] }
+                        continue
+                    }
+                    let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
+                        guard let label = item.labels.first?.identifier else { return nil }
+                        let coordinate = Annotation.Annotations.Coordinate(from: item, in: _document.annotations[i].image)
+                        return Annotation.Annotations.init(label: label, coordinates: coordinate)
+                    }
+                    
+                    Task { @MainActor in
+                        document.annotations[i].annotations.append(contentsOf: annotations)
+                        
+                        document.leftSideBarSelectedItem = [document.annotations[i].id]
+                        document.scrollProxy?.scrollTo(document.annotations[i].id)
+                    }
+                }
             }
         }
     }
@@ -109,7 +113,7 @@ struct AutoaAnnotateView: View {
 ///     - image: The image on which performs the ML.
 ///
 /// - Returns: The observations in the image; `nil` otherwise.
-func applyObjectDetectionML(to image: NSImage, model: MLModel) -> [VNRecognizedObjectObservation]? {
+func applyObjectDetectionML(to image: NSImage, model: MLModel) async -> [VNRecognizedObjectObservation]? {
     guard image.size != NSSize.zero else { print("skip \(image)"); return nil }
     guard let image = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { print("skip \(image)"); return nil }
     

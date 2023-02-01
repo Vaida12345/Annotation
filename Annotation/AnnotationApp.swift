@@ -17,8 +17,6 @@ struct AnnotationApp: App {
     @State var isShowingImportDialog = false
     
     @State var isShowingModelDialog = false
-    @State var model: MLModel? = nil
-    @State var confidence = "0.8"
     
     @Environment(\.undoManager) var undoManager
     @FocusedValue(\.document) var document
@@ -28,7 +26,7 @@ struct AnnotationApp: App {
             ContentView()
                 .focusedSceneValue(\.document, file.document)
                 .sheet(isPresented: $isShowingModelDialog) {
-                    AutoaAnnotateView(isShowingModelDialog: $isShowingModelDialog, confidence: $confidence, model: $model)
+                    AutoAnnotateView()
                 }
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }
@@ -77,15 +75,9 @@ struct AnnotationApp: App {
                 }
             }
             
-            CommandGroup(after: .pasteboard) {
-                Section {
-                    Menu {
-                        Button("based on model...") {
-                            isShowingModelDialog.toggle()
-                        }
-                    } label: {
-                        Text("Annotate")
-                    }
+            CommandMenu("Annotate") {
+                Button("based on model...") {
+                    isShowingModelDialog.toggle()
                 }
             }
         }
@@ -97,7 +89,7 @@ extension FocusedValues {
     struct DocumentFocusedValues: FocusedValueKey {
         typealias Value = AnnotationDocument
     }
-    
+
     var document: AnnotationDocument? {
         get {
             self[DocumentFocusedValues.self]

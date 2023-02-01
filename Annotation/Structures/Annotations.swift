@@ -52,6 +52,10 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 return "(\(x), \(y), \(width), \(height))"
             }
             
+            var size: CGSize {
+                CGSize(width: self.width, height: self.height)
+            }
+            
             init(x: Double, y: Double, width: Double, height: Double) {
                 self.x = x
                 self.y = y
@@ -227,9 +231,7 @@ func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordi
     guard image.pixelSize != .zero else { return nil }
     let rect = CGRect(from: coordinate)
     guard rect.size != .zero else { return nil }
-    print(image.size, coordinate, rect)
     
     guard let result = image.cgImage?.cropping(to: rect) else { return nil }
-    print(result.size)
     return NSImage(cgImage: result)
 }
