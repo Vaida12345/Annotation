@@ -107,7 +107,7 @@ struct SideBar: View {
                     }
                     let newItems = await loadItems(from: sources, reporter: reporter)
                     
-                    let union = oldItems.union(newItems)
+                    let union = oldItems + newItems
                     Task { @MainActor in
                         self.document.annotations = union
                         self.document.isImporting = false
@@ -135,7 +135,7 @@ struct SideBar: View {
                     }
                     let newItems = await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: reporter)
                     
-                    let union = oldItems.union(newItems)
+                    let union = oldItems + newItems
                     Task { @MainActor in
                         self.document.annotations = union
                         self.document.isImporting = false

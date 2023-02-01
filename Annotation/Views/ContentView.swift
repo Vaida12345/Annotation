@@ -136,7 +136,7 @@ struct ContentView: View {
                         }
                         let newItems = await loadItems(from: sources, reporter: reporter)
                         
-                        let union = oldItems.union(newItems)
+                        let union = oldItems + newItems
                         Task { @MainActor in
                             self.document.annotations = union
                             self.document.isImporting = false

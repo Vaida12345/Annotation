@@ -51,7 +51,7 @@ struct AnnotationApp: App {
                         }
                         let newItems = await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: reporter)
                         
-                        let union = oldItems.union(newItems)
+                        let union = oldItems + newItems
                         Task { @MainActor in
                             document.annotations = union
                             document.isImporting = false

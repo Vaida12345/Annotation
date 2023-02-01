@@ -94,7 +94,6 @@ struct AutoAnnotateView: View {
                 undoManager?.registerUndo(withTarget: document) { document in
                     document.replaceItems(with: oldItems, undoManager: undoManager)
                 }
-                print(undoManager)
             }
         }
         
