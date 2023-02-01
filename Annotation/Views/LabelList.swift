@@ -135,6 +135,7 @@ struct LabelListItem: View {
             Button("Show Image") {
                 withAnimation {
                     document.leftSideBarSelectedItem = [item.item.annotationID]
+                    document.scrollProxy?.scrollTo(item.item.annotationID)
                     showLabelList = false
                 }
             }

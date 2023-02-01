@@ -13,7 +13,7 @@ import Support
 
 struct AutoAnnotateView: View {
     
-    @State var confidence: String = "0.8"
+    @State var confidence: Double = 0.8
     @State var model: MLModel?
     
     @EnvironmentObject var document: AnnotationDocument
@@ -24,7 +24,7 @@ struct AutoAnnotateView: View {
     
     var body: some View {
         
-        VStack {
+        HStack {
             DropHandlerView(prompt: "Drop a CoreML model here")
                 .onDrop { sources in
                     guard let firstItem = sources.first else { return }
@@ -36,24 +36,28 @@ struct AutoAnnotateView: View {
                         applyML()
                     }
                 }
-                .frame(width: 400, height: 200)
+                .background(BlurredEffectView())
+                .frame(width: 400, height: 300)
             
-            HStack {
-                Button("Cancel") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
+            VStack(alignment: .leading) {
+                
+                Text("Confidence")
+                
+                Slider(value: $confidence, in: 0...1)
                 
                 Spacer()
                 
-                Text("Confidence: ")
-                
-                TextField("above which observations would be applied", text: $confidence)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 50)
-                    .multilineTextAlignment(.center)
+                HStack {
+                    Spacer()
+                    
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .keyboardShortcut(.cancelAction)
+                }
             }
             .padding()
+            .frame(width: 200, height: 300)
         }
         .alert(manager: $alertManager)
         
@@ -63,12 +67,7 @@ struct AutoAnnotateView: View {
         guard let model = model else { return }
         document.apply(undoManager: undoManager) {
             let _document = document
-            let staticConfidence: Double
-            if let userConfidence = Double(confidence), userConfidence <= 1, userConfidence >= 0 {
-                staticConfidence = userConfidence
-            } else {
-                staticConfidence = 0.8
-            }
+            let staticConfidence = confidence
             
             Task.detached {
                 for i in 0..<_document.annotations.count {
