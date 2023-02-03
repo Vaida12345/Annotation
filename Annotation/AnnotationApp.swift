@@ -16,7 +16,8 @@ struct AnnotationApp: App {
     @State var isShowingExportDialog = false
     @State var isShowingImportDialog = false
     
-    @State var isShowingModelDialog = false
+    @State var isShowingAutoAnnotate = false
+    @State var isShowingAutoDetect = false
     
     @State private var undoManager: UndoManager?
     @FocusedValue(\.document) var document
@@ -28,8 +29,11 @@ struct AnnotationApp: App {
                     undoManager = window?.undoManager
                 }
                 .focusedSceneValue(\.document, file.document)
-                .sheet(isPresented: $isShowingModelDialog) {
+                .sheet(isPresented: $isShowingAutoAnnotate) {
                     AutoAnnotateView(undoManager: $undoManager)
+                }
+                .sheet(isPresented: $isShowingAutoDetect) {
+                    AutoDetectView(undoManager: $undoManager)
                 }
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }
@@ -80,8 +84,12 @@ struct AnnotationApp: App {
             }
             
             CommandMenu("Annotate") {
-                Button("based on model...") {
-                    isShowingModelDialog.toggle()
+                Button("Based on model...") {
+                    isShowingAutoAnnotate.toggle()
+                }
+                
+                Button("Auto detect...") {
+                    isShowingAutoDetect.toggle()
                 }
             }
         }

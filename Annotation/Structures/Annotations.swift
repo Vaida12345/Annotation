@@ -27,19 +27,19 @@ struct Annotation: Equatable, Hashable, Identifiable {
         
         let id: UUID
         var label: String
-        let coordinates: Coordinate
+        let coordinate: Coordinate
         
         init(label: String, coordinates: Coordinate) {
             self.id = UUID()
             self.label = label
-            self.coordinates = coordinates
+            self.coordinate = coordinates
         }
         
         var export: AnnotationImport.Annotations {
-            return .init(label: label, coordinates: AnnotationImport.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
+            return .init(label: label, coordinates: AnnotationImport.Annotations.Coordinate(x: coordinate.x, y: coordinate.y, width: coordinate.width, height: coordinate.height))
         }
         
-        /// Coordinate relative to image, origin at center.
+        /// Coordinate relative to image, origin at center, coordinate zero at bottom-left.
         struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible, Identifiable {
             
             var id: UUID
@@ -49,7 +49,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
             var height: Double
             
             var description: String {
-                return "(\(x), \(y), \(width), \(height))"
+                return "(center: \(x), \(y), \(width), \(height))"
             }
             
             var size: CGSize {
@@ -64,7 +64,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 self.id = UUID()
             }
             
-            private init(center: CGPoint, size: CGSize) {
+            public init(center: CGPoint, size: CGSize) {
                 self.x = center.x
                 self.y = center.y
                 self.width = size.width

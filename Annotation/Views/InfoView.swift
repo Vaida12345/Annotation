@@ -38,7 +38,7 @@ struct InfoViewItem: View {
     
     var body: some View {
         HStack {
-            InfoViewImage(annotation: annotation, coordinate: item.coordinates)
+            InfoViewImage(annotation: annotation, coordinate: item.coordinate)
             
             Spacer()
             

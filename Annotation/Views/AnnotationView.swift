@@ -83,7 +83,7 @@ struct AnnotationView: NSViewRepresentable {
     }
     
     func drawAnnotation(annotation: Annotation.Annotations, on image: NSImageView) {
-        let rect = CGRect(from: annotation.coordinates, by: image)
+        let rect = CGRect(from: annotation.coordinate, by: image)
         let view = NSView(frame: rect)
         let layer = CALayer()
         layer.borderWidth = 2

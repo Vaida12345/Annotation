@@ -87,8 +87,8 @@ struct LabelListItems: View {
                             guard let annotation = await document.annotations.first(where: { $0.id == item.annotationID }) else { return nil }
                             guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
                             
-                            let size = annotations.coordinates.size.aspectRatio(extend: .height, to: LabelListItems.height)
-                            guard let croppedImage = trimImage(from: annotation.image, at: annotations.coordinates) else { return nil }
+                            let size = annotations.coordinate.size.aspectRatio(extend: .height, to: LabelListItems.height)
+                            guard let croppedImage = trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
                             guard let resizedImage = croppedImage.cgImage?.resized(to: size) else { return nil }
                             
                             return InnerViewElement(item: item, croppedImage: NativeImage(cgImage: resizedImage), size: size)
