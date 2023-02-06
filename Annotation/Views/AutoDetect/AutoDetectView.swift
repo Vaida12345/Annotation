@@ -29,15 +29,12 @@ struct AutoDetectView: View {
         HStack {
             VStack {
                 if !rawImages.isEmpty {
-                    ScrollView {
-                        LazyVGrid(columns: [GridItem](repeating: GridItem(.fixed(140)), count: 4)) {
-                            ForEach(rawImages) { image in
-                                Image(nativeImage: image.image)
-                                    .cornerRadius(10)
-                            }
-                        }
-                        .padding()
+                    GalleryView(rowCount: 4, data: rawImages) { image in
+                        Image(nativeImage: image.image)
+                            .cornerRadius(10)
+                            .aspectRatio(weight: (image.image.pixelSize?.height ?? 1) / (image.image.pixelSize?.width ?? 1))
                     }
+                    .padding()
                 }
             }
             .frame(width: 600, height: 400)
