@@ -30,86 +30,90 @@ struct InfoViewItem: View {
     
     @State var onEdit = false
     @State var showLabelSheet = false
-    @State var newLabel = ""
-    
-    @State private var isOnHover = false
+    @State var newLabel = Annotation.Label(title: "", color: .green)
     
     @Environment(\.undoManager) var undoManager
     
     var body: some View {
         HStack {
             InfoViewImage(annotation: annotation, coordinate: item.coordinate)
+                .opacity(item.hidden ? 0.5 : 1.0)
             
             Spacer()
             
             VStack(alignment: .trailing) {
                 if !onEdit {
-                    Text(item.label)
+                    Text(item.label.title)
                         .font(.title3)
+                        .foregroundStyle(item.hidden ? .secondary : item.label.color)
                 } else {
                     Menu {
                         ForEach(document.annotations.labels, id: \.self) { label in
-                            Button(label) {
+                            Button(label.title) {
                                 undoManager?.setActionName("Rename to \"\(label)\"")
                                 document.apply(undoManager: undoManager) {
                                     item.label = label
                                 }
                             }
+                            .foregroundStyle(label.color)
                         }
+                        
+                        Divider()
                         
                         Button("New...") {
                             showLabelSheet = true
                         }
                     } label: {
-                        Text(item.label)
+                        Text(item.label.title)
+                            .foregroundStyle(item.label.color)
                     }
                     
                 }
                 
                 Spacer()
                 
-                if isOnHover {
-                    HStack {
-                        Image(systemName: onEdit ? "checkmark" : "pencil")
-                            .onTapGesture {
-                                onEdit.toggle()
-                            }
-                        
-                        Image(systemName: "trash")
-                            .onTapGesture {
-                                withAnimation {
-                                    undoManager?.setActionName("Remove item")
-                                    document.apply(undoManager: undoManager) {
-                                        annotation.annotations.removeAll(where: { $0 == item })
-                                    }
+                HStack {
+                    Button {
+                        withAnimation {
+                            item.hidden.toggle()
+                        }
+                    } label: {
+                        Image(systemName: item.hidden ? "eye.slash.fill" : "eye.fill")
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    
+                    Image(systemName: onEdit ? "checkmark" : "pencil")
+                        .onTapGesture {
+                            onEdit.toggle()
+                        }
+                    
+                    Image(systemName: "trash")
+                        .onTapGesture {
+                            withAnimation {
+                                undoManager?.setActionName("Remove item")
+                                document.apply(undoManager: undoManager) {
+                                    annotation.annotations.removeAll(where: { $0 == item })
                                 }
                             }
-                    }
-                    .foregroundColor(.secondary)
+                        }
                 }
+                .buttonStyle(.plain)
+                .foregroundColor(.secondary)
             }
-        }
-        .onHover { hover in
-            self.isOnHover = hover
         }
         .sheet(isPresented: $showLabelSheet) {
             VStack {
-                HStack {
-                    Text("Name for label: ")
-                    
-                    Spacer()
+                ChangeLabelNameView(label: $newLabel) {
+                    undoManager?.setActionName("Rename to \"\(newLabel)\"")
+                    document.apply(undoManager: undoManager) {
+                        item.label = newLabel
+                        showLabelSheet = false
+                    }
                 }
-                TextField("Name for label", text: $newLabel)
-                    .onSubmit {
-                        undoManager?.setActionName("Rename to \"\(newLabel)\"")
-                        document.apply(undoManager: undoManager) {
-                            item.label = newLabel
-                            showLabelSheet = false
-                        }
-                    }
-                    .onAppear {
-                        newLabel = item.label
-                    }
+                .onAppear {
+                    newLabel = item.label
+                }
+                
                 HStack {
                     Spacer()
                     

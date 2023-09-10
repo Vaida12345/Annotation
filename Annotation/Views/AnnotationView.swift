@@ -16,7 +16,7 @@ struct AnnotationView: NSViewRepresentable {
 
     // core
     /// The current label used
-    @Binding var label: String
+    @Binding var label: Annotation.Label
     
     // layout
     let size: CGSize
@@ -83,15 +83,16 @@ struct AnnotationView: NSViewRepresentable {
     }
     
     func drawAnnotation(annotation: Annotation.Annotations, on image: NSImageView) {
+        guard !annotation.hidden else { return }
         let rect = CGRect(from: annotation.coordinate, by: image)
         let view = NSView(frame: rect)
         let layer = CALayer()
         layer.borderWidth = 2
-        layer.borderColor = NSColor.green.cgColor
+        layer.borderColor = annotation.label.color.cgColor ?? NSColor.green.cgColor
         view.layer = layer
         image.addSubview(view)
         
-        let label = NSHostingView(rootView: TextLabel(value: annotation.label, size: CGSize(width: rect.width, height: 20)))
+        let label = NSHostingView(rootView: TextLabel(label: annotation.label, size: CGSize(width: rect.width, height: 20)))
         label.frame = CGRect(x: view.frame.width-rect.width-2, y: view.frame.height-20, width: rect.width, height: 20)
         view.addSubview(label)
     }
@@ -102,10 +103,13 @@ struct AnnotationView: NSViewRepresentable {
         var recognizerView = NSView()
         var recognizer = PanGestureRecognizer()
         var recognizerStartingPoint = NSPoint.zero
-        var label = "Label"
+        var label = Annotation.Label(title: "Label", color: .gray)
         var annotationView: AnnotationView? = nil
         
         var document: AnnotationDocument
+        
+        var isShowingGrid = false
+        var gridCellView: GridCellView?
         
         override func viewDidLoad() {
             super.viewDidLoad()
@@ -128,6 +132,12 @@ struct AnnotationView: NSViewRepresentable {
                 guard let view = self?.view else { return }
                 guard let label = self?.label else { return }
                 guard let undoManager = self?.undoManager else { return }
+                guard self?.recognizerView.frame.size.__isValid ?? false else {
+                    self?.recognizerView.frame = CGRect(origin: .zero, size: .zero)
+                    self?.recognizerView.removeFromSuperview()
+                    self?.recognizerStartingPoint = NSPoint.zero
+                    return
+                }
                 
                 undoManager.setActionName("Annotate")
                 undoManager.beginUndoGrouping()
@@ -150,6 +160,16 @@ struct AnnotationView: NSViewRepresentable {
             self.view = NSView()
             self.view.addGestureRecognizer(recognizer)
             self.view.addSubview(recognizerView)
+            
+            // Add your main content view
+            let mainContentView = NSView(frame: view.bounds)
+            mainContentView.wantsLayer = true
+            view.addSubview(mainContentView)
+            
+            // Create and add the grid cell view
+            gridCellView = GridCellView(frame: self.view.bounds)
+            gridCellView?.isHidden = true
+            mainContentView.addSubview(gridCellView!)
         }
         
         init(document: AnnotationDocument) {
@@ -161,17 +181,65 @@ struct AnnotationView: NSViewRepresentable {
             fatalError("init(coder:) has not been implemented")
         }
         
+        override func mouseMoved(with event: NSEvent) {
+            print("moved")
+            if isShowingGrid {
+                let mouseLocation = view.convert(event.locationInWindow, from: nil)
+                gridCellView?.frame.origin = mouseLocation
+            }
+        }
+        
+        override func mouseEntered(with event: NSEvent) {
+            isShowingGrid = true
+            gridCellView?.isHidden = false
+            mouseMoved(with: event)
+        }
+        
+        override func mouseExited(with event: NSEvent) {
+            isShowingGrid = false
+            gridCellView?.isHidden = true
+        }
+        
     }
 
 }
 
+
+class GridCellView: NSView {
+
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.green.setStroke()
+        let path = NSBezierPath()
+        path.move(to: NSPoint(x: 0, y: frame.height / 2))
+        path.line(to: NSPoint(x: frame.width, y: frame.height / 2))
+        path.lineWidth = 2
+        path.stroke()
+        
+        let path2 = NSBezierPath()
+        path2.move(to: NSPoint(x: frame.width / 2, y: 0))
+        path2.line(to: NSPoint(x: frame.width / 2, y: frame.height))
+        path2.lineWidth = 2
+        path2.stroke()
+    }
+    
+    
+}
+
+extension CGSize {
+    
+    var __isValid: Bool {
+        self.width > 10 && self.height > 10
+    }
+    
+}
+
 struct TextLabel: View {
-    @State var value: String
+    @State var label: Annotation.Label
     @State var size: CGSize
     
     var body: some View {
         HStack {
-            Text(value)
+            Text(label.title)
                 .multilineTextAlignment(.trailing)
                 .background {
                     Rectangle()

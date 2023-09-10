@@ -20,18 +20,21 @@ struct LabelList: View {
     @Environment(\.undoManager) var undoManager
     
     var body: some View {
-        List(document.annotations.labels, id: \.self) { label in
+        List(document.annotations.labels) { label in
             VStack {
                 HStack {
-                    Text(label)
+                    Text(label.title)
                         .font(.title)
+                        .foregroundStyle(label.color)
+                    
                     Image(systemName: "pencil")
                         .onTapGesture {
                             showLabelSheet = true
                         }
                         .sheet(isPresented: $showLabelSheet) {
-                            RenameLabelView(oldName: label)
+                            RenameLabelView(oldLabel: label)
                         }
+                    
                     Spacer()
                     Image(systemName: "trash")
                         .onTapGesture {
@@ -50,7 +53,7 @@ struct LabelList: View {
 struct LabelListItems: View {
     
     @EnvironmentObject var document: AnnotationDocument
-    @State var label: String
+    @State var label: Annotation.Label
     @Binding var showLabelList: Bool
     
     @State private var innerView: [InnerViewElement] = []
@@ -95,7 +98,8 @@ struct LabelListItems: View {
                         }
                     }
                     
-                    return await group.makeAsyncIterator().allObjects(reservingCapacity: labelsDictionary.count).compacted()
+                    var iterator = group.makeAsyncIterator()
+                    return await iterator.allObjects(reservingCapacity: labelsDictionary.count).compacted()
                 }
                 
                 Task { @MainActor in

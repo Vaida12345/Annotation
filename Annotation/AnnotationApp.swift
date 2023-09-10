@@ -48,12 +48,7 @@ struct AnnotationApp: App {
                             document.isImporting = true
                         }
                         
-                        let reporter = ProgressReporter(totalUnitCount: urls.count) { progress in
-                            Task { @MainActor in
-                                document.importingProgress = progress
-                            }
-                        }
-                        let newItems = await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: reporter)
+                        let newItems = try await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: document.importingProgress)
                         
                         let union = oldItems + newItems
                         Task { @MainActor in

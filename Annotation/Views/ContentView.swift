@@ -61,13 +61,12 @@ struct ContentView: View {
             ToolbarItem(placement: .navigation) {
                 Group {
                     if document.isExporting {
-                        ProgressView(value: document.exportingProgress)
-                            .progressViewStyle(.circular)
+                        ProgressView(document.exportingProgress)
                     } else if document.isImporting {
-                        ProgressView(value: document.importingProgress)
-                            .progressViewStyle(.circular)
+                        ProgressView(document.importingProgress)
                     }
                 }
+                .progressViewStyle(.simpleCircular)
                 .onTapGesture {
                     showPopover.toggle()
                 }
@@ -78,8 +77,9 @@ struct ContentView: View {
                             
                             Spacer()
                         }
+                        .padding(.bottom)
                         
-                        ProgressView(value: document.isImporting ? document.importingProgress : document.exportingProgress)
+                        ProgressView(document.isImporting ? document.importingProgress : document.exportingProgress)
                     }
                     .padding()
                     .frame(width: 300)
@@ -116,6 +116,9 @@ struct ContentView: View {
                 if document.leftSideBarSelectedItem.isEmpty {
                     ContainerView {
                         Text("Select an item or items to start")
+                            .foregroundStyle(.gray)
+                            .fontDesign(.rounded)
+                            .fontWeight(.heavy)
                     }
                 } else {
                     DetailView()
@@ -128,13 +131,7 @@ struct ContentView: View {
                         }
                         
                         let oldItems = await document.annotations
-                        
-                        let reporter = ProgressReporter(totalUnitCount: sources.count) { progress in
-                            Task { @MainActor in
-                                self.document.importingProgress = progress
-                            }
-                        }
-                        let newItems = await loadItems(from: sources, reporter: reporter)
+                        let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
                         
                         let union = oldItems + newItems
                         Task { @MainActor in

@@ -24,6 +24,7 @@
 		B45B52F4282A8C93007C8CCC /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F3282A8C93007C8CCC /* InfoView.swift */; };
 		B45B52F6282A8CA8007C8CCC /* LabelList.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F5282A8CA8007C8CCC /* LabelList.swift */; };
 		B45B52F8282A8CE9007C8CCC /* AutoAnnotateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */; };
+		B466771E2AADDE7A00648F04 /* ChangeLabelNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */; };
 		B47D623C298D532200F6025B /* AutoDetectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B47D623B298D532200F6025B /* AutoDetectView.swift */; };
 		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
 		B4C716FB2824D3CF00D19A9D /* Support in Frameworks */ = {isa = PBXBuildFile; productRef = B4C716FA2824D3CF00D19A9D /* Support */; };
@@ -50,6 +51,7 @@
 		B45B52F3282A8C93007C8CCC /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
 		B45B52F5282A8CA8007C8CCC /* LabelList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelList.swift; sourceTree = "<group>"; };
 		B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoAnnotateView.swift; sourceTree = "<group>"; };
+		B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeLabelNameView.swift; sourceTree = "<group>"; };
 		B47D623B298D532200F6025B /* AutoDetectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoDetectView.swift; sourceTree = "<group>"; };
 		B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Folder Icon.icns"; sourceTree = "<group>"; };
 		B4C716F92824D3CC00D19A9D /* DataBase */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DataBase; path = ../../Packages/DataBase; sourceTree = "<group>"; };
@@ -134,6 +136,7 @@
 				B416910A27B53B020029AB97 /* ContentView.swift */,
 				B45B52F5282A8CA8007C8CCC /* LabelList.swift */,
 				B41B36AF298A921D0075DADD /* RenameLabelView.swift */,
+				B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */,
 				B45B52EF282A8C4E007C8CCC /* SideBar.swift */,
 				B45B52F1282A8C7B007C8CCC /* DetailView.swift */,
 				B45B52F3282A8C93007C8CCC /* InfoView.swift */,
@@ -254,6 +257,7 @@
 				B45B52F2282A8C7B007C8CCC /* DetailView.swift in Sources */,
 				B45B52F8282A8CE9007C8CCC /* AutoAnnotateView.swift in Sources */,
 				B45B52F6282A8CA8007C8CCC /* LabelList.swift in Sources */,
+				B466771E2AADDE7A00648F04 /* ChangeLabelNameView.swift in Sources */,
 				B45B52F0282A8C4E007C8CCC /* SideBar.swift in Sources */,
 				B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */,
 				B416910B27B53B020029AB97 /* ContentView.swift in Sources */,
@@ -404,7 +408,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -436,7 +440,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";

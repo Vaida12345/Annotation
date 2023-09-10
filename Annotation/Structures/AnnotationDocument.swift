@@ -25,10 +25,10 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     // layout
     @Published var isExporting = false
-    @Published var exportingProgress = 0.0
+    @Published var exportingProgress = Progress()
     
     @Published var isImporting = false
-    @Published var importingProgress = 0.0
+    @Published var importingProgress = Progress()
     
     @Published var leftSideBarSelectedItem: Set<Annotation.ID> = []
     
@@ -45,7 +45,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         guard let mainWrapper = wrapper.fileWrappers?["annotations.json"] else { throw CocoaError(.fileReadCorruptFile) }
         guard let mediaFileWrapper = wrapper.fileWrappers?["Media"] else { throw CocoaError(.fileReadCorruptFile) }
         guard let data = mainWrapper.regularFileContents,
-              let document = try? JSONDecoder().decode([AnnotationExport].self, from: data)
+              let document = try? JSONDecoder().decode([_AnnotationImport].self, from: data)
         else {
             throw CocoaError(.fileReadCorruptFile)
         }
@@ -54,7 +54,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         guard let container = mediaFileWrapper.fileWrappers else { throw CocoaError(.fileReadCorruptFile) }
         
         self.annotations = document.concurrent.compactMap { documentItem in
-            guard let mediaItem = container["\(documentItem.id.description).png"] else { return nil }
+            guard let mediaItem = container["\(documentItem.id.description).heic"] else { return nil }
             guard let data = mediaItem.regularFileContents else { return nil }
             guard let image = NSImage(data: data) else { return nil }
             
@@ -80,27 +80,22 @@ final class AnnotationDocument: ReferenceFileDocument {
             self.isExporting = true
         }
         
-        let reporter = ProgressReporter(totalUnitCount: 1) { progress in
-            Task { @MainActor in
-                self.exportingProgress = progress
-            }
-        }
-        
+        let reporter = self.exportingProgress
         let data: Data
         
         if configuration.contentType == .annotationProject {
-            let annotationsExport: [AnnotationExport] = snapshot.concurrent.map {
-                AnnotationExport(id: $0.id, image: "Media/\($0.id).png", annotations: $0.annotations.map(\.export))
+            let annotationsImport: [_AnnotationImport] = snapshot.concurrent.map {
+                _AnnotationImport(id: $0.id, image: "Media/\($0.id).png", annotations: $0.annotations.map(\.import))
             }
             
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
-            data = try encoder.encode(annotationsExport)
+            data = try encoder.encode(annotationsImport)
         } else {
             // create AnnotationDocument.AnnotationExport
-            let annotationsExport: [AnnotationExportFolder] = snapshot.concurrent.compactMap {
+            let annotationsExport: [_AnnotationExportFolder] = snapshot.concurrent.compactMap {
                 guard !$0.annotations.isEmpty else { return nil }
-                return AnnotationExportFolder(image: "Media/\($0.id).png", annotations: $0.annotations.map(\.export))
+                return _AnnotationExportFolder(image: "Media/\($0.id).heic", annotations: $0.annotations.map(\.export))
             }
             
             let encoder = JSONEncoder()
@@ -119,7 +114,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             print("performing save with old data")
             
             let oldItems = Array(container.keys)
-            let newItems = snapshot.map{ $0.id.description + ".png" }
+            let newItems = snapshot.map{ $0.id.description + ".heic" }
             let commonItems = oldItems.intersection(newItems)
             
             var addedItems = newItems
@@ -132,7 +127,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             if removedItems.count <= addedItems.count || removedItems.count < commonItems.count {
                 mediaWrapper = FileWrapper(directoryWithFileWrappers: container)
                 
-                let childReporter = ProgressReporter(totalUnitCount: removedItems.count + addedItems.count, parent: reporter)
+                reporter.totalUnitCount = Int64(removedItems.count + addedItems.count)
                 
                 if !removedItems.isEmpty {
                     var index = 0
@@ -140,24 +135,20 @@ final class AnnotationDocument: ReferenceFileDocument {
                         guard let item = container.first(where: { $0.key == removedItems[index] }) else { index += 1; continue }
                         
                         mediaWrapper.removeFileWrapper(item.value)
-                        Task {
-                            await childReporter.advance()
-                        }
+                        Task { @MainActor in reporter.completedUnitCount += 1 }
                         
                         index += 1
                     }
                 }
                 
                 if !addedItems.isEmpty {
-                    let _newItems = snapshot.filter({ addedItems.contains($0.id.description + ".png" )})
+                    let _newItems = snapshot.filter({ addedItems.contains($0.id.description + ".heic" )})
                     let _newWrappers = _newItems.concurrent.map { item in
-                        let image = item.image.data(using: .png)!
+                        let image = item.image.data(using: .heic)!
                         let imageWrapper = FileWrapper(regularFileWithContents: image)
-                        imageWrapper.preferredFilename = "\(item.id).png"
+                        imageWrapper.preferredFilename = "\(item.id).heic"
                         
-                        Task {
-                            await childReporter.advance()
-                        }
+                        Task { @MainActor in reporter.completedUnitCount += 1 }
                         
                         return imageWrapper
                     }
@@ -168,16 +159,14 @@ final class AnnotationDocument: ReferenceFileDocument {
                 }
                 print("done")
             } else {
-                let childReporter = ProgressReporter(totalUnitCount: snapshot.count, parent: reporter)
+                reporter.totalUnitCount = Int64(snapshot.count)
                 
                 let _newWrappers = snapshot.concurrent.map { item in
-                    let image = item.image.data(using: .png)!
+                    let image = item.image.data(using: .heic)!
                     let imageWrapper = FileWrapper(regularFileWithContents: image)
-                    imageWrapper.preferredFilename = "\(item.id).png"
+                    imageWrapper.preferredFilename = "\(item.id).heic"
                     
-                    Task {
-                        await childReporter.advance()
-                    }
+                    Task { @MainActor in reporter.completedUnitCount += 1 }
                     
                     return imageWrapper
                 }
@@ -187,18 +176,16 @@ final class AnnotationDocument: ReferenceFileDocument {
                 }
             }
         } else {
+            reporter.totalUnitCount = Int64(snapshot.count)
             print("performing save without old data")
+            
             if configuration.contentType == .annotationProject {
-                let childReporter = ProgressReporter(totalUnitCount: snapshot.count, parent: reporter)
-                
                 let _newWrappers = snapshot.concurrent.map { item in
-                    let image = item.image.data(using: .png)!
+                    let image = item.image.data(using: .heic)!
                     let imageWrapper = FileWrapper(regularFileWithContents: image)
-                    imageWrapper.preferredFilename = "\(item.id).png"
+                    imageWrapper.preferredFilename = "\(item.id).heic"
                     
-                    Task {
-                        await childReporter.advance()
-                    }
+                    Task { @MainActor in reporter.completedUnitCount += 1 }
                     
                     return imageWrapper
                 }
@@ -208,16 +195,13 @@ final class AnnotationDocument: ReferenceFileDocument {
                 }
             } else {
                 let source = snapshot.filter { !$0.annotations.isEmpty }
-                let childReporter = ProgressReporter(totalUnitCount: source.count, parent: reporter)
                 
                 let _newWrappers = source.concurrent.map { item in
-                    let image = item.image.data(using: .png)!
+                    let image = item.image.data(using: .heic)!
                     let imageWrapper = FileWrapper(regularFileWithContents: image)
-                    imageWrapper.preferredFilename = "\(item.id).png"
+                    imageWrapper.preferredFilename = "\(item.id).heic"
                     
-                    Task {
-                        await childReporter.advance()
-                    }
+                    Task { @MainActor in reporter.completedUnitCount += 1 }
                     
                     return imageWrapper
                 }
@@ -239,7 +223,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         
     }
     
-    fileprivate struct AnnotationExport: Codable {
+    fileprivate struct _AnnotationImport: Codable {
         
         var id: UUID
         var image: String
@@ -247,10 +231,10 @@ final class AnnotationDocument: ReferenceFileDocument {
         
     }
     
-    fileprivate struct AnnotationExportFolder: Codable {
+    fileprivate struct _AnnotationExportFolder: Codable {
         
         var image: String
-        var annotations: [AnnotationImport.Annotations]
+        var annotations: [AnnotationExport.Annotations]
         
     }
 }
@@ -373,7 +357,7 @@ extension AnnotationDocument {
         }
     }
     
-    func remove(undoManager: UndoManager?, label: String) {
+    func remove(undoManager: UndoManager?, label: Annotation.Label) {
         undoManager?.setActionName("Remove \"\(label)\"")
         var indexes: [Int: [Int]] = [:] // [Annotation.Index: [Annotation.Annotations.Index]]
         indexes.reserveCapacity(annotations.count)
@@ -407,7 +391,7 @@ extension AnnotationDocument {
         }
     }
     
-    func rename(label oldName: String, with newName: String, undoManager: UndoManager?) {
+    func rename(label oldName: Annotation.Label, with newName: Annotation.Label, undoManager: UndoManager?) {
         undoManager?.setActionName("Rename \"\(oldName)\" with \"\(newName)\"")
         var indexes: [Int: [Int]] = [:] // [Annotation.Index: [Annotation.Annotations.Index]]
         indexes.reserveCapacity(annotations.count)
@@ -440,19 +424,19 @@ extension AnnotationDocument {
 }
 
 
-func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> [Annotation] {
+func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [Annotation] {
     
     var newItems: [Annotation] = []
+    reporter.totalUnitCount = Int64(sources.count)
     
     for source in sources {
-        
         guard let contentType = source.contentType else { continue }
         
         switch contentType {
         case .annotationProject, .folder:
             guard let file = try? AnnotationDocument(from: FileWrapper(url: source.url, options: [])) else { fallthrough }
             newItems.append(contentsOf: file.annotations)
-            await reporter.advance()
+            Task { @MainActor in reporter.completedUnitCount += 1 }
             
         case .folder:
             do {
@@ -461,19 +445,22 @@ func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> 
                 guard let value = mainWrapper.regularFileContents else { fallthrough }
                 let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: value)
                 
-                let childReporter = ProgressReporter(totalUnitCount: annotationImport.count, parent: reporter)
+                let childReporter = Progress(totalUnitCount: Int64(annotationImport.count), parent: reporter, pendingUnitCount: 1)
                 
                 let _newItems = await withTaskGroup(of: Annotation?.self) { group in
                     for item in annotationImport {
                         group.addTask {
                             guard let image = NSImage(at: source.with(subPath: item.image)) else { return nil }
                             let annotation = Annotation(image: image, annotations: item.annotations.map(\.annotations))
-                            await childReporter.advance()
+                            
+                            Task { @MainActor in childReporter.completedUnitCount += 1 }
+                            
                             return annotation
                         }
                     }
                     
-                    return await group.makeAsyncIterator().allObjects(reservingCapacity: annotationImport.count)
+                    var iterator = group.makeAsyncIterator()
+                    return await iterator.allObjects(reservingCapacity: annotationImport.count)
                 }
                 
                 newItems.append(contentsOf: _newItems.compacted())
@@ -483,44 +470,52 @@ func loadItems(from sources: [FinderItem], reporter: ProgressReporter) async -> 
             }
             
         case .folder:
-            guard let children = source.children(range: .enumeration) else { continue }
-            let childReporter = ProgressReporter(totalUnitCount: children.count, parent: reporter)
+            let children = try source.children(range: .enumeration)
+            
+            let childReporter = Progress(totalUnitCount: Int64(children.count), parent: reporter, pendingUnitCount: 1)
             
             let _newItems = await withTaskGroup(of: Annotation?.self) { group in
                 for child in children {
                     group.addTask {
                         guard let image = child.image else { return nil }
                         let annotation = Annotation(image: image)
-                        await childReporter.advance()
+                        
+                        Task { @MainActor in childReporter.completedUnitCount += 1 }
+                        
                         return annotation
                     }
                 }
                 
-                return await group.makeAsyncIterator().allObjects(reservingCapacity: children.count).compacted()
+                var iterator = group.makeAsyncIterator()
+                return await iterator.allObjects(reservingCapacity: children.count)
             }
             
-            newItems.append(contentsOf: _newItems)
+            newItems.append(contentsOf: _newItems.filter { $0 != nil }.map { $0! })
             
         case .quickTimeMovie, .movie, .video, UTType("com.apple.m4v-video"):
             guard let asset = AVAsset(at: source) else { fallthrough }
             guard let frameCount = asset.framesCount else { fallthrough }
-            let childReporter = ProgressReporter(totalUnitCount: frameCount, parent: reporter)
             
+            let childReporter = Progress(totalUnitCount: Int64(frameCount), parent: reporter, pendingUnitCount: 1)
             
-            guard let frames = try? await asset.getFrames(onProgressChanged: { _ in
-                Task {
-                    await childReporter.advance()
+            let frames = try await asset.generateFramesStream()
+                .stream
+                .map {
+                    defer { Task { @MainActor in childReporter.completedUnitCount += 1 } }
+                    return Annotation(id: UUID(), image: NativeImage(cgImage: $0.image), annotations: [])
                 }
-            }) else { continue }
-            newItems.append(contentsOf: frames.map{ Annotation(id: UUID(), image: NativeImage(cgImage: $0), annotations: []) })
+                .sequence
+            
+            newItems.append(contentsOf: frames)
             
         default:
             guard let image = source.image else { continue }
             newItems.append(Annotation(id: UUID(), image: image, annotations: []))
+            Task { @MainActor in reporter.completedUnitCount += 1 }
         }
     }
     
-    await reporter.complete()
+    reporter.completedUnitCount = reporter.totalUnitCount
     return newItems
 }
 
@@ -532,11 +527,55 @@ struct AnnotationImport: Codable {
     
     struct Annotations: Equatable, Hashable, Encodable, Decodable {
         
+        internal init(label: String, color: Color, coordinates: AnnotationImport.Annotations.Coordinate) {
+            self.label = label
+            self.color = color
+            self.coordinates = coordinates
+        }
+        
+        
+        var label: String
+        var color: Color
+        var coordinates: Coordinate
+        
+        var annotations: Annotation.Annotations {
+            return Annotation.Annotations(label: .init(title: label, color: color), coordinates: Annotation.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
+        }
+        
+        
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.label = try container.decode(String.self, forKey: .label)
+            self.color = try container.decodeIfPresent(Color.self, forKey: .color) ?? .green
+            self.coordinates = try container.decode(Coordinate.self, forKey: .coordinates)
+        }
+        
+        struct Coordinate: Equatable, Hashable, Encodable, Decodable {
+            
+            var x: Double
+            var y: Double
+            var width: Double
+            var height: Double
+            
+        }
+    }
+    
+}
+
+
+struct AnnotationExport: Codable {
+    
+    let image: String
+    let annotations: [Annotations]
+    
+    struct Annotations: Equatable, Hashable, Encodable, Decodable {
+        
         var label: String
         var coordinates: Coordinate
         
         var annotations: Annotation.Annotations {
-            return Annotation.Annotations(label: label, coordinates: Annotation.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
+            return Annotation.Annotations(label: .init(title: label, color: .yellow), coordinates: Annotation.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
         }
         
         struct Coordinate: Equatable, Hashable, Encodable, Decodable {

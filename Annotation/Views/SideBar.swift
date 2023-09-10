@@ -50,7 +50,7 @@ struct SideBar: View {
                                 }
                                 
                                 ForEach(document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) }).labels, id: \.self) { item in
-                                    Button(item) {
+                                    Button(item.title) {
                                         undoManager?.setActionName("Remove annotation \"\(item)\"")
                                         document.apply(undoManager: undoManager) {
                                             for i in document.leftSideBarSelectedItem {
@@ -58,6 +58,7 @@ struct SideBar: View {
                                             }
                                         }
                                     }
+                                    .foregroundStyle(item.color)
                                 }
                             } label: {
                                 Text("Remove annotations")
@@ -99,13 +100,7 @@ struct SideBar: View {
                         self.document.isImporting = true
                     }
                     let oldItems = await document.annotations
-                    
-                    let reporter = ProgressReporter(totalUnitCount: sources.count) { progress in
-                        Task { @MainActor in
-                            self.document.importingProgress = progress
-                        }
-                    }
-                    let newItems = await loadItems(from: sources, reporter: reporter)
+                    let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
                     
                     let union = oldItems + newItems
                     Task { @MainActor in
@@ -128,12 +123,7 @@ struct SideBar: View {
                         self.document.isImporting = true
                     }
                     
-                    let reporter = ProgressReporter(totalUnitCount: urls.count) { progress in
-                        Task { @MainActor in
-                            self.document.importingProgress = progress
-                        }
-                    }
-                    let newItems = await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: reporter)
+                    let newItems = try await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: self.document.importingProgress)
                     
                     let union = oldItems + newItems
                     Task { @MainActor in

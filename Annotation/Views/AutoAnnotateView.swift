@@ -78,7 +78,7 @@ struct AutoAnnotateView: View {
                 let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
                     guard let label = item.labels.first?.identifier else { return nil }
                     let coordinate = Annotation.Annotations.Coordinate(from: item, in: _document.annotations[i].image)
-                    return Annotation.Annotations.init(label: label, coordinates: coordinate)
+                    return Annotation.Annotations.init(label: .init(title: label, color: .yellow), coordinates: coordinate)
                 }
                 
                 Task { @MainActor in

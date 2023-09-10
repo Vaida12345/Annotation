@@ -16,7 +16,7 @@ struct DetailView: View {
     
     // layout
     @State var showLabelSheet = false
-    @State var currentLabel: String = "New Label"
+    @State var currentLabel = Annotation.Label(title: "New Label", color: .gray)
     
     @Environment(\.undoManager) var undoManager
     
@@ -29,16 +29,23 @@ struct DetailView: View {
                     VStack {
                         Menu {
                             ForEach(document.annotations.labels, id: \.self) { label in
-                                Button(label) {
+                                Button {
                                     currentLabel = label
+                                } label: {
+                                    Text(label.title)
+                                        .foregroundStyle(label.color)
                                 }
                             }
+                            
+                            Divider()
+                            
                             Button("New...") {
-                                currentLabel = "New Label"
+                                currentLabel = .init(title: "New Label", color: .green)
                                 showLabelSheet = true
                             }
                         } label: {
-                            Text(currentLabel)
+                            Text(currentLabel.title)
+                                .foregroundStyle(currentLabel.color)
                         }
                         .background(RoundedRectangle(cornerRadius: 5).fill(.ultraThinMaterial))
                         .frame(width: 100, height: 20)
@@ -53,15 +60,10 @@ struct DetailView: View {
         }
         .sheet(isPresented: $showLabelSheet) {
             VStack {
-                HStack {
-                    Text("Name for label: ")
-                    
-                    Spacer()
+                ChangeLabelNameView(label: $currentLabel) {
+                    showLabelSheet = false
                 }
-                TextField("Name for label", text: $currentLabel)
-                    .onSubmit {
-                        showLabelSheet = false
-                    }
+                
                 HStack {
                     Spacer()
                     

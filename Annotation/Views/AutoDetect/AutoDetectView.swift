@@ -29,39 +29,40 @@ struct AutoDetectView: View {
         HStack {
             VStack {
                 if !rawImages.isEmpty {
-                    GalleryView(rowCount: 4, data: rawImages) { image in
-                        Image(nativeImage: image.image)
-                            .cornerRadius(10)
-                            .aspectRatio(weight: (image.image.pixelSize?.height ?? 1) / (image.image.pixelSize?.width ?? 1))
+                    GalleryView(itemsPerRow: 4) {
+                        ForEach(rawImages) { image in
+                            Image(nativeImage: image.image)
+                                .cornerRadius(10)
+                        }
                     }
                     .padding()
                 }
             }
             .frame(width: 600, height: 400)
             .background(BlurredEffectView())
-            
+
             VStack {
                 Picker("Option", selection: $detectOption)
                     .disabled(detectProgress != .initial)
-                
+
                 Text(self.detectOption.description)
                     .font(.callout)
                     .foregroundColor(.secondary)
-                
+
                 Spacer()
-                
+
                 HStack() {
                     Button("Discard") {
                         dismiss()
                     }
-                    
+
                     Spacer()
-                    
+
                     if detectProgress == .applyingML {
                         ProgressView()
                             .progressViewStyle(.circular)
                     }
-                    
+
                     Button {
                         switch detectProgress {
                         case .initial:
@@ -70,42 +71,45 @@ struct AutoDetectView: View {
                                 do {
                                     let annotations = try await autoDetectDocument.applyML(option: option)
                                     guard !annotations.isEmpty else { throw ErrorManager("Cannot find any matching result") }
-                                    
+
                                     let __croppedImages = await withTaskGroup(of: RawImage?.self) { group in
                                         for annotation in annotations {
                                             let image = annotation.image
-                                            
+
                                             for _annotation in annotation.annotations {
                                                 group.addTask {
                                                     guard let _image = trimImage(from: image, at: _annotation.coordinate),
                                                           let cgImage = _image.cgImage,
                                                           let _cgImage = cgImage.resized(to: cgImage.size.aspectRatio(extend: .width, to: 140)) else { return nil }
-                                                    
+
                                                     return RawImage(annotationID: annotation.id, annotationsID: _annotation.id, image: NativeImage(cgImage: _cgImage))
                                                 }
                                             }
                                         }
-                                        
-                                        return await group.makeAsyncIterator().allObjects(reservingCapacity: annotations.count).compacted()
+
+                                        var iterator = group.makeAsyncIterator()
+                                        return await iterator.allObjects(reservingCapacity: annotations.count).compacted()
                                     }
-                                    
+
                                     Task { @MainActor in
                                         autoDetectDocument.annotations = annotations
-                                        
+
                                         self.rawImages = __croppedImages
                                         self.detectProgress = .waitForSelection
-                                        
+
                                         print("returned")
                                     }
                                 } catch {
                                     Task { @MainActor in
-                                        self.alertManager = AlertManager(error: error, defaultAction: {
-                                            await dismiss()
+                                        self.alertManager = AlertManager(error: error, actions: {
+                                            Button("dismiss") {
+                                                dismiss()
+                                            }
                                         })
                                     }
                                 }
                             }
-                            
+
                             detectProgress = .applyingML
                         default:
                             break
@@ -244,7 +248,7 @@ final class AutoDetectDocument: ObservableObject {
                     return Annotation.Annotations.Coordinate(center: CGPoint(x: rect.center.x, y: image.size.height - rect.center.y), size: rect.size)
                 }
                 
-                result.append(AnnotationDocument.Snapshot.Element(id: annotation.id, image: annotation.image, annotations: coordinates.map { Annotation.Annotations(label: UUID().uuidString, coordinates: $0) }))
+                result.append(AnnotationDocument.Snapshot.Element(id: annotation.id, image: annotation.image, annotations: coordinates.map { Annotation.Annotations(label: .init(title: UUID().uuidString, color: .green), coordinates: $0) }))
             }
         }
         

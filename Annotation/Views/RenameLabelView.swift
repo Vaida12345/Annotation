@@ -11,24 +11,23 @@ import SwiftUI
 
 struct RenameLabelView: View {
     
-    let oldName: String
-    @State var newLabel: String = ""
+    let oldLabel: Annotation.Label
+    @State var newLabel = Annotation.Label(title: "", color: .green)
     
     @Environment(\.undoManager) var undoManager
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var document: AnnotationDocument
     
     var body: some View {
-        VStack {
-            HStack {
-                Text("Name for label: ")
-                
-                Spacer()
+        VStack(alignment: .leading) {
+            Text("Rename label of \(oldLabel.title)")
+                .font(.title2)
+                .bold()
+            
+            ChangeLabelNameView(label: $newLabel) {
+                applyAndDismiss()
             }
-            TextField(oldName, text: $newLabel)
-                .onSubmit {
-                    applyAndDismiss()
-                }
+            
             HStack {
                 Spacer()
                 
@@ -37,16 +36,16 @@ struct RenameLabelView: View {
                 }
                 .keyboardShortcut(.defaultAction)
             }
-            .frame(width: 400)
         }
         .padding()
         .onAppear {
-            newLabel = oldName
+            newLabel = oldLabel
         }
+        .frame(width: 400)
     }
     
     func applyAndDismiss() {
-        document.rename(label: oldName, with: newLabel, undoManager: undoManager)
+        document.rename(label: oldLabel, with: newLabel, undoManager: undoManager)
         
         dismiss()
     }
