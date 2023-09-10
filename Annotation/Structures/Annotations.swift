@@ -23,38 +23,21 @@ struct Annotation: Equatable, Hashable, Identifiable {
         self.annotations = annotations
     }
     
-    
-    struct Label: Codable, Hashable, Identifiable {
-        
-        var title: String
-        
-        var color: Color
-        
-        var id: String {
-            title
-        }
-        
-    }
-    
     struct Annotations: Equatable, Hashable, Encodable, Decodable, Identifiable {
         
         let id: UUID
-        var label: Label
+        var label: String
         var hidden = false
         let coordinate: Coordinate
         
-        init(label: Label, coordinates: Coordinate) {
+        init(label: String, coordinates: Coordinate) {
             self.id = UUID()
             self.label = label
             self.coordinate = coordinates
         }
         
         var export: AnnotationExport.Annotations {
-            return .init(label: label.title, coordinates: AnnotationExport.Annotations.Coordinate(x: coordinate.x, y: coordinate.y, width: coordinate.width, height: coordinate.height))
-        }
-        
-        var `import`: AnnotationImport.Annotations {
-            return .init(label: label.title, color: label.color, coordinates: AnnotationImport.Annotations.Coordinate(x: coordinate.x, y: coordinate.y, width: coordinate.width, height: coordinate.height))
+            return .init(label: label, coordinates: coordinate)
         }
         
         /// Coordinate relative to image, origin at center, coordinate zero at bottom-left.
@@ -213,12 +196,12 @@ extension CGRect {
 
 extension Array where Element == Annotation {
     
-    var labels: [Annotation.Label] {
+    var __labels: [String] {
         self.flatMap { $0.annotations.map(\.label) }.unique()
     }
     
-    var labelDictionary: [Annotation.Label: Array<LabelDictionaryValue>] {
-        var dictionary: [Annotation.Label: Array<LabelDictionaryValue>] = [:]
+    var labelDictionary: [String: Array<LabelDictionaryValue>] {
+        var dictionary: [String: Array<LabelDictionaryValue>] = [:]
         dictionary.reserveCapacity(self.map(\.annotations.count).sum())
         
         for i in self {

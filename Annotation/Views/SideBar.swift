@@ -49,8 +49,8 @@ struct SideBar: View {
                                     }
                                 }
                                 
-                                ForEach(document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) }).labels, id: \.self) { item in
-                                    Button(item.title) {
+                                ForEach(document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) }).__labels, id: \.self) { item in
+                                    Button(item) {
                                         undoManager?.setActionName("Remove annotation \"\(item)\"")
                                         document.apply(undoManager: undoManager) {
                                             for i in document.leftSideBarSelectedItem {
@@ -58,7 +58,6 @@ struct SideBar: View {
                                             }
                                         }
                                     }
-                                    .foregroundStyle(item.color)
                                 }
                             } label: {
                                 Text("Remove annotations")

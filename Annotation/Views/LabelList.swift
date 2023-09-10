@@ -20,7 +20,7 @@ struct LabelList: View {
     @Environment(\.undoManager) var undoManager
     
     var body: some View {
-        List(document.annotations.labels) { label in
+        List(Array(document.labels)) { label in
             VStack {
                 HStack {
                     Text(label.title)
@@ -53,7 +53,7 @@ struct LabelList: View {
 struct LabelListItems: View {
     
     @EnvironmentObject var document: AnnotationDocument
-    @State var label: Annotation.Label
+    @State var label: AnnotationDocument.Label
     @Binding var showLabelList: Bool
     
     @State private var innerView: [InnerViewElement] = []
@@ -82,7 +82,7 @@ struct LabelListItems: View {
         .frame(height: LabelListItems.height)
         .task {
             Task.detached { @Sendable in
-                guard let labelsDictionary = await document.annotations.labelDictionary[label] else { return }
+                guard let labelsDictionary = await document.annotations.labelDictionary[label.title] else { return }
                 
                 let _innerView = await withTaskGroup(of: InnerViewElement?.self) { group in
                     for item in labelsDictionary {

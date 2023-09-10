@@ -30,7 +30,7 @@ struct InfoViewItem: View {
     
     @State var onEdit = false
     @State var showLabelSheet = false
-    @State var newLabel = Annotation.Label(title: "", color: .green)
+    @State var newLabel = AnnotationDocument.Label(title: "", color: .green)
     
     @Environment(\.undoManager) var undoManager
     
@@ -43,16 +43,16 @@ struct InfoViewItem: View {
             
             VStack(alignment: .trailing) {
                 if !onEdit {
-                    Text(item.label.title)
+                    Text(item.label)
                         .font(.title3)
-                        .foregroundStyle(item.hidden ? .secondary : item.label.color)
+                        .foregroundStyle(item.hidden ? .secondary : document.labels.first(where: { $0.title == item.label })?.color ?? .primary)
                 } else {
                     Menu {
-                        ForEach(document.annotations.labels, id: \.self) { label in
+                        ForEach(Array(document.labels), id: \.self) { label in
                             Button(label.title) {
-                                undoManager?.setActionName("Rename to \"\(label)\"")
+                                undoManager?.setActionName("Change label to \"\(label)\"")
                                 document.apply(undoManager: undoManager) {
-                                    item.label = label
+                                    item.label = label.title
                                 }
                             }
                             .foregroundStyle(label.color)
@@ -64,8 +64,7 @@ struct InfoViewItem: View {
                             showLabelSheet = true
                         }
                     } label: {
-                        Text(item.label.title)
-                            .foregroundStyle(item.label.color)
+                        Text(item.label)
                     }
                     
                 }
@@ -102,31 +101,12 @@ struct InfoViewItem: View {
             }
         }
         .sheet(isPresented: $showLabelSheet) {
-            VStack {
-                ChangeLabelNameView(label: $newLabel) {
-                    undoManager?.setActionName("Rename to \"\(newLabel)\"")
-                    document.apply(undoManager: undoManager) {
-                        item.label = newLabel
-                        showLabelSheet = false
-                    }
-                }
-                .onAppear {
-                    newLabel = item.label
-                }
-                
-                HStack {
-                    Spacer()
-                    
-                    Button("Done") {
-                        undoManager?.setActionName("Rename to \"\(newLabel)\"")
-                        document.apply(undoManager: undoManager) {
-                            item.label = newLabel
-                            showLabelSheet = false
-                        }
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .frame(width: 400)
+            ChangeLabelNameView(label: $newLabel) {
+                undoManager?.setActionName("Rename to \"\(newLabel)\"")
+                document.rename(label: item.label, with: newLabel.title, undoManager: undoManager)
+            }
+            .onAppear {
+                newLabel = .init(title: item.label, color: document.labels.first(where: { $0.title == item.label })?.color ?? .primary)
             }
             .padding()
         }

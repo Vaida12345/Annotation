@@ -23,6 +23,8 @@ final class AnnotationDocument: ReferenceFileDocument {
     // core
     @Published var annotations: [Annotation]
     
+    @Published var labels: Set<Label>
+    
     // layout
     @Published var isExporting = false
     @Published var exportingProgress = Progress()
@@ -34,8 +36,9 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     @Published var scrollProxy: ScrollViewProxy? = nil
 
-    init(annotations: [Annotation] = []) {
+    init(annotations: [Annotation] = [], labels: Set<Label> = []) {
         self.annotations = annotations
+        self.labels = labels
     }
 
     static nonisolated var readableContentTypes: [UTType] { [.annotationProject] }
@@ -53,14 +56,21 @@ final class AnnotationDocument: ReferenceFileDocument {
         // create Annotation
         guard let container = mediaFileWrapper.fileWrappers else { throw CocoaError(.fileReadCorruptFile) }
         
-        self.annotations = document.concurrent.compactMap { documentItem in
+        let annotations: [Annotation] = document.concurrent.compactMap { documentItem in
             guard let mediaItem = container["\(documentItem.id.description).heic"] else { return nil }
             guard let data = mediaItem.regularFileContents else { return nil }
             guard let image = NSImage(data: data) else { return nil }
             
             return Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations.map(\.annotations))
         }
-        print("import: finished")
+        self.annotations = annotations
+        
+        if let labelsWrapper = wrapper.fileWrappers?["labels.plist"] {
+            guard let data = labelsWrapper.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }
+            self.labels = try .init(data: data, format: .plist)
+        } else {
+            self.labels = Set(Set(annotations.flatMap({ $0.annotations.map(\.label) })).map({ Label(title: $0, color: .green) }))
+        }
     }
 
     convenience init(configuration: ReadConfiguration) throws {
@@ -85,7 +95,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         
         if configuration.contentType == .annotationProject {
             let annotationsImport: [_AnnotationImport] = snapshot.concurrent.map {
-                _AnnotationImport(id: $0.id, image: "Media/\($0.id).png", annotations: $0.annotations.map(\.import))
+                _AnnotationImport(id: $0.id, image: "Media/\($0.id).heic", annotations: $0.annotations.map(\.export))
             }
             
             let encoder = JSONEncoder()
@@ -227,7 +237,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         
         var id: UUID
         var image: String
-        var annotations: [AnnotationImport.Annotations]
+        var annotations: [AnnotationExport.Annotations]
         
     }
     
@@ -235,6 +245,21 @@ final class AnnotationDocument: ReferenceFileDocument {
         
         var image: String
         var annotations: [AnnotationExport.Annotations]
+        
+    }
+    
+    struct Label: Codable, Identifiable, Hashable {
+        
+        var title: String
+        
+        var color: Color
+        
+        
+        var id: String { title }
+        
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(self.title)
+        }
         
     }
 }
@@ -357,13 +382,13 @@ extension AnnotationDocument {
         }
     }
     
-    func remove(undoManager: UndoManager?, label: Annotation.Label) {
+    func remove(undoManager: UndoManager?, label: Label) {
         undoManager?.setActionName("Remove \"\(label)\"")
         var indexes: [Int: [Int]] = [:] // [Annotation.Index: [Annotation.Annotations.Index]]
         indexes.reserveCapacity(annotations.count)
         
         for annotation in self.annotations.enumerated() {
-            let list = annotation.element.annotations.indexes { $0.label == label }
+            let list = annotation.element.annotations.indexes { $0.label == label.title }
             indexes[annotation.offset] = list
         }
         
@@ -380,10 +405,13 @@ extension AnnotationDocument {
             values[key] = list
         }
         
+        self.labels.remove(label)
+        
         undoManager?.registerUndo(withTarget: self) { document in
             for (key, value) in values {
                 document.annotations[key].annotations.append(contentsOf: value)
             }
+            self.labels.insert(label)
             
             undoManager?.registerUndo(withTarget: self) { document in
                 document.remove(undoManager: undoManager, label: label)
@@ -391,7 +419,20 @@ extension AnnotationDocument {
         }
     }
     
-    func rename(label oldName: Annotation.Label, with newName: Annotation.Label, undoManager: UndoManager?) {
+    func replaceColor(label: String, with color: Color, undoManager: UndoManager?) {
+        guard let firstIndex = self.labels.firstIndex(where: { $0.title == label }) else { return }
+        
+        undoManager?.setActionName("Set color for \(label)")
+        
+        let removed = self.labels.remove(at: firstIndex)
+        self.labels.insert(Label(title: label, color: color))
+        
+        undoManager?.registerUndo(withTarget: self) { document in
+            self.replaceColor(label: label, with: removed.color, undoManager: undoManager)
+        }
+    }
+    
+    func rename(label oldName: String, with newName: String, undoManager: UndoManager?) {
         undoManager?.setActionName("Rename \"\(oldName)\" with \"\(newName)\"")
         var indexes: [Int: [Int]] = [:] // [Annotation.Index: [Annotation.Annotations.Index]]
         indexes.reserveCapacity(annotations.count)
@@ -407,6 +448,10 @@ extension AnnotationDocument {
             }
         }
         
+        guard let firstIndex = self.labels.firstIndex(where: { $0.title == oldName }) else { return }
+        let removed = self.labels.remove(at: firstIndex)
+        self.labels.insert(Label(title: newName, color: removed.color))
+        
         
         undoManager?.registerUndo(withTarget: self) { document in
             for (key, value) in indexes {
@@ -414,6 +459,9 @@ extension AnnotationDocument {
                     document.annotations[key].annotations[_value].label = oldName
                 }
             }
+            
+            self.labels.remove(Label(title: newName, color: removed.color))
+            self.labels.insert(Label(title: oldName, color: removed.color))
             
             undoManager?.registerUndo(withTarget: self) { document in
                 document.rename(label: oldName, with: newName, undoManager: undoManager)
@@ -443,7 +491,7 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
                 let wrapper = try FileWrapper(url: source.url, options: [])
                 guard let mainWrapper = wrapper.fileWrappers?["annotations.json"] else { fallthrough }
                 guard let value = mainWrapper.regularFileContents else { fallthrough }
-                let annotationImport = try JSONDecoder().decode([AnnotationImport].self, from: value)
+                let annotationImport = try JSONDecoder().decode([AnnotationExport].self, from: value)
                 
                 let childReporter = Progress(totalUnitCount: Int64(annotationImport.count), parent: reporter, pendingUnitCount: 1)
                 
@@ -520,50 +568,6 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
 }
 
 
-struct AnnotationImport: Codable {
-    
-    let image: String
-    let annotations: [Annotations]
-    
-    struct Annotations: Equatable, Hashable, Encodable, Decodable {
-        
-        internal init(label: String, color: Color, coordinates: AnnotationImport.Annotations.Coordinate) {
-            self.label = label
-            self.color = color
-            self.coordinates = coordinates
-        }
-        
-        
-        var label: String
-        var color: Color
-        var coordinates: Coordinate
-        
-        var annotations: Annotation.Annotations {
-            return Annotation.Annotations(label: .init(title: label, color: color), coordinates: Annotation.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
-        }
-        
-        
-        
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.label = try container.decode(String.self, forKey: .label)
-            self.color = try container.decodeIfPresent(Color.self, forKey: .color) ?? .green
-            self.coordinates = try container.decode(Coordinate.self, forKey: .coordinates)
-        }
-        
-        struct Coordinate: Equatable, Hashable, Encodable, Decodable {
-            
-            var x: Double
-            var y: Double
-            var width: Double
-            var height: Double
-            
-        }
-    }
-    
-}
-
-
 struct AnnotationExport: Codable {
     
     let image: String
@@ -572,19 +576,10 @@ struct AnnotationExport: Codable {
     struct Annotations: Equatable, Hashable, Encodable, Decodable {
         
         var label: String
-        var coordinates: Coordinate
+        var coordinates: Annotation.Annotations.Coordinate
         
         var annotations: Annotation.Annotations {
-            return Annotation.Annotations(label: .init(title: label, color: .yellow), coordinates: Annotation.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
-        }
-        
-        struct Coordinate: Equatable, Hashable, Encodable, Decodable {
-            
-            var x: Double
-            var y: Double
-            var width: Double
-            var height: Double
-            
+            return Annotation.Annotations(label: label, coordinates: coordinates)
         }
     }
     

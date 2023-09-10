@@ -248,7 +248,7 @@ final class AutoDetectDocument: ObservableObject {
                     return Annotation.Annotations.Coordinate(center: CGPoint(x: rect.center.x, y: image.size.height - rect.center.y), size: rect.size)
                 }
                 
-                result.append(AnnotationDocument.Snapshot.Element(id: annotation.id, image: annotation.image, annotations: coordinates.map { Annotation.Annotations(label: .init(title: UUID().uuidString, color: .green), coordinates: $0) }))
+                result.append(AnnotationDocument.Snapshot.Element(id: annotation.id, image: annotation.image, annotations: coordinates.map { Annotation.Annotations(label: UUID().uuidString, coordinates: $0) }))
             }
         }
         

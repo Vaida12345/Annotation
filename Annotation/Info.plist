@@ -6,7 +6,7 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>CreateML Annotation Project</string>
+			<string>Annotation Project</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
@@ -27,7 +27,7 @@
 				<string>com.apple.package</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>CreateML Annotation Project</string>
+			<string>Annotation Project</string>
 			<key>UTTypeIconFile</key>
 			<string>icon</string>
 			<key>UTTypeIcons</key>

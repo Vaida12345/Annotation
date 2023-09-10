@@ -16,19 +16,19 @@ struct DetailView: View {
     
     // layout
     @State var showLabelSheet = false
-    @State var currentLabel = Annotation.Label(title: "New Label", color: .gray)
+    @State var currentLabel = AnnotationDocument.Label(title: "New Label", color: .gray)
     
     @Environment(\.undoManager) var undoManager
     
     var body: some View {
         GeometryReader { reader in
             ZStack {
-                AnnotationView(label: $currentLabel, size: reader.size)
+                AnnotationView(label: currentLabel.title, size: reader.size)
                 
                 HStack {
                     VStack {
                         Menu {
-                            ForEach(document.annotations.labels, id: \.self) { label in
+                            ForEach(Array(document.labels), id: \.self) { label in
                                 Button {
                                     currentLabel = label
                                 } label: {
@@ -59,20 +59,8 @@ struct DetailView: View {
             }
         }
         .sheet(isPresented: $showLabelSheet) {
-            VStack {
-                ChangeLabelNameView(label: $currentLabel) {
-                    showLabelSheet = false
-                }
-                
-                HStack {
-                    Spacer()
-                    
-                    Button("Done") {
-                        showLabelSheet = false
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .frame(width: 400)
+            ChangeLabelNameView(label: $currentLabel) {
+                showLabelSheet = false
             }
             .padding()
         }

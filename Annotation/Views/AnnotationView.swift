@@ -16,7 +16,7 @@ struct AnnotationView: NSViewRepresentable {
 
     // core
     /// The current label used
-    @Binding var label: Annotation.Label
+    let label: String
     
     // layout
     let size: CGSize
@@ -88,7 +88,7 @@ struct AnnotationView: NSViewRepresentable {
         let view = NSView(frame: rect)
         let layer = CALayer()
         layer.borderWidth = 2
-        layer.borderColor = annotation.label.color.cgColor ?? NSColor.green.cgColor
+        layer.borderColor = document.labels.first(where: { $0.title == annotation.label })?.color.cgColor ?? NSColor.green.cgColor
         view.layer = layer
         image.addSubview(view)
         
@@ -103,7 +103,7 @@ struct AnnotationView: NSViewRepresentable {
         var recognizerView = NSView()
         var recognizer = PanGestureRecognizer()
         var recognizerStartingPoint = NSPoint.zero
-        var label = Annotation.Label(title: "Label", color: .gray)
+        var label: String = ""
         var annotationView: AnnotationView? = nil
         
         var document: AnnotationDocument
@@ -149,6 +149,10 @@ struct AnnotationView: NSViewRepresentable {
                     let annotation = Annotation.Annotations(label: label, coordinates: coordinate)
                     
                     document.appendAnnotations(undoManager: undoManager, annotationID: item, item: annotation)
+                    
+                    if label == "New Label" {
+                        document.labels.insert(AnnotationDocument.Label(title: label, color: .green))
+                    }
                 }
                 
                 undoManager.endUndoGrouping()
@@ -234,12 +238,12 @@ extension CGSize {
 }
 
 struct TextLabel: View {
-    @State var label: Annotation.Label
-    @State var size: CGSize
+    let label: String
+    let size: CGSize
     
     var body: some View {
         HStack {
-            Text(label.title)
+            Text(label)
                 .multilineTextAlignment(.trailing)
                 .background {
                     Rectangle()
