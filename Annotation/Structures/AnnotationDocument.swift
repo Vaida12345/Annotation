@@ -93,6 +93,8 @@ final class AnnotationDocument: ReferenceFileDocument {
         let reporter = self.exportingProgress
         let data: Data
         
+        let wrapper = FileWrapper(directoryWithFileWrappers: [:])
+        
         if configuration.contentType == .annotationProject {
             let annotationsImport: [_AnnotationImport] = snapshot.concurrent.map {
                 _AnnotationImport(id: $0.id, image: "Media/\($0.id).heic", annotations: $0.annotations.map(\.export))
@@ -101,6 +103,10 @@ final class AnnotationDocument: ReferenceFileDocument {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
             data = try encoder.encode(annotationsImport)
+            
+            let labelsWrapper = try FileWrapper(regularFileWithContents: labels.data(using: .plist))
+            labelsWrapper.preferredFilename = "labels.plist"
+            wrapper.addFileWrapper(labelsWrapper)
         } else {
             // create AnnotationDocument.AnnotationExport
             let annotationsExport: [_AnnotationExportFolder] = snapshot.concurrent.compactMap {
@@ -113,7 +119,6 @@ final class AnnotationDocument: ReferenceFileDocument {
             data = try encoder.encode(annotationsExport)
         }
         
-        let wrapper = FileWrapper(directoryWithFileWrappers: [:])
         let mainWrapper = FileWrapper(regularFileWithContents: data)
         mainWrapper.preferredFilename = "annotations.json"
         wrapper.addFileWrapper(mainWrapper)
