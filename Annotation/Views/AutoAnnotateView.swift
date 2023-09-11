@@ -72,7 +72,7 @@ struct AutoAnnotateView: View {
         Task.detached {
             for i in 0..<_document.annotations.count {
                 guard let result = await applyObjectDetectionML(to: _document.annotations[i].image, model: model) else {
-                    Task { @MainActor in document.leftSideBarSelectedItem = [document.annotations[i].id] }
+                    Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
                     continue
                 }
                 let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
@@ -84,7 +84,7 @@ struct AutoAnnotateView: View {
                 Task { @MainActor in
                     document.annotations[i].annotations.append(contentsOf: annotations)
                     
-                    document.leftSideBarSelectedItem = [document.annotations[i].id]
+                    document.selectedItems = [document.annotations[i].id]
                     document.scrollProxy?.scrollTo(document.annotations[i].id)
                 }
             }

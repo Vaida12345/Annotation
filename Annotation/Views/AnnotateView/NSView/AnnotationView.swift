@@ -16,7 +16,7 @@ struct AnnotationView: NSViewRepresentable {
 
     // core
     /// The current label used
-    let label: String
+    let label: AnnotationDocument.Label
     
     // layout
     let size: CGSize
@@ -24,7 +24,7 @@ struct AnnotationView: NSViewRepresentable {
     @EnvironmentObject var document: AnnotationDocument
     
     var annotations: [Annotation] {
-        document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) })
+        document.annotations.filter({ document.selectedItems.contains($0.id) })
     }
     
 //    var textField = NSTextField()
@@ -42,12 +42,12 @@ struct AnnotationView: NSViewRepresentable {
         }
         
         let viewController = ViewController(document: document)
-        viewController.viewDidLoad()
-        view.addSubview(viewController.view)
-        
-        viewController.view.frame = CGRect(origin: .zero, size: size)
+        viewController.view = NSView(frame: CGRect(origin: .zero, size: size))
         viewController.label = label
         viewController.annotationView = self
+        
+        viewController.viewDidLoad()
+        view.addSubview(viewController.view)
         
         return view
     }
@@ -56,12 +56,12 @@ struct AnnotationView: NSViewRepresentable {
         _ = nsView.subviews.map{ $0.removeFromSuperview() }
         
         let viewController = ViewController(document: document)
-        viewController.viewDidLoad()
-        nsView.addSubview(viewController.view)
-        
-        viewController.view.frame = CGRect(origin: .zero, size: size)
+        viewController.view = NSView(frame: CGRect(origin: .zero, size: size))
         viewController.label = label
         viewController.annotationView = self
+        
+        viewController.viewDidLoad()
+        nsView.addSubview(viewController.view)
         
         for annotation in annotations {
             let image = annotation.image
@@ -77,8 +77,6 @@ struct AnnotationView: NSViewRepresentable {
             }
         }
         
-        viewController.view.frame = CGRect(origin: .zero, size: size)
-        viewController.label = label
         nsView.addSubview(viewController.view)
     }
     
@@ -92,7 +90,9 @@ struct AnnotationView: NSViewRepresentable {
         view.layer = layer
         image.addSubview(view)
         
-        let label = NSHostingView(rootView: TextLabel(label: annotation.label, size: CGSize(width: rect.width, height: 20)))
+        let _label = document.labels.first(where: { $0.title == annotation.label }) ?? .init(title: annotation.label, color: .gray)
+        
+        let label = NSHostingView(rootView: TextLabel(label: _label, size: CGSize(width: rect.width, height: 20)))
         label.frame = CGRect(x: view.frame.width-rect.width-2, y: view.frame.height-20, width: rect.width, height: 20)
         view.addSubview(label)
     }
@@ -103,20 +103,22 @@ struct AnnotationView: NSViewRepresentable {
         var recognizerView = NSView()
         var recognizer = PanGestureRecognizer()
         var recognizerStartingPoint = NSPoint.zero
-        var label: String = ""
+        var label: AnnotationDocument.Label! = nil
         var annotationView: AnnotationView? = nil
         
         var document: AnnotationDocument
         
-        var isShowingGrid = false
         var gridCellView: GridCellView?
         
         override func viewDidLoad() {
             super.viewDidLoad()
+            
             recognizer = PanGestureRecognizer(target: self, mouseDown: { [self] in
                 self.view.addSubview(recognizerView)
                 self.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 recognizerStartingPoint = recognizer.location(in: self.view)
+                
+                gridCellView?.isHidden = false
             }, mouseDragged: { [weak self] in
                 self?.recognizerView.layer?.borderWidth = 2
                 self?.recognizerView.layer?.borderColor = NSColor.blue.cgColor
@@ -126,7 +128,13 @@ struct AnnotationView: NSViewRepresentable {
                 guard let recognizerStartingPoint = self?.recognizerStartingPoint else { return }
                 
                 self?.recognizerView.frame = CGRect(x: [location.x, recognizerStartingPoint.x].sorted(by: <).first!, y: [location.y, recognizerStartingPoint.y].sorted(by: <).first!, width: abs(translation.x), height: abs(translation.y))
+                
+                if let view = self?.gridCellView {
+                    view.center = location
+                    view.setNeedsDisplay(view.bounds)
+                }
             }, mouseUp: { [weak self] in
+                self?.gridCellView?.isHidden = true
                 guard let document = self?.document else { return } // all classes, no cost
                 guard let recognizerView = self?.recognizerView else { return }
                 guard let view = self?.view else { return }
@@ -142,16 +150,16 @@ struct AnnotationView: NSViewRepresentable {
                 undoManager.setActionName("Annotate")
                 undoManager.beginUndoGrouping()
                 
-                for item in document.leftSideBarSelectedItem {
+                for item in document.selectedItems {
                     guard let index = document.annotations.firstIndex(where: { $0.id == item }) else { continue }
                     
                     let coordinate = Annotation.Annotations.Coordinate(from: recognizerView.frame, by: view, image: document.annotations[index].image)
-                    let annotation = Annotation.Annotations(label: label, coordinates: coordinate)
+                    let annotation = Annotation.Annotations(label: label.title, coordinates: coordinate)
                     
                     document.appendAnnotations(undoManager: undoManager, annotationID: item, item: annotation)
                     
-                    if label == "New Label" {
-                        document.labels.insert(AnnotationDocument.Label(title: label, color: .green))
+                    if label.title == "New Label", !document.labels.contains(where: { $0.title == label.title }) {
+                        document.labels.insert(label)
                     }
                 }
                 
@@ -161,7 +169,6 @@ struct AnnotationView: NSViewRepresentable {
                 self?.recognizerView.removeFromSuperview()
                 self?.recognizerStartingPoint = NSPoint.zero
             })
-            self.view = NSView()
             self.view.addGestureRecognizer(recognizer)
             self.view.addSubview(recognizerView)
             
@@ -172,7 +179,6 @@ struct AnnotationView: NSViewRepresentable {
             
             // Create and add the grid cell view
             gridCellView = GridCellView(frame: self.view.bounds)
-            gridCellView?.isHidden = true
             mainContentView.addSubview(gridCellView!)
         }
         
@@ -184,49 +190,63 @@ struct AnnotationView: NSViewRepresentable {
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
         }
-        
-        override func mouseMoved(with event: NSEvent) {
-            print("moved")
-            if isShowingGrid {
-                let mouseLocation = view.convert(event.locationInWindow, from: nil)
-                gridCellView?.frame.origin = mouseLocation
-            }
-        }
-        
-        override func mouseEntered(with event: NSEvent) {
-            isShowingGrid = true
-            gridCellView?.isHidden = false
-            mouseMoved(with: event)
-        }
-        
-        override func mouseExited(with event: NSEvent) {
-            isShowingGrid = false
-            gridCellView?.isHidden = true
-        }
-        
     }
 
 }
 
 
 class GridCellView: NSView {
+    
+    var trackingArea : NSTrackingArea?
+    
+    var center = CGPoint(x: -1, y: -1)
+    
+    var showDrawings = false
+    
+    
+    override func updateTrackingAreas() {
+        if trackingArea != nil {
+            self.removeTrackingArea(trackingArea!)
+        }
+        
+        let options : NSTrackingArea.Options = [.mouseEnteredAndExited, .mouseMoved, .activeInKeyWindow]
+        trackingArea = NSTrackingArea(rect: self.bounds, options: options, owner: self, userInfo: nil)
+        self.addTrackingArea(trackingArea!)
+    }
 
     override func draw(_ dirtyRect: NSRect) {
-        NSColor.green.setStroke()
+        super.draw(dirtyRect)
+        guard showDrawings else { return }
+        
+        NSColor.controlBackgroundColor.setStroke()
         let path = NSBezierPath()
-        path.move(to: NSPoint(x: 0, y: frame.height / 2))
-        path.line(to: NSPoint(x: frame.width, y: frame.height / 2))
-        path.lineWidth = 2
+        path.lineWidth = 0.75
+        
+        path.move(to: NSPoint(x: 0, y: self.center.y))
+        path.line(to: NSPoint(x: frame.width, y: self.center.y))
         path.stroke()
         
-        let path2 = NSBezierPath()
-        path2.move(to: NSPoint(x: frame.width / 2, y: 0))
-        path2.line(to: NSPoint(x: frame.width / 2, y: frame.height))
-        path2.lineWidth = 2
-        path2.stroke()
+        path.move(to: NSPoint(x: self.center.x, y: 0))
+        path.line(to: NSPoint(x: self.center.x, y: frame.height))
+        path.stroke()
     }
     
+    override func mouseEntered(with event: NSEvent) {
+        showDrawings = true
+        self.setNeedsDisplay(self.bounds)
+    }
     
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        
+        self.center = self.convert(event.locationInWindow, from: nil)
+        self.setNeedsDisplay(self.bounds)
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        showDrawings = false
+        self.setNeedsDisplay(self.bounds)
+    }
 }
 
 extension CGSize {
@@ -238,64 +258,17 @@ extension CGSize {
 }
 
 struct TextLabel: View {
-    let label: String
+    let label: AnnotationDocument.Label
     let size: CGSize
     
     var body: some View {
         HStack {
-            Text(label)
+            Text(label.title)
                 .multilineTextAlignment(.trailing)
-                .background {
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                }
+                .foregroundStyle(label.color)
         }
         .frame(width: size.width, height: size.height, alignment: .trailing)
     }
 }
 
-/// A continuous gesture recognizer for panning gestures.
-class PanGestureRecognizer: NSPanGestureRecognizer {
-    
-    var touchesDidStart: (()->())? = nil
-    var touchesDragged: (()->())? = nil
-    var touchesDidEnd: (()->())? = nil
-    
-    /// Creates an instance with its actions.
-    ///
-    /// - Parameters:
-    ///    - mouseDown: Informs the gesture recognizer that the user pressed the left mouse button.
-    ///    - mouseDragged: Informs the gesture recognizer that the user moved the mouse with the left button pressed.
-    ///    - mouseUp: Informs the gesture recognizer that the user released the left mouse button.
-    convenience init(target: Any?, mouseDown: (()->())? = nil, mouseDragged: (()->())? = nil, mouseUp: (()->())? = nil) {
-        self.init(target: target, action: nil)
-        self.touchesDidStart = mouseDown
-        self.touchesDragged = mouseDragged
-        self.touchesDidEnd = mouseUp
-    }
-    
-    override func mouseDown(with event: NSEvent) {
-        super.mouseDown(with: event)
-        
-        if touchesDidStart != nil {
-            touchesDidStart!()
-        }
-    }
-    
-    override func mouseDragged(with event: NSEvent) {
-        super.mouseDragged(with: event)
-        
-        if touchesDragged != nil {
-            touchesDragged!()
-        }
-    }
-    
-    override func mouseUp(with event: NSEvent) {
-        super.mouseUp(with: event)
-        
-        if touchesDidEnd != nil {
-            touchesDidEnd!()
-        }
-    }
-    
-}
+

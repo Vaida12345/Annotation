@@ -22,7 +22,7 @@ struct SideBar: View {
     
     var body: some View {
         ScrollViewReader { proxy in
-            List(selection: $document.leftSideBarSelectedItem) {
+            List(selection: $document.selectedItems) {
                 ForEach(document.annotations) { annotation in
                     Image(nsImage: annotation.image)
                         .resizable()
@@ -32,28 +32,28 @@ struct SideBar: View {
                             Button("Remove") {
                                 undoManager?.setActionName("Remove images")
                                 undoManager?.beginUndoGrouping()
-                                for id in document.leftSideBarSelectedItem {
+                                for id in document.selectedItems {
                                     document.removeAnnotation(undoManager: undoManager, annotationID: id)
                                 }
                                 undoManager?.endUndoGrouping()
-                                document.leftSideBarSelectedItem = []
+                                document.selectedItems = []
                             }
                             
                             Menu {
                                 Button("All") {
                                     undoManager?.setActionName("Remove all annotations")
                                     document.apply(undoManager: undoManager) {
-                                        for i in document.leftSideBarSelectedItem {
+                                        for i in document.selectedItems {
                                             document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
                                         }
                                     }
                                 }
                                 
-                                ForEach(document.annotations.filter({ document.leftSideBarSelectedItem.contains($0.id) }).__labels, id: \.self) { item in
+                                ForEach(document.annotations.filter({ document.selectedItems.contains($0.id) }).__labels, id: \.self) { item in
                                     Button(item) {
                                         undoManager?.setActionName("Remove annotation \"\(item)\"")
                                         document.apply(undoManager: undoManager) {
-                                            for i in document.leftSideBarSelectedItem {
+                                            for i in document.selectedItems {
                                                 document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
                                             }
                                         }
@@ -63,7 +63,7 @@ struct SideBar: View {
                                 Text("Remove annotations")
                             }
                         }
-                        .disabled(!document.leftSideBarSelectedItem.contains(annotation.id))
+                        .disabled(!document.selectedItems.contains(annotation.id))
                         .id(annotation.id)
                 }
                 .onMove { fromIndex, toIndex in
@@ -106,6 +106,8 @@ struct SideBar: View {
                         self.document.annotations = union
                         self.document.isImporting = false
                         
+                        if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
+                        
                         undoManager?.setActionName("import files")
                         undoManager?.registerUndo(withTarget: self.document, handler: { document in
                             document.replaceItems(with: oldItems, undoManager: undoManager)
@@ -129,6 +131,8 @@ struct SideBar: View {
                         self.document.annotations = union
                         self.document.isImporting = false
                         
+                        if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
+                        
                         undoManager?.setActionName("import files")
                         undoManager?.registerUndo(withTarget: self.document, handler: { document in
                             document.replaceItems(with: oldItems, undoManager: undoManager)
@@ -137,11 +141,11 @@ struct SideBar: View {
                 }
             }
             .onDeleteCommand {
-                let sequence = document.annotations.indexes(where: { document.leftSideBarSelectedItem.contains($0.id) })
+                let sequence = document.annotations.indexes(where: { document.selectedItems.contains($0.id) })
                 let indexSet = IndexSet(sequence)
                 document.delete(offsets: indexSet, undoManager: undoManager)
                 
-                document.leftSideBarSelectedItem = []
+                document.selectedItems = []
             }
             .onAppear {
                 document.scrollProxy = proxy

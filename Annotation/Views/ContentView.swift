@@ -22,12 +22,19 @@ struct ContentView: View {
     @State private var sideBarState = true
     @State private var isShowingExportDialog = false
     
+//    @State private var sideBarWidth = 0.0
+    
     
     @Environment(\.undoManager) private var undoManager
     
     var body: some View {
         NavigationView {
-            SideBar()
+//            GeometryReader { geometry in
+                SideBar()
+//                    .onChange(of: geometry.size.width) { value in
+//                        self.sideBarWidth = value
+//                    }
+//            }
             
             if showLabelList {
                 LabelList(showLabelList: $showLabelList)
@@ -51,9 +58,15 @@ struct ContentView: View {
                 }
                 .onChange(of: showLabelList) { newValue in
                     toggleSideBar(to: !newValue)
-                    guard newValue else { return }
-                    showInfoView = false
-                    document.leftSideBarSelectedItem = []
+                    
+                    if newValue {
+                        // show label list
+                        showInfoView = false
+                        document.previousSelectedItems = document.selectedItems
+                        document.selectedItems = []
+                    } else {
+                        document.selectedItems = document.previousSelectedItems
+                    }
                 }
                 .help("Show Label List")
             }
@@ -105,7 +118,7 @@ struct ContentView: View {
                     Image(systemName: "list.bullet")
                 }
                 .help("Show Info View")
-                .disabled(document.leftSideBarSelectedItem.count != 1)
+                .disabled(document.selectedItems.count != 1)
             }
         }
     }
@@ -113,7 +126,7 @@ struct ContentView: View {
     var mainBody: some View {
         ZStack {
             if !document.annotations.isEmpty {
-                if document.leftSideBarSelectedItem.isEmpty {
+                if document.selectedItems.isEmpty {
                     ContainerView {
                         Text("Select an item or items to start")
                             .foregroundStyle(.gray)
@@ -138,6 +151,8 @@ struct ContentView: View {
                             self.document.annotations = union
                             self.document.isImporting = false
                             
+                            if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
+                            
                             undoManager?.setActionName("import files")
                             undoManager?.registerUndo(withTarget: self.document, handler: { document in
                                 document.replaceItems(with: oldItems, undoManager: undoManager)
@@ -146,7 +161,7 @@ struct ContentView: View {
                     }
             }
             
-            if showInfoView, document.leftSideBarSelectedItem.count == 1, let selection = document.leftSideBarSelectedItem.first {
+            if showInfoView, document.selectedItems.count == 1, let selection = document.selectedItems.first {
                 HStack {
                     Spacer()
                     if let first = $document.annotations.first(where: {$0.id == selection}) {

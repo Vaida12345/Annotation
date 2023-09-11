@@ -158,6 +158,35 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 
                 self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
             }
+            
+            
+            // MARK: - Codable
+            
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: Annotation.Annotations.Coordinate.CodingKeys.self)
+                try container.encode(self.x, forKey: Annotation.Annotations.Coordinate.CodingKeys.x)
+                try container.encode(self.y, forKey: Annotation.Annotations.Coordinate.CodingKeys.y)
+                try container.encode(self.width, forKey: Annotation.Annotations.Coordinate.CodingKeys.width)
+                try container.encode(self.height, forKey: Annotation.Annotations.Coordinate.CodingKeys.height)
+            }
+            
+            enum CodingKeys: CodingKey {
+                case id
+                case x
+                case y
+                case width
+                case height
+            }
+            
+            init(from decoder: Decoder) throws {
+                let container: KeyedDecodingContainer<Annotation.Annotations.Coordinate.CodingKeys> = try decoder.container(keyedBy: Annotation.Annotations.Coordinate.CodingKeys.self)
+                self.x = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.x)
+                self.y = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.y)
+                self.width = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.width)
+                self.height = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.height)
+                
+                self.id = UUID()
+            }
         }
     }
 }

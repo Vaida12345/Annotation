@@ -21,6 +21,7 @@ final class AnnotationDocument: ReferenceFileDocument {
     typealias Snapshot = Array<Annotation>
     
     // core
+    /// The images, with real annotations hidden inside.
     @Published var annotations: [Annotation]
     
     @Published var labels: Set<Label>
@@ -32,7 +33,8 @@ final class AnnotationDocument: ReferenceFileDocument {
     @Published var isImporting = false
     @Published var importingProgress = Progress()
     
-    @Published var leftSideBarSelectedItem: Set<Annotation.ID> = []
+    @Published var selectedItems: Set<Annotation.ID> = []
+    var previousSelectedItems: Set<Annotation.ID> = []
     
     @Published var scrollProxy: ScrollViewProxy? = nil
 
@@ -45,19 +47,18 @@ final class AnnotationDocument: ReferenceFileDocument {
     static nonisolated var writableContentTypes: [UTType] { [.annotationProject, .folder] }
     
     init(from wrapper: FileWrapper) throws {
-        guard let mainWrapper = wrapper.fileWrappers?["annotations.json"] else { throw CocoaError(.fileReadCorruptFile) }
-        guard let mediaFileWrapper = wrapper.fileWrappers?["Media"] else { throw CocoaError(.fileReadCorruptFile) }
-        guard let data = mainWrapper.regularFileContents,
-              let document = try? JSONDecoder().decode([_AnnotationImport].self, from: data)
-        else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
+        guard let mainWrapper = wrapper.fileWrappers?["annotations.json"],
+              let mediaFileWrapper = wrapper.fileWrappers?["Media"],
+              let data = mainWrapper.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }
+        
+        let document = try [_AnnotationImport](data: data, format: .json)
         
         // create Annotation
         guard let container = mediaFileWrapper.fileWrappers else { throw CocoaError(.fileReadCorruptFile) }
         
         let annotations: [Annotation] = document.concurrent.compactMap { documentItem in
-            guard let mediaItem = container["\(documentItem.id.description).heic"] else { return nil }
+            print(documentItem.image, container[documentItem.image])
+            guard let mediaItem = container[String(documentItem.image.dropFirst("Media/".count))] else { return nil }
             guard let data = mediaItem.regularFileContents else { return nil }
             guard let image = NSImage(data: data) else { return nil }
             
@@ -65,11 +66,12 @@ final class AnnotationDocument: ReferenceFileDocument {
         }
         self.annotations = annotations
         
-        if let labelsWrapper = wrapper.fileWrappers?["labels.plist"] {
-            guard let data = labelsWrapper.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }
+        if let labelsWrapper = wrapper.fileWrappers?["labels.plist"],
+           let data = labelsWrapper.regularFileContents
+        {
             self.labels = try .init(data: data, format: .plist)
         } else {
-            self.labels = Set(Set(annotations.flatMap({ $0.annotations.map(\.label) })).map({ Label(title: $0, color: .green) }))
+            self.labels = Set(Set(annotations.__labels.map({ Label(title: $0, color: .green) })))
         }
     }
 

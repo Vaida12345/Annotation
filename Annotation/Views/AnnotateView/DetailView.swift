@@ -12,18 +12,23 @@ import SwiftUI
 struct DetailView: View {
     
     // core
-    @EnvironmentObject var document: AnnotationDocument
+    @EnvironmentObject private var document: AnnotationDocument
     
     // layout
-    @State var showLabelSheet = false
-    @State var currentLabel = AnnotationDocument.Label(title: "New Label", color: .gray)
+    @State private var showLabelSheet = false
+    @State private var currentLabel = AnnotationDocument.Label(title: "New Label", color: .gray)
     
-    @Environment(\.undoManager) var undoManager
+//    @State private var cursorPosition = CGPoint.zero
+//    @State private var showCursor = false
+    
+//    let sideBarWidth: Double
+    
+    @Environment(\.undoManager) private var undoManager
     
     var body: some View {
         GeometryReader { reader in
             ZStack {
-                AnnotationView(label: currentLabel.title, size: reader.size)
+                AnnotationView(label: currentLabel, size: reader.size)
                 
                 HStack {
                     VStack {
@@ -56,11 +61,29 @@ struct DetailView: View {
                     
                     Spacer()
                 }
+                
+//                if showCursor {
+//                    HStack {
+//                        Rectangle()
+//                            .fill(.yellow)
+//                            .frame(width: 0.5, height: reader.size.height)
+//                        
+//                        Spacer()
+//                    }
+//                    .offset(x: cursorPosition.x - sideBarWidth)
+//                }
             }
+//            .onHover { isHovering in
+//                showCursor = isHovering
+//            }
+//            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didUpdateNotification)) { _ in
+//                cursorPosition = NSEvent.mouseLocation
+//            }
         }
         .sheet(isPresented: $showLabelSheet) {
             ChangeLabelNameView(label: $currentLabel) {
                 showLabelSheet = false
+                document.labels.insert(currentLabel)
             }
             .padding()
         }
