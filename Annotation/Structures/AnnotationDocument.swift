@@ -194,7 +194,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             }
         } else {
             reporter.totalUnitCount = Int64(snapshot.count)
-            print("performing save without old data")
+            print("performing save without old data, total: \(reporter.totalUnitCount)")
             
             if configuration.contentType == .annotationProject {
                 let _newWrappers = snapshot.concurrent.map { item in
@@ -255,7 +255,7 @@ final class AnnotationDocument: ReferenceFileDocument {
         
     }
     
-    struct Label: Codable, Identifiable, Hashable {
+    struct Label: Codable, Identifiable, Hashable, Comparable {
         
         var title: String
         
@@ -268,6 +268,9 @@ final class AnnotationDocument: ReferenceFileDocument {
             hasher.combine(self.title)
         }
         
+        static func < (lhs: AnnotationDocument.Label, rhs: AnnotationDocument.Label) -> Bool {
+            lhs.title < rhs.title
+        }
     }
 }
 
@@ -390,7 +393,7 @@ extension AnnotationDocument {
     }
     
     func remove(undoManager: UndoManager?, label: Label) {
-        undoManager?.setActionName("Remove \"\(label)\"")
+        undoManager?.setActionName("Remove \"\(label.title)\"")
         var indexes: [Int: [Int]] = [:] // [Annotation.Index: [Annotation.Annotations.Index]]
         indexes.reserveCapacity(annotations.count)
         
@@ -459,21 +462,10 @@ extension AnnotationDocument {
         let removed = self.labels.remove(at: firstIndex)
         self.labels.insert(Label(title: newName, color: removed.color))
         
-        
         undoManager?.registerUndo(withTarget: self) { document in
-            for (key, value) in indexes {
-                for _value in value {
-                    document.annotations[key].annotations[_value].label = oldName
-                }
-            }
-            
-            self.labels.remove(Label(title: newName, color: removed.color))
-            self.labels.insert(Label(title: oldName, color: removed.color))
-            
-            undoManager?.registerUndo(withTarget: self) { document in
-                document.rename(label: oldName, with: newName, undoManager: undoManager)
-            }
+            document.rename(label: newName, with: oldName, undoManager: undoManager)
         }
+        print(undoManager?.canUndo)
     }
     
 }

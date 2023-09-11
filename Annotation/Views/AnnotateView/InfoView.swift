@@ -48,7 +48,7 @@ struct InfoViewItem: View {
                         .foregroundStyle(item.hidden ? .secondary : document.labels.first(where: { $0.title == item.label })?.color ?? .primary)
                 } else {
                     Menu {
-                        ForEach(Array(document.labels), id: \.self) { label in
+                        ForEach(Array(document.labels).sorted(), id: \.self) { label in
                             Button(label.title) {
                                 undoManager?.setActionName("Change label to \"\(label)\"")
                                 document.apply(undoManager: undoManager) {

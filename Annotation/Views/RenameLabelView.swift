@@ -12,16 +12,16 @@ import SwiftUI
 struct RenameLabelView: View {
     
     let oldLabel: AnnotationDocument.Label
+    // for some reason, has to pass like this
+    let undoManager: UndoManager?
     @State var newLabel = AnnotationDocument.Label(title: "", color: .green)
     
-    @Environment(\.undoManager) var undoManager
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var document: AnnotationDocument
     
     var body: some View {
         ChangeLabelNameView(label: $newLabel) {
             applyAndDismiss()
-            
         }
         .padding()
         .onAppear {

@@ -20,33 +20,37 @@ struct LabelList: View {
     @Environment(\.undoManager) var undoManager
     
     var body: some View {
-        List(Array(document.labels)) { label in
-            VStack {
-                HStack {
-                    Text(label.title)
-                        .font(.title)
-                        .foregroundStyle(label.color)
+        ScrollView(.vertical) {
+            ForEach(Array(document.labels).sorted()) { label in
+                VStack {
+                    HStack {
+                        Text(label.title)
+                            .font(.title)
+                            .foregroundStyle(label.color)
+                        
+                        Image(systemName: "pencil")
+                            .onTapGesture {
+                                showLabelSheet = true
+                            }
+                            .sheet(isPresented: $showLabelSheet) {
+                                RenameLabelView(oldLabel: label, undoManager: undoManager)
+                            }
+                        
+                        Spacer()
+                        Image(systemName: "trash")
+                            .onTapGesture {
+                                document.remove(undoManager: undoManager, label: label)
+                            }
+                    }
                     
-                    Image(systemName: "pencil")
-                        .onTapGesture {
-                            showLabelSheet = true
-                        }
-                        .sheet(isPresented: $showLabelSheet) {
-                            RenameLabelView(oldLabel: label)
-                        }
+                    LabelListItems(label: label, showLabelList: $showLabelList)
                     
-                    Spacer()
-                    Image(systemName: "trash")
-                        .onTapGesture {
-                            document.remove(undoManager: undoManager, label: label)
-                        }
+                    Divider()
                 }
-                
-                LabelListItems(label: label, showLabelList: $showLabelList)
-                
-                Divider()
+                .padding(.trailing)
             }
         }
+        .padding(.leading)
     }
 }
 
@@ -57,6 +61,7 @@ struct LabelListItems: View {
     @Binding var showLabelList: Bool
     
     @State private var innerView: [InnerViewElement] = []
+    @State private var isCompleted = false
     
     var body: some View {
         Group {
@@ -70,12 +75,19 @@ struct LabelListItems: View {
                     }
                 }
             } else {
-                HStack {
-                    Text("Loading preview")
-                    
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .padding()
+                if isCompleted {
+                    HStack {
+                        Text("Loading preview")
+                        
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .padding()
+                    }
+                } else {
+                    Text("Empty")
+                        .foregroundStyle(.gray)
+                        .fontDesign(.rounded)
+                        .fontWeight(.heavy)
                 }
             }
         }
@@ -105,6 +117,7 @@ struct LabelListItems: View {
                 Task { @MainActor in
                     print("load completes with \(_innerView.count)")
                     self.innerView = _innerView
+                    self.isCompleted = true
                 }
             }
         }

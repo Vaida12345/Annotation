@@ -18,11 +18,6 @@ struct DetailView: View {
     @State private var showLabelSheet = false
     @State private var currentLabel = AnnotationDocument.Label(title: "New Label", color: .gray)
     
-//    @State private var cursorPosition = CGPoint.zero
-//    @State private var showCursor = false
-    
-//    let sideBarWidth: Double
-    
     @Environment(\.undoManager) private var undoManager
     
     var body: some View {
@@ -33,7 +28,7 @@ struct DetailView: View {
                 HStack {
                     VStack {
                         Menu {
-                            ForEach(Array(document.labels), id: \.self) { label in
+                            ForEach(Array(document.labels).sorted(), id: \.self) { label in
                                 Button {
                                     currentLabel = label
                                 } label: {
@@ -52,6 +47,7 @@ struct DetailView: View {
                             Text(currentLabel.title)
                                 .foregroundStyle(currentLabel.color)
                         }
+                        .foregroundColor(.green)
                         .background(RoundedRectangle(cornerRadius: 5).fill(.ultraThinMaterial))
                         .frame(width: 100, height: 20)
                         .padding()
@@ -61,28 +57,12 @@ struct DetailView: View {
                     
                     Spacer()
                 }
-                
-//                if showCursor {
-//                    HStack {
-//                        Rectangle()
-//                            .fill(.yellow)
-//                            .frame(width: 0.5, height: reader.size.height)
-//                        
-//                        Spacer()
-//                    }
-//                    .offset(x: cursorPosition.x - sideBarWidth)
-//                }
             }
-//            .onHover { isHovering in
-//                showCursor = isHovering
-//            }
-//            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didUpdateNotification)) { _ in
-//                cursorPosition = NSEvent.mouseLocation
-//            }
         }
         .sheet(isPresented: $showLabelSheet) {
             ChangeLabelNameView(label: $currentLabel) {
                 showLabelSheet = false
+                print(currentLabel)
                 document.labels.insert(currentLabel)
             }
             .padding()
