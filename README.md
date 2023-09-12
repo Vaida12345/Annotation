@@ -15,7 +15,7 @@ Download from [App Store](https://apps.apple.com/au/app/annotationcreater/id1623
 
 ~~Files and source code could be found in [releases](https://github.com/Vaida12345/Annotation/releases).~~
 
-Note: If mac says the app was damaged / unknown developer, please go to `System Preferences > Security & Privacy > General`, and click `Open Anyway`. [Show Details.](https://github.com/Vaida12345/Annotation/wiki#why-i-cant-open-the-app)
+~~Note: If mac says the app was damaged / unknown developer, please go to `System Preferences > Security & Privacy > General`, and click `Open Anyway`. [Show Details.](https://github.com/Vaida12345/Annotation/wiki#why-i-cant-open-the-app)~~
 
 ## Interface
 This app was written with [SwiftUI](https://developer.apple.com/xcode/swiftui/) and Cocoa.
