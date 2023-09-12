@@ -15,9 +15,6 @@ struct AnnotationView: NSViewRepresentable {
     typealias NSViewType = NSView
 
     // core
-    /// The current label used
-    let label: AnnotationDocument.Label
-    
     // layout
     let size: CGSize
     
@@ -43,7 +40,6 @@ struct AnnotationView: NSViewRepresentable {
         
         let viewController = ViewController(document: document)
         viewController.view = NSView(frame: CGRect(origin: .zero, size: size))
-        viewController.label = label
         viewController.annotationView = self
         
         viewController.viewDidLoad()
@@ -57,7 +53,6 @@ struct AnnotationView: NSViewRepresentable {
         
         let viewController = ViewController(document: document)
         viewController.view = NSView(frame: CGRect(origin: .zero, size: size))
-        viewController.label = label
         viewController.annotationView = self
         
         viewController.viewDidLoad()
@@ -86,11 +81,11 @@ struct AnnotationView: NSViewRepresentable {
         let view = NSView(frame: rect)
         let layer = CALayer()
         layer.borderWidth = 2
-        layer.borderColor = document.labels.first(where: { $0.title == annotation.label })?.color.cgColor ?? NSColor.green.cgColor
+        layer.borderColor = document.labels[annotation.label]?.color.cgColor ?? NSColor.green.cgColor
         view.layer = layer
         image.addSubview(view)
         
-        let _label = document.labels.first(where: { $0.title == annotation.label }) ?? .init(title: annotation.label, color: .gray)
+        let _label = document.labels[annotation.label] ?? .init(title: annotation.label, color: .gray)
         
         let label = NSHostingView(rootView: TextLabel(label: _label, size: CGSize(width: rect.width, height: 20)))
         label.frame = CGRect(x: view.frame.width-rect.width-2, y: view.frame.height-20, width: rect.width, height: 20)
@@ -103,7 +98,6 @@ struct AnnotationView: NSViewRepresentable {
         var recognizerView = NSView()
         var recognizer = PanGestureRecognizer()
         var recognizerStartingPoint = NSPoint.zero
-        var label: AnnotationDocument.Label! = nil
         var annotationView: AnnotationView? = nil
         
         var document: AnnotationDocument
@@ -138,7 +132,7 @@ struct AnnotationView: NSViewRepresentable {
                 guard let document = self?.document else { return } // all classes, no cost
                 guard let recognizerView = self?.recognizerView else { return }
                 guard let view = self?.view else { return }
-                guard let label = self?.label else { return }
+                guard let label = self?.document.selectedLabel else { return }
                 guard let undoManager = self?.undoManager else { return }
                 guard self?.recognizerView.frame.size.__isValid ?? false else {
                     self?.recognizerView.frame = CGRect(origin: .zero, size: .zero)
@@ -158,8 +152,8 @@ struct AnnotationView: NSViewRepresentable {
                     
                     document.appendAnnotations(undoManager: undoManager, annotationID: item, item: annotation)
                     
-                    if label.title == "New Label", !document.labels.contains(where: { $0.title == label.title }) {
-                        document.labels.insert(label)
+                    if label.title == "New Label", document.labels[label.title] == nil {
+                        document.labels[label.title] = label
                     }
                 }
                 

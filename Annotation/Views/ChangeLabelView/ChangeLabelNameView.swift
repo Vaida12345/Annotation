@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-struct ChangeLabelNameView: View {
+struct __ChangeLabelNameView: View {
     
     @Binding var label: AnnotationDocument.Label
     
@@ -19,14 +19,15 @@ struct ChangeLabelNameView: View {
     var body: some View {
         VStack {
             VStack(alignment: .leading) {
-                Text("Name for label: ")
+                Text("Name")
                 
                 TextField("Name for label", text: $label.title)
                     .onSubmit {
                         dismiss()
                     }
+                    .padding(.bottom)
                 
-                ColorPicker("Color of label: ", selection: $label.color)
+                ColorPicker("Color", selection: $label.color)
             }
             .padding(.vertical, 5)
             
@@ -38,7 +39,6 @@ struct ChangeLabelNameView: View {
                 }
                 .keyboardShortcut(.defaultAction)
             }
-            .frame(width: 400)
         }
         
     }

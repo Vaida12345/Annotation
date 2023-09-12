@@ -69,15 +69,17 @@ struct AutoAnnotateView: View {
         let _document = document
         let staticConfidence = confidence
         
+        let images = _document.annotations.map(\.image)
+        
         Task.detached {
-            for i in 0..<_document.annotations.count {
-                guard let result = await applyObjectDetectionML(to: _document.annotations[i].image, model: model) else {
+            for i in await 0..<_document.annotations.count {
+                guard let result = await applyObjectDetectionML(to: images[i], model: model) else {
                     Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
                     continue
                 }
                 let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
                     guard let label = item.labels.first?.identifier else { return nil }
-                    let coordinate = Annotation.Annotations.Coordinate(from: item, in: _document.annotations[i].image)
+                    let coordinate = Annotation.Annotations.Coordinate(from: item, in: images[i])
                     return Annotation.Annotations.init(label: label, coordinates: coordinate)
                 }
                 
@@ -120,8 +122,8 @@ struct AutoAnnotateView: View {
 ///
 /// - Returns: The observations in the image; `nil` otherwise.
 func applyObjectDetectionML(to image: NSImage, model: MLModel) async -> [VNRecognizedObjectObservation]? {
-    guard image.size != NSSize.zero else { print("skip \(image)"); return nil }
-    guard let image = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { print("skip \(image)"); return nil }
+    guard image.size != NSSize.zero else { return nil }
+    guard let image = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
     
     let orientation = CGImagePropertyOrientation.up
     let handler = VNImageRequestHandler(cgImage: image, orientation: orientation, options: [:])
@@ -130,9 +132,9 @@ func applyObjectDetectionML(to image: NSImage, model: MLModel) async -> [VNRecog
     let request = VNCoreMLRequest(model: model)
     try! handler.perform([request])
     
-    guard let results = request.results else { print("skip \(image): can not form request from current model"); return nil }
+    guard let results = request.results else { return nil }
     let observations = results as! [VNRecognizedObjectObservation]
-    guard !observations.isEmpty else { print("skip \(image): the classification array of \(observations) is empty"); return nil }
+    guard !observations.isEmpty else { return nil }
     
     return observations
 }

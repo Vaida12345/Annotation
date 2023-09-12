@@ -26,6 +26,7 @@
 		B46539812AAEE2E30042562E /* Recognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46539802AAEE2E30042562E /* Recognizer.swift */; };
 		B466771E2AADDE7A00648F04 /* ChangeLabelNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */; };
 		B47D623C298D532200F6025B /* AutoDetectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B47D623B298D532200F6025B /* AutoDetectView.swift */; };
+		B492E58C2AB00F4400A949B1 /* NewLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58B2AB00F4400A949B1 /* NewLabelView.swift */; };
 		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
 		B4C716FB2824D3CF00D19A9D /* Support in Frameworks */ = {isa = PBXBuildFile; productRef = B4C716FA2824D3CF00D19A9D /* Support */; };
 /* End PBXBuildFile section */
@@ -53,6 +54,7 @@
 		B46539802AAEE2E30042562E /* Recognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recognizer.swift; sourceTree = "<group>"; };
 		B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeLabelNameView.swift; sourceTree = "<group>"; };
 		B47D623B298D532200F6025B /* AutoDetectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoDetectView.swift; sourceTree = "<group>"; };
+		B492E58B2AB00F4400A949B1 /* NewLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewLabelView.swift; sourceTree = "<group>"; };
 		B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Folder Icon.icns"; sourceTree = "<group>"; };
 		B4C716F92824D3CC00D19A9D /* DataBase */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DataBase; path = ../../Packages/DataBase; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -133,8 +135,7 @@
 			children = (
 				B416910A27B53B020029AB97 /* ContentView.swift */,
 				B45B52F5282A8CA8007C8CCC /* LabelList.swift */,
-				B41B36AF298A921D0075DADD /* RenameLabelView.swift */,
-				B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */,
+				B492E58A2AB00EFA00A949B1 /* ChangeLabelView */,
 				B45B52EF282A8C4E007C8CCC /* SideBar.swift */,
 				B465397E2AAEE2920042562E /* AnnotateView */,
 				B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */,
@@ -177,6 +178,16 @@
 				B47D623B298D532200F6025B /* AutoDetectView.swift */,
 			);
 			path = AutoDetect;
+			sourceTree = "<group>";
+		};
+		B492E58A2AB00EFA00A949B1 /* ChangeLabelView */ = {
+			isa = PBXGroup;
+			children = (
+				B41B36AF298A921D0075DADD /* RenameLabelView.swift */,
+				B492E58B2AB00F4400A949B1 /* NewLabelView.swift */,
+				B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */,
+			);
+			path = ChangeLabelView;
 			sourceTree = "<group>";
 		};
 		B4C716F82824D3CC00D19A9D /* Frameworks */ = {
@@ -275,6 +286,7 @@
 				B466771E2AADDE7A00648F04 /* ChangeLabelNameView.swift in Sources */,
 				B45B52F0282A8C4E007C8CCC /* SideBar.swift in Sources */,
 				B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */,
+				B492E58C2AB00F4400A949B1 /* NewLabelView.swift in Sources */,
 				B416910B27B53B020029AB97 /* ContentView.swift in Sources */,
 				B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */,
 				B46539812AAEE2E30042562E /* Recognizer.swift in Sources */,

@@ -43,7 +43,7 @@ struct AnnotationApp: App {
                     guard let urls = try? result.get() else { return }
                     guard let document else { return }
                     Task.detached(priority: .background) {
-                        let oldItems = document.annotations
+                        let oldItems = await document.annotations
                         Task { @MainActor in
                             document.isImporting = true
                         }

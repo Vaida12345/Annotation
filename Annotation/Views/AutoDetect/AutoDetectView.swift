@@ -96,8 +96,6 @@ struct AutoDetectView: View {
 
                                         self.rawImages = __croppedImages
                                         self.detectProgress = .waitForSelection
-
-                                        print("returned")
                                     }
                                 } catch {
                                     Task { @MainActor in

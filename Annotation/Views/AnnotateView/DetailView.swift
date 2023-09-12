@@ -16,21 +16,20 @@ struct DetailView: View {
     
     // layout
     @State private var showLabelSheet = false
-    @State private var currentLabel = AnnotationDocument.Label(title: "New Label", color: .gray)
     
     @Environment(\.undoManager) private var undoManager
     
     var body: some View {
         GeometryReader { reader in
             ZStack {
-                AnnotationView(label: currentLabel, size: reader.size)
+                AnnotationView(size: reader.size)
                 
                 HStack {
                     VStack {
                         Menu {
-                            ForEach(Array(document.labels).sorted(), id: \.self) { label in
+                            ForEach(document.labels.values.sorted()) { label in
                                 Button {
-                                    currentLabel = label
+                                    document.selectedLabel = label
                                 } label: {
                                     Text(label.title)
                                         .foregroundStyle(label.color)
@@ -40,12 +39,11 @@ struct DetailView: View {
                             Divider()
                             
                             Button("New...") {
-                                currentLabel = .init(title: "New Label", color: .green)
                                 showLabelSheet = true
                             }
                         } label: {
-                            Text(currentLabel.title)
-                                .foregroundStyle(currentLabel.color)
+                            Text(document.selectedLabel.title)
+                                .foregroundStyle(document.selectedLabel.color)
                         }
                         .foregroundColor(.green)
                         .background(RoundedRectangle(cornerRadius: 5).fill(.ultraThinMaterial))
@@ -60,12 +58,9 @@ struct DetailView: View {
             }
         }
         .sheet(isPresented: $showLabelSheet) {
-            ChangeLabelNameView(label: $currentLabel) {
-                showLabelSheet = false
-                print(currentLabel)
-                document.labels.insert(currentLabel)
+            NewLabelView(undoManager: undoManager) {
+                document.selectedLabel = $0
             }
-            .padding()
         }
     }
 }

@@ -41,7 +41,7 @@ struct SideBar: View {
                             
                             Menu {
                                 Button("All") {
-                                    undoManager?.setActionName("Remove all annotations")
+                                    undoManager?.setActionName("Remove all annotations for selected items")
                                     document.apply(undoManager: undoManager) {
                                         for i in document.selectedItems {
                                             document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
@@ -51,7 +51,7 @@ struct SideBar: View {
                                 
                                 ForEach(document.annotations.filter({ document.selectedItems.contains($0.id) }).__labels, id: \.self) { item in
                                     Button(item) {
-                                        undoManager?.setActionName("Remove annotation \"\(item)\"")
+                                        undoManager?.setActionName("Remove annotation \"\(item)\" for selected items")
                                         document.apply(undoManager: undoManager) {
                                             for i in document.selectedItems {
                                                 document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })

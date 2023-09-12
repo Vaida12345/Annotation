@@ -16,6 +16,7 @@ extension UTType {
     }
 }
 
+
 final class AnnotationDocument: ReferenceFileDocument {
     
     typealias Snapshot = Array<Annotation>
@@ -24,7 +25,7 @@ final class AnnotationDocument: ReferenceFileDocument {
     /// The images, with real annotations hidden inside.
     @Published var annotations: [Annotation]
     
-    @Published var labels: Set<Label>
+    @Published var labels: [String: Label]
     
     // layout
     @Published var isExporting = false
@@ -36,15 +37,21 @@ final class AnnotationDocument: ReferenceFileDocument {
     @Published var selectedItems: Set<Annotation.ID> = []
     var previousSelectedItems: Set<Annotation.ID> = []
     
+    @Published var selectedLabel: Label = Label(title: "New Label", color: .green)
+    
     @Published var scrollProxy: ScrollViewProxy? = nil
 
-    init(annotations: [Annotation] = [], labels: Set<Label> = []) {
+    init(annotations: [Annotation] = [], labels: Array<Label> = []) {
         self.annotations = annotations
-        self.labels = labels
+        self.labels = .init(uniqueKeysWithValues: labels.map { ($0.title, $0) })
     }
 
     static nonisolated var readableContentTypes: [UTType] { [.annotationProject] }
     static nonisolated var writableContentTypes: [UTType] { [.annotationProject, .folder] }
+    
+    #if DEBUG
+    static let preview = AnnotationDocument()
+    #endif
     
     init(from wrapper: FileWrapper) throws {
         guard let mainWrapper = wrapper.fileWrappers?["annotations.json"],
@@ -57,7 +64,6 @@ final class AnnotationDocument: ReferenceFileDocument {
         guard let container = mediaFileWrapper.fileWrappers else { throw CocoaError(.fileReadCorruptFile) }
         
         let annotations: [Annotation] = document.concurrent.compactMap { documentItem in
-            print(documentItem.image, container[documentItem.image])
             guard let mediaItem = container[String(documentItem.image.dropFirst("Media/".count))] else { return nil }
             guard let data = mediaItem.regularFileContents else { return nil }
             guard let image = NSImage(data: data) else { return nil }
@@ -67,11 +73,12 @@ final class AnnotationDocument: ReferenceFileDocument {
         self.annotations = annotations
         
         if let labelsWrapper = wrapper.fileWrappers?["labels.plist"],
-           let data = labelsWrapper.regularFileContents
-        {
-            self.labels = try .init(data: data, format: .plist)
+           let data = labelsWrapper.regularFileContents {
+            let set = try [Label](data: data, format: .plist)
+            self.labels = .init(uniqueKeysWithValues: set.map { ($0.title, $0) })
         } else {
-            self.labels = Set(Set(annotations.__labels.map({ Label(title: $0, color: .green) })))
+            let set = Set(Set(annotations.__labels.map({ Label(title: $0, color: .green) })))
+            self.labels = .init(uniqueKeysWithValues: set.map { ($0.title, $0) })
         }
     }
 
@@ -87,7 +94,6 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     func fileWrapper(snapshot: [Annotation], configuration: WriteConfiguration) throws -> FileWrapper {
         
-        print("saving file")
         Task { @MainActor in
             self.isExporting = true
         }
@@ -106,7 +112,7 @@ final class AnnotationDocument: ReferenceFileDocument {
             encoder.outputFormatting = .prettyPrinted
             data = try encoder.encode(annotationsImport)
             
-            let labelsWrapper = try FileWrapper(regularFileWithContents: labels.data(using: .plist))
+            let labelsWrapper = try FileWrapper(regularFileWithContents: Array(labels.values).data(using: .plist))
             labelsWrapper.preferredFilename = "labels.plist"
             wrapper.addFileWrapper(labelsWrapper)
         } else {
@@ -128,7 +134,6 @@ final class AnnotationDocument: ReferenceFileDocument {
         var mediaWrapper = FileWrapper(directoryWithFileWrappers: [:])
         
         if let existingFile = configuration.existingFile, let container = existingFile.fileWrappers?["Media"]?.fileWrappers, configuration.contentType == .annotationProject {
-            print("performing save with old data")
             
             let oldItems = Array(container.keys)
             let newItems = snapshot.map{ $0.id.description + ".heic" }
@@ -138,8 +143,6 @@ final class AnnotationDocument: ReferenceFileDocument {
             addedItems.removeAll(where: { commonItems.contains($0) })
             var removedItems = oldItems
             removedItems.removeAll(where: { commonItems.contains($0) })
-            
-            print("result", commonItems.count, addedItems.count, removedItems.count)
             
             if removedItems.count <= addedItems.count || removedItems.count < commonItems.count {
                 mediaWrapper = FileWrapper(directoryWithFileWrappers: container)
@@ -174,7 +177,6 @@ final class AnnotationDocument: ReferenceFileDocument {
                         mediaWrapper.addFileWrapper(wrapper)
                     }
                 }
-                print("done")
             } else {
                 reporter.totalUnitCount = Int64(snapshot.count)
                 
@@ -194,7 +196,6 @@ final class AnnotationDocument: ReferenceFileDocument {
             }
         } else {
             reporter.totalUnitCount = Int64(snapshot.count)
-            print("performing save without old data, total: \(reporter.totalUnitCount)")
             
             if configuration.contentType == .annotationProject {
                 let _newWrappers = snapshot.concurrent.map { item in
@@ -234,7 +235,6 @@ final class AnnotationDocument: ReferenceFileDocument {
         Task { @MainActor in
             self.isExporting = false
         }
-        print("file saved")
         
         return wrapper
         
@@ -415,13 +415,13 @@ extension AnnotationDocument {
             values[key] = list
         }
         
-        self.labels.remove(label)
+        self.labels[label.title] = nil
         
         undoManager?.registerUndo(withTarget: self) { document in
             for (key, value) in values {
                 document.annotations[key].annotations.append(contentsOf: value)
             }
-            self.labels.insert(label)
+            self.labels[label.title] = label
             
             undoManager?.registerUndo(withTarget: self) { document in
                 document.remove(undoManager: undoManager, label: label)
@@ -430,15 +430,14 @@ extension AnnotationDocument {
     }
     
     func replaceColor(label: String, with color: Color, undoManager: UndoManager?) {
-        guard let firstIndex = self.labels.firstIndex(where: { $0.title == label }) else { return }
+        guard let oldColor = self.labels[label]?.color else { return }
         
         undoManager?.setActionName("Set color for \(label)")
         
-        let removed = self.labels.remove(at: firstIndex)
-        self.labels.insert(Label(title: label, color: color))
+        self.labels[label]?.color = color
         
         undoManager?.registerUndo(withTarget: self) { document in
-            self.replaceColor(label: label, with: removed.color, undoManager: undoManager)
+            self.replaceColor(label: label, with: oldColor, undoManager: undoManager)
         }
     }
     
@@ -458,14 +457,13 @@ extension AnnotationDocument {
             }
         }
         
-        guard let firstIndex = self.labels.firstIndex(where: { $0.title == oldName }) else { return }
-        let removed = self.labels.remove(at: firstIndex)
-        self.labels.insert(Label(title: newName, color: removed.color))
+        guard let removed = self.labels[oldName] else { return }
+        self.labels[oldName] = nil
+        self.labels[newName] = Label(title: newName, color: removed.color)
         
         undoManager?.registerUndo(withTarget: self) { document in
             document.rename(label: newName, with: oldName, undoManager: undoManager)
         }
-        print(undoManager?.canUndo)
     }
     
 }
@@ -512,7 +510,6 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
                 
                 newItems.append(contentsOf: _newItems.compacted())
             } catch {
-                print(error)
                 fallthrough
             }
             

@@ -21,12 +21,14 @@ struct LabelList: View {
     
     var body: some View {
         ScrollView(.vertical) {
-            ForEach(Array(document.labels).sorted()) { label in
+            ForEach(document.labels.values.sorted()) { label in
                 VStack {
                     HStack {
                         Text(label.title)
                             .font(.title)
                             .foregroundStyle(label.color)
+                        
+                        Spacer()
                         
                         Image(systemName: "pencil")
                             .onTapGesture {
@@ -36,7 +38,6 @@ struct LabelList: View {
                                 RenameLabelView(oldLabel: label, undoManager: undoManager)
                             }
                         
-                        Spacer()
                         Image(systemName: "trash")
                             .onTapGesture {
                                 document.remove(undoManager: undoManager, label: label)
@@ -115,7 +116,6 @@ struct LabelListItems: View {
                 }
                 
                 Task { @MainActor in
-                    print("load completes with \(_innerView.count)")
                     self.innerView = _innerView
                     self.isCompleted = true
                 }
@@ -147,23 +147,28 @@ struct LabelListItem: View {
     @Environment(\.undoManager) var undoManager
     @Environment(\.dismiss) var dismiss
     
+    @ViewBuilder
+    var contextMenuContents: some View {
+        Button("Show Image") {
+            withAnimation {
+                document.selectedItems = [item.item.annotationID]
+                document.scrollProxy?.scrollTo(item.item.annotationID)
+                showLabelList = false
+            }
+        }
+        
+        Divider()
+        
+        Button("Remove") {
+            withAnimation {
+                document.removeAnnotations(undoManager: undoManager, annotationID: item.item.annotationID, annotationsID: item.item.annotationsID)
+            }
+        }
+    }
+    
     var contextMenu: some View {
         Menu {
-            Button("Show Image") {
-                withAnimation {
-                    document.selectedItems = [item.item.annotationID]
-                    document.scrollProxy?.scrollTo(item.item.annotationID)
-                    showLabelList = false
-                }
-            }
-            
-            Divider()
-            
-            Button("Remove") {
-                withAnimation {
-                    document.removeAnnotations(undoManager: undoManager, annotationID: item.item.annotationID, annotationsID: item.item.annotationsID)
-                }
-            }
+            contextMenuContents
         } label: {
             
         }
@@ -173,14 +178,7 @@ struct LabelListItem: View {
         Image(nsImage: item.croppedImage)
             .cornerRadius(5)
             .contextMenu {
-                contextMenu
-            }
-            .overlay(alignment: .topTrailing) {
-                contextMenu
-                    .menuStyle(.borderlessButton)
-                    .frame(width: 10)
-                    .padding(2)
-                    .foregroundColor(.blue)
+                contextMenuContents
             }
     }
 }
