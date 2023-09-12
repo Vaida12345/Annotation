@@ -45,9 +45,9 @@ struct RenameLabelView: View {
 }
 
 
-#if DEBUG
-#Preview {
-    RenameLabelView(oldLabel: .init(title: "1", color: .white), undoManager: nil)
-        .environmentObject(AnnotationDocument.preview)
-}
-#endif
+//#if DEBUG
+//#Preview {
+//    RenameLabelView(oldLabel: .init(title: "1", color: .white), undoManager: nil)
+//        .environmentObject(AnnotationDocument.preview)
+//}
+//#endif

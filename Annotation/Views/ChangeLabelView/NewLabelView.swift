@@ -41,9 +41,9 @@ struct NewLabelView: View {
 }
 
 
-#if DEBUG
-#Preview {
-    NewLabelView(undoManager: nil, onDismiss: { _ in })
-        .environmentObject(AnnotationDocument.preview)
-}
-#endif
+//#if DEBUG
+//#Preview {
+//    NewLabelView(undoManager: nil, onDismiss: { _ in })
+//        .environmentObject(AnnotationDocument.preview)
+//}
+//#endif

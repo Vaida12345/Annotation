@@ -126,12 +126,12 @@ struct AutoAnnotateView: View {
 }
 
 
-#if DEBUG
-#Preview {
-    AutoAnnotateView(undoManager: nil)
-        .environmentObject(AnnotationDocument.preview)
-}
-#endif
+//#if DEBUG
+//#Preview {
+//    AutoAnnotateView(undoManager: nil)
+//        .environmentObject(AnnotationDocument.preview)
+//}
+//#endif
 
 
 /// Returns the ML result by applying an Object Detection ML model to an image.
