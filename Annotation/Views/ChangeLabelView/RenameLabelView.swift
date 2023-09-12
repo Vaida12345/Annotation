@@ -28,11 +28,11 @@ struct RenameLabelView: View {
                 .bold()
             
             __ChangeLabelNameView(label: $newLabel) {
-                undoManager?.setActionName("Edit label")
                 undoManager?.beginUndoGrouping()
                 document.rename(label: oldLabel.title, with: newLabel.title, undoManager: undoManager)
                 document.replaceColor(label: newLabel.title, with: newLabel.color, undoManager: undoManager)
                 undoManager?.endUndoGrouping()
+                undoManager?.setActionName("Edit label")
                 
                 dismiss()
             }

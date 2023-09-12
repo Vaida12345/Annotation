@@ -150,7 +150,6 @@ struct AnnotationView: NSViewRepresentable {
                     return
                 }
                 
-                undoManager.setActionName("Annotate")
                 undoManager.beginUndoGrouping()
                 
                 for item in document.selectedItems {
@@ -167,6 +166,7 @@ struct AnnotationView: NSViewRepresentable {
                 }
                 
                 undoManager.endUndoGrouping()
+                undoManager.setActionName("Annotate")
                 
                 self?.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                 self?.recognizerView.removeFromSuperview()

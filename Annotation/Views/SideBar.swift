@@ -30,12 +30,12 @@ struct SideBar: View {
                         .cornerRadius(5)
                         .contextMenu {
                             Button("Remove") {
-                                undoManager?.setActionName("Remove images")
                                 undoManager?.beginUndoGrouping()
                                 for id in document.selectedItems {
                                     document.removeAnnotation(undoManager: undoManager, annotationID: id)
                                 }
                                 undoManager?.endUndoGrouping()
+                                undoManager?.setActionName("Remove images")
                                 document.selectedItems = []
                             }
                             

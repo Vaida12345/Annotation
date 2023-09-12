@@ -96,12 +96,14 @@ struct LabelListItems: View {
         }
         .frame(height: LabelListItems.height)
         .task {
+            defer { self.isCompleted = true }
             guard let labelsDictionaryValue = document.annotations.labelDictionary[label.title] else { return }
             
             await updateInnerViews(labelsDictionaryValue: labelsDictionaryValue)
         }
         .onChange(of: document.annotations) { annotations in
             guard self.isCompleted else { return } // not yet completed, do not put more stress
+            defer { self.isCompleted = true }
             guard let labelsDictionaryValue = document.annotations.labelDictionary[label.title] else { return }
             guard self.labelsDictionaryValue != labelsDictionaryValue else { return }
             self.isCompleted = false

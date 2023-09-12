@@ -102,9 +102,22 @@ struct AutoAnnotateView: View {
             }
             
             Task { @MainActor in
+                // synchronize labels
+                let _labels = document.annotations.__labels
+                let difference = Set(_labels).subtracting(document.labels.keys)
+                document.objectWillChange.send()
+                for i in difference {
+                    document.labels[i] = .init(title: i, color: .green)
+                }
+                
+                // undo / redo
                 undoManager?.setActionName("Auto Annotate")
                 undoManager?.registerUndo(withTarget: document) { document in
                     document.replaceItems(with: oldItems, undoManager: undoManager)
+                    
+                    for i in difference {
+                        document.labels[i] = nil
+                    }
                 }
             }
         }

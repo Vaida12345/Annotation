@@ -147,7 +147,11 @@ final class AnnotationDocument: ReferenceFileDocument {
             if removedItems.count <= addedItems.count || removedItems.count < commonItems.count {
                 mediaWrapper = FileWrapper(directoryWithFileWrappers: container)
                 
-                reporter.totalUnitCount = Int64(removedItems.count + addedItems.count)
+                let totalCount = Int64(removedItems.count + addedItems.count)
+                Task { @MainActor in
+                    reporter.totalUnitCount = totalCount
+                    reporter.completedUnitCount = 0
+                }
                 
                 if !removedItems.isEmpty {
                     var index = 0
@@ -178,7 +182,10 @@ final class AnnotationDocument: ReferenceFileDocument {
                     }
                 }
             } else {
-                reporter.totalUnitCount = Int64(snapshot.count)
+                Task { @MainActor in
+                    reporter.totalUnitCount = Int64(snapshot.count)
+                    reporter.completedUnitCount = 0
+                }
                 
                 let _newWrappers = snapshot.concurrent.map { item in
                     let image = item.image.data(using: .heic)!
@@ -195,9 +202,12 @@ final class AnnotationDocument: ReferenceFileDocument {
                 }
             }
         } else {
-            reporter.totalUnitCount = Int64(snapshot.count)
             
             if configuration.contentType == .annotationProject {
+                Task { @MainActor in
+                    reporter.totalUnitCount = Int64(snapshot.count)
+                    reporter.completedUnitCount = 0
+                }
                 let _newWrappers = snapshot.concurrent.map { item in
                     let image = item.image.data(using: .heic)!
                     let imageWrapper = FileWrapper(regularFileWithContents: image)
@@ -213,6 +223,10 @@ final class AnnotationDocument: ReferenceFileDocument {
                 }
             } else {
                 let source = snapshot.filter { !$0.annotations.isEmpty }
+                Task { @MainActor in 
+                    reporter.totalUnitCount = Int64(source.count)
+                    reporter.completedUnitCount = 0
+                }
                 
                 let _newWrappers = source.concurrent.map { item in
                     let image = item.image.data(using: .heic)!
@@ -470,7 +484,10 @@ extension AnnotationDocument {
 func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [Annotation] {
     
     var newItems: [Annotation] = []
-    reporter.totalUnitCount = Int64(sources.count)
+    Task { @MainActor in
+        reporter.totalUnitCount = Int64(sources.count)
+        reporter.completedUnitCount = 0
+    }
     
     for source in sources {
         guard let contentType = source.contentType else { continue }
@@ -557,7 +574,9 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
         }
     }
     
-    reporter.completedUnitCount = reporter.totalUnitCount
+    Task { @MainActor in
+        reporter.completedUnitCount = reporter.totalUnitCount
+    }
     return newItems
 }
 
