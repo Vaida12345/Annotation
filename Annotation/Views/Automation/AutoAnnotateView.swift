@@ -13,14 +13,15 @@ import Support
 
 struct AutoAnnotateView: View {
     
-    @State var confidence: Double = 0.8
-    @State var model: MLModel?
+    @State private var confidence: Double = 0.8
+    @State private var model: MLModel?
+    @State private var unannotatedImageOnly = true
     
     @EnvironmentObject var document: AnnotationDocument
     @Environment(\.dismiss) var dismiss
     
     @State var alertManager = AlertManager()
-    @Binding var undoManager: UndoManager?
+    let undoManager: UndoManager?
     
     var body: some View {
         
@@ -45,6 +46,8 @@ struct AutoAnnotateView: View {
                 
                 Slider(value: $confidence, in: 0...1)
                 
+                Toggle("Unannotated Images Only", isOn: $unannotatedImageOnly)
+                
                 Spacer()
                 
                 HStack {
@@ -57,7 +60,7 @@ struct AutoAnnotateView: View {
                 }
             }
             .padding()
-            .frame(width: 200, height: 300)
+            .frame(width: 210, height: 300)
         }
         .alert(manager: $alertManager)
     }
@@ -65,14 +68,21 @@ struct AutoAnnotateView: View {
     func applyML() {
         guard let model = model else { return }
         let oldItems = document.annotations
+        self.document.selectedItems = []
         
         let _document = document
         let staticConfidence = confidence
         
+        let _unannotatedImagesOnly = unannotatedImageOnly
+        
         let images = _document.annotations.map(\.image)
         
         Task.detached {
-            for i in await 0..<_document.annotations.count {
+            for i in 0..<_document.annotations.count {
+                if _unannotatedImagesOnly && !_document.annotations[i].annotations.isEmpty {
+                    continue
+                }
+                
                 guard let result = await applyObjectDetectionML(to: images[i], model: model) else {
                     Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
                     continue
@@ -101,6 +111,14 @@ struct AutoAnnotateView: View {
         
     }
 }
+
+
+#if DEBUG
+#Preview {
+    AutoAnnotateView(undoManager: nil)
+        .environmentObject(AnnotationDocument.preview)
+}
+#endif
 
 
 /// Returns the ML result by applying an Object Detection ML model to an image.

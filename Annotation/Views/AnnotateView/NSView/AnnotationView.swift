@@ -21,13 +21,18 @@ struct AnnotationView: NSViewRepresentable {
     @EnvironmentObject var document: AnnotationDocument
     
     var annotations: [Annotation] {
-        document.annotations.filter({ document.selectedItems.contains($0.id) })
+        let date = Date()
+        defer { print("Obtain AnnotationView annotations took \(date.distanceToNow())") }
+        return document.annotations.filter({ document.selectedItems.contains($0.id) })
     }
     
 //    var textField = NSTextField()
 //    var annotationsViews: [NSView] = []
 
     func makeNSView(context: Context) -> NSView {
+        let date = Date()
+        defer { print("\(#function) took \(date.distanceToNow())") }
+        
         let view = NSView(frame: NSRect(origin: .zero, size: size))
         for image in annotations.map({ $0.image }) {
             let imageView: NSImageView = NSImageView()
@@ -49,6 +54,9 @@ struct AnnotationView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
+        let date = Date()
+        defer { print("\(#function) took \(date.distanceToNow())") }
+        
         _ = nsView.subviews.map{ $0.removeFromSuperview() }
         
         let viewController = ViewController(document: document)
@@ -138,6 +146,7 @@ struct AnnotationView: NSViewRepresentable {
                     self?.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                     self?.recognizerView.removeFromSuperview()
                     self?.recognizerStartingPoint = NSPoint.zero
+                    self?.document.objectWillChange.send()
                     return
                 }
                 

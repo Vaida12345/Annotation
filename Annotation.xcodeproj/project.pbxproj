@@ -27,6 +27,7 @@
 		B466771E2AADDE7A00648F04 /* ChangeLabelNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */; };
 		B47D623C298D532200F6025B /* AutoDetectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B47D623B298D532200F6025B /* AutoDetectView.swift */; };
 		B492E58C2AB00F4400A949B1 /* NewLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58B2AB00F4400A949B1 /* NewLabelView.swift */; };
+		B492E58E2AB0398100A949B1 /* SelectLabelMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */; };
 		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
 		B4C716FB2824D3CF00D19A9D /* Support in Frameworks */ = {isa = PBXBuildFile; productRef = B4C716FA2824D3CF00D19A9D /* Support */; };
 /* End PBXBuildFile section */
@@ -55,6 +56,7 @@
 		B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeLabelNameView.swift; sourceTree = "<group>"; };
 		B47D623B298D532200F6025B /* AutoDetectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoDetectView.swift; sourceTree = "<group>"; };
 		B492E58B2AB00F4400A949B1 /* NewLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewLabelView.swift; sourceTree = "<group>"; };
+		B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLabelMenu.swift; sourceTree = "<group>"; };
 		B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Folder Icon.icns"; sourceTree = "<group>"; };
 		B4C716F92824D3CC00D19A9D /* DataBase */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DataBase; path = ../../Packages/DataBase; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -138,8 +140,7 @@
 				B492E58A2AB00EFA00A949B1 /* ChangeLabelView */,
 				B45B52EF282A8C4E007C8CCC /* SideBar.swift */,
 				B465397E2AAEE2920042562E /* AnnotateView */,
-				B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */,
-				B47D623A298D531200F6025B /* AutoDetect */,
+				B47D623A298D531200F6025B /* Automation */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -158,6 +159,7 @@
 			children = (
 				B465397F2AAEE2D00042562E /* NSView */,
 				B45B52F1282A8C7B007C8CCC /* DetailView.swift */,
+				B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */,
 				B45B52F3282A8C93007C8CCC /* InfoView.swift */,
 			);
 			path = AnnotateView;
@@ -172,12 +174,13 @@
 			path = NSView;
 			sourceTree = "<group>";
 		};
-		B47D623A298D531200F6025B /* AutoDetect */ = {
+		B47D623A298D531200F6025B /* Automation */ = {
 			isa = PBXGroup;
 			children = (
+				B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */,
 				B47D623B298D532200F6025B /* AutoDetectView.swift */,
 			);
-			path = AutoDetect;
+			path = Automation;
 			sourceTree = "<group>";
 		};
 		B492E58A2AB00EFA00A949B1 /* ChangeLabelView */ = {
@@ -280,6 +283,7 @@
 				B416914B27B53B6C0029AB97 /* Annotations.swift in Sources */,
 				B416910927B53B020029AB97 /* AnnotationDocument.swift in Sources */,
 				B47D623C298D532200F6025B /* AutoDetectView.swift in Sources */,
+				B492E58E2AB0398100A949B1 /* SelectLabelMenu.swift in Sources */,
 				B45B52F2282A8C7B007C8CCC /* DetailView.swift in Sources */,
 				B45B52F8282A8CE9007C8CCC /* AutoAnnotateView.swift in Sources */,
 				B45B52F6282A8CA8007C8CCC /* LabelList.swift in Sources */,

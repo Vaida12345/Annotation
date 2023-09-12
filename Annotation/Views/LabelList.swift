@@ -61,6 +61,8 @@ struct LabelListItems: View {
     @State var label: AnnotationDocument.Label
     @Binding var showLabelList: Bool
     
+    @State private var labelsDictionaryValue: Array<Array<Annotation>.LabelDictionaryValue> = []
+    
     @State private var innerView: [InnerViewElement] = []
     @State private var isCompleted = false
     
@@ -76,7 +78,7 @@ struct LabelListItems: View {
                     }
                 }
             } else {
-                if isCompleted {
+                if !isCompleted {
                     HStack {
                         Text("Loading preview")
                         
@@ -94,32 +96,46 @@ struct LabelListItems: View {
         }
         .frame(height: LabelListItems.height)
         .task {
-            Task.detached { @Sendable in
-                guard let labelsDictionary = await document.annotations.labelDictionary[label.title] else { return }
-                
-                let _innerView = await withTaskGroup(of: InnerViewElement?.self) { group in
-                    for item in labelsDictionary {
-                        group.addTask {
-                            guard let annotation = await document.annotations.first(where: { $0.id == item.annotationID }) else { return nil }
-                            guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
-                            
-                            let size = annotations.coordinate.size.aspectRatio(extend: .height, to: LabelListItems.height)
-                            guard let croppedImage = trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
-                            guard let resizedImage = croppedImage.cgImage?.resized(to: size) else { return nil }
-                            
-                            return InnerViewElement(item: item, croppedImage: NativeImage(cgImage: resizedImage), size: size)
-                        }
-                    }
+            guard let labelsDictionaryValue = document.annotations.labelDictionary[label.title] else { return }
+            
+            await updateInnerViews(labelsDictionaryValue: labelsDictionaryValue)
+        }
+        .onChange(of: document.annotations) { annotations in
+            guard self.isCompleted else { return } // not yet completed, do not put more stress
+            guard let labelsDictionaryValue = document.annotations.labelDictionary[label.title] else { return }
+            guard self.labelsDictionaryValue != labelsDictionaryValue else { return }
+            self.isCompleted = false
+            self.innerView = []
+            
+            Task {
+                await updateInnerViews(labelsDictionaryValue: labelsDictionaryValue)
+            }
+        }
+    }
+    
+    func updateInnerViews(labelsDictionaryValue: Array<Array<Annotation>.LabelDictionaryValue>) async {
+        let _innerView = await withTaskGroup(of: InnerViewElement?.self) { group in
+            for item in labelsDictionaryValue {
+                group.addTask {
+                    guard let annotation = await document.annotations.first(where: { $0.id == item.annotationID }) else { return nil }
+                    guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
                     
-                    var iterator = group.makeAsyncIterator()
-                    return await iterator.allObjects(reservingCapacity: labelsDictionary.count).compacted()
-                }
-                
-                Task { @MainActor in
-                    self.innerView = _innerView
-                    self.isCompleted = true
+                    let size = annotations.coordinate.size.aspectRatio(extend: .height, to: LabelListItems.height)
+                    guard let croppedImage = trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
+                    guard let resizedImage = croppedImage.cgImage?.resized(to: size) else { return nil }
+                    
+                    return InnerViewElement(item: item, croppedImage: NativeImage(cgImage: resizedImage), size: size)
                 }
             }
+            
+            var iterator = group.makeAsyncIterator()
+            return await iterator.allObjects(reservingCapacity: labelsDictionaryValue.count).compacted()
+        }
+        
+        Task { @MainActor in
+            self.labelsDictionaryValue = labelsDictionaryValue
+            self.innerView = _innerView
+            self.isCompleted = true
         }
     }
     

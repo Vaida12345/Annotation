@@ -281,9 +281,8 @@ extension AnnotationDocument {
     func replaceItems(with newItems: [Annotation], undoManager: UndoManager?, animation: Animation? = .default) {
         let oldItems = annotations
         
-        withAnimation(animation) {
-            annotations = newItems
-        }
+        self.objectWillChange.send()
+        self.annotations = newItems
         
         undoManager?.registerUndo(withTarget: self) { document in
             // Because you recurse here, redo support is automatic.
@@ -344,9 +343,8 @@ extension AnnotationDocument {
     
     func apply(undoManager: UndoManager?, action: (()->Void)) {
         let oldItems = annotations
-        withAnimation {
-            action()
-        }
+        self.objectWillChange.send()
+        action()
         
         undoManager?.registerUndo(withTarget: self) { document in
             // Use the replaceItems symmetric undoable-redoable function.

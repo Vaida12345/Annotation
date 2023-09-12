@@ -23,6 +23,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
         self.annotations = annotations
     }
     
+    /// An annotation with rect and label.
     struct Annotations: Equatable, Hashable, Encodable, Decodable, Identifiable {
         
         let id: UUID
@@ -247,7 +248,7 @@ extension Array where Element == Annotation {
         return dictionary
     }
     
-    struct LabelDictionaryValue {
+    struct LabelDictionaryValue: Equatable {
         
         let annotationID: Annotation.ID
         

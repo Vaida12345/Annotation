@@ -30,10 +30,10 @@ struct AnnotationApp: App {
                 }
                 .focusedSceneValue(\.document, file.document)
                 .sheet(isPresented: $isShowingAutoAnnotate) {
-                    AutoAnnotateView(undoManager: $undoManager)
+                    AutoAnnotateView(undoManager: undoManager)
                 }
                 .sheet(isPresented: $isShowingAutoDetect) {
-                    AutoDetectView(undoManager: $undoManager)
+                    AutoDetectView(globalUndoManager: undoManager)
                 }
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }
