@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import CoreML
 import Vision
-import Support
+import Stratum
 
 struct AutoAnnotateView: View {
     
@@ -20,7 +20,6 @@ struct AutoAnnotateView: View {
     @EnvironmentObject var document: AnnotationDocument
     @Environment(\.dismiss) var dismiss
     
-    @State var alertManager = AlertManager()
     let undoManager: UndoManager?
     
     var body: some View {
@@ -31,13 +30,13 @@ struct AutoAnnotateView: View {
                     guard let firstItem = sources.first else { return }
                     let model = try MLModel(contentsOf: MLModel.compileModel(at: firstItem.url))
                     
-                    Task { @MainActor in
+                    Task {
                         self.model = model
                         dismiss()
-                        applyML()
+                        await applyML()
                     }
                 }
-                .background(BlurredEffectView())
+                .background(.regularMaterial)
                 .frame(width: 400, height: 300)
             
             VStack(alignment: .leading) {
@@ -62,10 +61,9 @@ struct AutoAnnotateView: View {
             .padding()
             .frame(width: 210, height: 300)
         }
-        .alert(manager: $alertManager)
     }
     
-    func applyML() {
+    func applyML() async {
         guard let model = model else { return }
         let oldItems = document.annotations
         self.document.selectedItems = []
@@ -75,50 +73,48 @@ struct AutoAnnotateView: View {
         
         let _unannotatedImagesOnly = unannotatedImageOnly
         
-        let images = _document.annotations.map(\.image)
+        nonisolated(unsafe)
+        let images = _document.annotations.map(\.image).compactMap(\.cgImage)
         
-        Task.detached {
-            for i in 0..<_document.annotations.count {
-                if _unannotatedImagesOnly && !_document.annotations[i].annotations.isEmpty {
-                    continue
-                }
-                
-                guard let result = await applyObjectDetectionML(to: images[i], model: model) else {
-                    Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
-                    continue
-                }
-                let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
-                    guard let label = item.labels.first?.identifier else { return nil }
-                    let coordinate = Annotation.Annotations.Coordinate(from: item, in: images[i])
-                    return Annotation.Annotations.init(label: label, coordinates: coordinate)
-                }
-                
-                Task { @MainActor in
-                    document.annotations[i].annotations.append(contentsOf: annotations)
-                    
-                    document.selectedItems = [document.annotations[i].id]
-                    document.scrollProxy?.scrollTo(document.annotations[i].id)
-                }
+        for i in 0..<_document.annotations.count {
+            if _unannotatedImagesOnly && !_document.annotations[i].annotations.isEmpty {
+                continue
+            }
+            
+            guard let result = await applyObjectDetectionML(to: images[i], model: model) else {
+                Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
+                continue
+            }
+            let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
+                guard let label = item.labels.first?.identifier else { return nil }
+                let coordinate = Annotation.Annotations.Coordinate(from: item, in: images[i])
+                return Annotation.Annotations.init(label: label, coordinates: coordinate)
             }
             
             Task { @MainActor in
-                // synchronize labels
-                let _labels = document.annotations.__labels
-                let difference = Set(_labels).subtracting(document.labels.keys)
-                document.objectWillChange.send()
-                for i in difference {
-                    document.labels[i] = .init(title: i, color: .green)
-                }
+                document.annotations[i].annotations.append(contentsOf: annotations)
                 
-                // undo / redo
-                undoManager?.setActionName("Auto Annotate")
-                undoManager?.registerUndo(withTarget: document) { document in
-                    document.replaceItems(with: oldItems, undoManager: undoManager)
-                    
-                    for i in difference {
-                        document.labels[i] = nil
-                    }
-                }
+                document.selectedItems = [document.annotations[i].id]
+                document.scrollProxy?.scrollTo(document.annotations[i].id)
+            }
+        }
+        
+        
+        // synchronize labels
+        let _labels = document.annotations.__labels
+        let difference = Set(_labels).subtracting(document.labels.keys)
+        document.objectWillChange.send()
+        for i in difference {
+            document.labels[i] = .init(title: i, color: .green)
+        }
+        
+        // undo / redo
+        undoManager?.setActionName("Auto Annotate")
+        undoManager?.registerUndo(withTarget: document) { document in
+            document.replaceItems(with: oldItems, undoManager: undoManager)
+            
+            for i in difference {
+                document.labels[i] = nil
             }
         }
         
@@ -152,10 +148,7 @@ struct AutoAnnotateView: View {
 ///     - image: The image on which performs the ML.
 ///
 /// - Returns: The observations in the image; `nil` otherwise.
-func applyObjectDetectionML(to image: NSImage, model: MLModel) async -> [VNRecognizedObjectObservation]? {
-    guard image.size != NSSize.zero else { return nil }
-    guard let image = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-    
+func applyObjectDetectionML(to image: CGImage, model: MLModel) async -> [VNRecognizedObjectObservation]? {
     let orientation = CGImagePropertyOrientation.up
     let handler = VNImageRequestHandler(cgImage: image, orientation: orientation, options: [:])
     

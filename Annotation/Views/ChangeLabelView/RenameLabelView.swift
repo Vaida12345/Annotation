@@ -11,11 +11,9 @@ import SwiftUI
 
 struct RenameLabelView: View {
     
-    let oldLabel: AnnotationDocument.Label
+    let label: AnnotationDocument.Label
     // for some reason, has to pass like this
     let undoManager: UndoManager?
-    
-    @State var newLabel = AnnotationDocument.Label(title: "", color: .green)
     
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var document: AnnotationDocument
@@ -23,11 +21,11 @@ struct RenameLabelView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Rename \(oldLabel.title)")
+            Text("Rename \(label.title)")
                 .font(.title2)
                 .bold()
             
-            __ChangeLabelNameView(label: $newLabel) {
+            __ChangeLabelNameView(label: label) { oldLabel, newLabel in
                 undoManager?.beginUndoGrouping()
                 document.rename(label: oldLabel.title, with: newLabel.title, undoManager: undoManager)
                 document.replaceColor(label: newLabel.title, with: newLabel.color, undoManager: undoManager)
@@ -37,10 +35,8 @@ struct RenameLabelView: View {
                 dismiss()
             }
         }
+        .frame(minWidth: 600)
         .padding()
-        .onAppear {
-            newLabel = oldLabel
-        }
     }
 }
 

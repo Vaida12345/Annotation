@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 55;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -18,6 +18,8 @@
 		B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914C27B53B740029AB97 /* AnnotationView.swift */; };
 		B416914F27B53FB20029AB97 /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B416914E27B53FB20029AB97 /* icon.icns */; };
 		B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41B36AF298A921D0075DADD /* RenameLabelView.swift */; };
+		B44136C52C2187AA00E9331D /* Stratum in Frameworks */ = {isa = PBXBuildFile; productRef = B44136C42C2187AA00E9331D /* Stratum */; };
+		B44136C82C21884200E9331D /* ViewCollection in Frameworks */ = {isa = PBXBuildFile; productRef = B44136C72C21884200E9331D /* ViewCollection */; };
 		B45B52F0282A8C4E007C8CCC /* SideBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52EF282A8C4E007C8CCC /* SideBar.swift */; };
 		B45B52F2282A8C7B007C8CCC /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F1282A8C7B007C8CCC /* DetailView.swift */; };
 		B45B52F4282A8C93007C8CCC /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F3282A8C93007C8CCC /* InfoView.swift */; };
@@ -29,7 +31,16 @@
 		B492E58C2AB00F4400A949B1 /* NewLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58B2AB00F4400A949B1 /* NewLabelView.swift */; };
 		B492E58E2AB0398100A949B1 /* SelectLabelMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */; };
 		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
-		B4C716FB2824D3CF00D19A9D /* Support in Frameworks */ = {isa = PBXBuildFile; productRef = B4C716FA2824D3CF00D19A9D /* Support */; };
+		B4E36C012C218B9A00FA581E /* MediaKit in Frameworks */ = {isa = PBXBuildFile; productRef = B4E36C002C218B9A00FA581E /* MediaKit */; };
+		B4E36C062C21903800FA581E /* StratumMacros in Frameworks */ = {isa = PBXBuildFile; productRef = B4E36C052C21903800FA581E /* StratumMacros */; };
+		B4E36C092C21A25500FA581E /* LabelListItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C082C21A25200FA581E /* LabelListItems.swift */; };
+		B4E36C0B2C21A26400FA581E /* LabelListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C0A2C21A26200FA581E /* LabelListItem.swift */; };
+		B4E36C0D2C21A67C00FA581E /* LabelListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C0C2C21A67A00FA581E /* LabelListRow.swift */; };
+		B4E36C102C21AC0A00FA581E /* ImportExportCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C0F2C21AC0700FA581E /* ImportExportCommand.swift */; };
+		B4E36C122C21AD8100FA581E /* AppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C112C21AD7F00FA581E /* AppView.swift */; };
+		B4E36C142C21AE5D00FA581E /* AnnotateCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C132C21AE5900FA581E /* AnnotateCommand.swift */; };
+		B4E36C172C21B3B900FA581E /* InfoViewItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C162C21B3B900FA581E /* InfoViewItem.swift */; };
+		B4E36C192C21B3DA00FA581E /* InfoViewImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C182C21B3D400FA581E /* InfoViewImage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +70,14 @@
 		B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLabelMenu.swift; sourceTree = "<group>"; };
 		B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Folder Icon.icns"; sourceTree = "<group>"; };
 		B4C716F92824D3CC00D19A9D /* DataBase */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DataBase; path = ../../Packages/DataBase; sourceTree = "<group>"; };
+		B4E36C082C21A25200FA581E /* LabelListItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelListItems.swift; sourceTree = "<group>"; };
+		B4E36C0A2C21A26200FA581E /* LabelListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelListItem.swift; sourceTree = "<group>"; };
+		B4E36C0C2C21A67A00FA581E /* LabelListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelListRow.swift; sourceTree = "<group>"; };
+		B4E36C0F2C21AC0700FA581E /* ImportExportCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExportCommand.swift; sourceTree = "<group>"; };
+		B4E36C112C21AD7F00FA581E /* AppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppView.swift; sourceTree = "<group>"; };
+		B4E36C132C21AE5900FA581E /* AnnotateCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotateCommand.swift; sourceTree = "<group>"; };
+		B4E36C162C21B3B900FA581E /* InfoViewItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoViewItem.swift; sourceTree = "<group>"; };
+		B4E36C182C21B3D400FA581E /* InfoViewImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoViewImage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,7 +85,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B4C716FB2824D3CF00D19A9D /* Support in Frameworks */,
+				B44136C52C2187AA00E9331D /* Stratum in Frameworks */,
+				B4E36C012C218B9A00FA581E /* MediaKit in Frameworks */,
+				B4E36C062C21903800FA581E /* StratumMacros in Frameworks */,
+				B44136C82C21884200E9331D /* ViewCollection in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -95,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				B416910627B53B020029AB97 /* AnnotationApp.swift */,
+				B4E36C0E2C21AC0300FA581E /* Commands */,
 				B45B52EE282A8C2E007C8CCC /* Structures */,
 				B45B52ED282A8C04007C8CCC /* Views */,
 				B416911D27B53B450029AB97 /* Assets */,
@@ -135,8 +158,9 @@
 		B45B52ED282A8C04007C8CCC /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				B4E36C112C21AD7F00FA581E /* AppView.swift */,
 				B416910A27B53B020029AB97 /* ContentView.swift */,
-				B45B52F5282A8CA8007C8CCC /* LabelList.swift */,
+				B4E36C072C21A24100FA581E /* LabelList */,
 				B492E58A2AB00EFA00A949B1 /* ChangeLabelView */,
 				B45B52EF282A8C4E007C8CCC /* SideBar.swift */,
 				B465397E2AAEE2920042562E /* AnnotateView */,
@@ -160,7 +184,7 @@
 				B465397F2AAEE2D00042562E /* NSView */,
 				B45B52F1282A8C7B007C8CCC /* DetailView.swift */,
 				B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */,
-				B45B52F3282A8C93007C8CCC /* InfoView.swift */,
+				B4E36C152C21B3AF00FA581E /* InfoView */,
 			);
 			path = AnnotateView;
 			sourceTree = "<group>";
@@ -201,6 +225,36 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		B4E36C072C21A24100FA581E /* LabelList */ = {
+			isa = PBXGroup;
+			children = (
+				B45B52F5282A8CA8007C8CCC /* LabelList.swift */,
+				B4E36C0C2C21A67A00FA581E /* LabelListRow.swift */,
+				B4E36C082C21A25200FA581E /* LabelListItems.swift */,
+				B4E36C0A2C21A26200FA581E /* LabelListItem.swift */,
+			);
+			path = LabelList;
+			sourceTree = "<group>";
+		};
+		B4E36C0E2C21AC0300FA581E /* Commands */ = {
+			isa = PBXGroup;
+			children = (
+				B4E36C0F2C21AC0700FA581E /* ImportExportCommand.swift */,
+				B4E36C132C21AE5900FA581E /* AnnotateCommand.swift */,
+			);
+			path = Commands;
+			sourceTree = "<group>";
+		};
+		B4E36C152C21B3AF00FA581E /* InfoView */ = {
+			isa = PBXGroup;
+			children = (
+				B45B52F3282A8C93007C8CCC /* InfoView.swift */,
+				B4E36C162C21B3B900FA581E /* InfoViewItem.swift */,
+				B4E36C182C21B3D400FA581E /* InfoViewImage.swift */,
+			);
+			path = InfoView;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -218,7 +272,10 @@
 			);
 			name = Annotation;
 			packageProductDependencies = (
-				B4C716FA2824D3CF00D19A9D /* Support */,
+				B44136C42C2187AA00E9331D /* Stratum */,
+				B44136C72C21884200E9331D /* ViewCollection */,
+				B4E36C002C218B9A00FA581E /* MediaKit */,
+				B4E36C052C21903800FA581E /* StratumMacros */,
 			);
 			productName = Annotation;
 			productReference = B416910327B53B020029AB97 /* Annotation.app */;
@@ -232,7 +289,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1320;
-				LastUpgradeCheck = 1420;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					B416910227B53B020029AB97 = {
 						CreatedOnToolsVersion = 13.2.1;
@@ -248,6 +305,12 @@
 				Base,
 			);
 			mainGroup = B41690FA27B53B020029AB97;
+			packageReferences = (
+				B44136C32C2187AA00E9331D /* XCLocalSwiftPackageReference "../../Packages/Stratum" */,
+				B44136C62C21884200E9331D /* XCLocalSwiftPackageReference "../../Packages/ViewCollection" */,
+				B4E36BFF2C218B9A00FA581E /* XCLocalSwiftPackageReference "../../Packages/MediaKit" */,
+				B4E36C042C21903800FA581E /* XCLocalSwiftPackageReference "../../Packages/StratumMacros" */,
+			);
 			productRefGroup = B416910427B53B020029AB97 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -278,22 +341,30 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B4E36C192C21B3DA00FA581E /* InfoViewImage.swift in Sources */,
 				B45B52F4282A8C93007C8CCC /* InfoView.swift in Sources */,
 				B416910727B53B020029AB97 /* AnnotationApp.swift in Sources */,
 				B416914B27B53B6C0029AB97 /* Annotations.swift in Sources */,
+				B4E36C142C21AE5D00FA581E /* AnnotateCommand.swift in Sources */,
 				B416910927B53B020029AB97 /* AnnotationDocument.swift in Sources */,
 				B47D623C298D532200F6025B /* AutoDetectView.swift in Sources */,
 				B492E58E2AB0398100A949B1 /* SelectLabelMenu.swift in Sources */,
+				B4E36C0D2C21A67C00FA581E /* LabelListRow.swift in Sources */,
 				B45B52F2282A8C7B007C8CCC /* DetailView.swift in Sources */,
 				B45B52F8282A8CE9007C8CCC /* AutoAnnotateView.swift in Sources */,
 				B45B52F6282A8CA8007C8CCC /* LabelList.swift in Sources */,
 				B466771E2AADDE7A00648F04 /* ChangeLabelNameView.swift in Sources */,
 				B45B52F0282A8C4E007C8CCC /* SideBar.swift in Sources */,
+				B4E36C172C21B3B900FA581E /* InfoViewItem.swift in Sources */,
 				B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */,
 				B492E58C2AB00F4400A949B1 /* NewLabelView.swift in Sources */,
 				B416910B27B53B020029AB97 /* ContentView.swift in Sources */,
+				B4E36C102C21AC0A00FA581E /* ImportExportCommand.swift in Sources */,
+				B4E36C092C21A25500FA581E /* LabelListItems.swift in Sources */,
+				B4E36C122C21AD8100FA581E /* AppView.swift in Sources */,
 				B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */,
 				B46539812AAEE2E30042562E /* Recognizer.swift in Sources */,
+				B4E36C0B2C21A26400FA581E /* LabelListItem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -304,6 +375,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -338,6 +410,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -366,6 +439,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -400,6 +474,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -440,7 +515,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -472,7 +547,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -504,10 +579,41 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		B44136C32C2187AA00E9331D /* XCLocalSwiftPackageReference "../../Packages/Stratum" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Packages/Stratum;
+		};
+		B44136C62C21884200E9331D /* XCLocalSwiftPackageReference "../../Packages/ViewCollection" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Packages/ViewCollection;
+		};
+		B4E36BFF2C218B9A00FA581E /* XCLocalSwiftPackageReference "../../Packages/MediaKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Packages/MediaKit;
+		};
+		B4E36C042C21903800FA581E /* XCLocalSwiftPackageReference "../../Packages/StratumMacros" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Packages/StratumMacros;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
-		B4C716FA2824D3CF00D19A9D /* Support */ = {
+		B44136C42C2187AA00E9331D /* Stratum */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Support;
+			productName = Stratum;
+		};
+		B44136C72C21884200E9331D /* ViewCollection */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ViewCollection;
+		};
+		B4E36C002C218B9A00FA581E /* MediaKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MediaKit;
+		};
+		B4E36C052C21903800FA581E /* StratumMacros */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StratumMacros;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

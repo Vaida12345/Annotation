@@ -6,9 +6,10 @@
 //
 
 import SwiftUI
-import Support
+import Stratum
 import Vision
 import CoreImage
+import ViewCollection
 
 struct AutoDetectView: View {
     
@@ -17,7 +18,6 @@ struct AutoDetectView: View {
     @State private var unannotatedImagesOnly = true
     
     @State private var detectProgress: DetectProgress = .initial
-    @State private var alertManager = AlertManager()
     
     @StateObject private var rawImages: RawImagesContainer = .init()
     
@@ -126,44 +126,37 @@ struct AutoDetectView: View {
                         switch detectProgress {
                         case .initial:
                             let option = self.detectOption
-                            Task.detached {
-                                do {
+                            Task {
+                                await withErrorPresented {
                                     let annotations = try await autoDetectDocument.applyML(option: option, document: self.document, unannotatedImagesOnly: unannotatedImagesOnly)
-                                    guard !annotations.isEmpty else { throw ErrorManager("Cannot find any matching result") }
-
+                                    guard !annotations.isEmpty else { throw MLError.noMatch }
+                                    
                                     let __croppedImages = await withTaskGroup(of: RawImagesContainer.RawImage?.self) { group in
                                         for annotation in annotations {
+                                            nonisolated(unsafe)
                                             let image = annotation.image
-
+                                            
                                             for _annotation in annotation.annotations {
                                                 group.addTask {
                                                     guard let _image = trimImage(from: image, at: _annotation.coordinate),
                                                           let cgImage = _image.cgImage,
                                                           let _cgImage = cgImage.resized(to: cgImage.size.aspectRatio(extend: .width, to: 140)) else { return nil }
-
+                                                    
                                                     return RawImagesContainer.RawImage(annotationID: annotation.id, annotationsID: _annotation.id, image: NativeImage(cgImage: _cgImage), confidence: _annotation.confidence, rect: _annotation.body.coordinate)
                                                 }
                                             }
                                         }
-
+                                        
                                         var iterator = group.makeAsyncIterator()
                                         return await iterator.allObjects(reservingCapacity: annotations.count).compacted()
                                     }
-
+                                    
                                     Task { @MainActor in
                                         autoDetectDocument.annotations = annotations
-
+                                        
                                         self.rawImages.objectWillChange.send()
                                         self.rawImages.images = __croppedImages
                                         self.detectProgress = .waitForConfidence
-                                    }
-                                } catch {
-                                    Task { @MainActor in
-                                        self.alertManager = AlertManager(error: error, actions: {
-                                            Button("dismiss") {
-                                                dismiss()
-                                            }
-                                        })
                                     }
                                 }
                             }
@@ -202,7 +195,6 @@ struct AutoDetectView: View {
             .frame(width: 300)
             .frame(idealHeight: 400)
         }
-        .alert(manager: $alertManager)
     }
     
     enum DetectOption: String, CaseIterable {
@@ -226,6 +218,23 @@ struct AutoDetectView: View {
                 return "recognizes animals in an image."
             }
         }
+    }
+    
+    enum MLError: GenericError {
+        
+        case noMatch
+        
+        var title: String {
+            "ML Error"
+        }
+        
+        var message: String {
+            switch self {
+            case .noMatch:
+                "Cannot find any matching result"
+            }
+        }
+        
     }
     
     enum DetectProgress: Comparable {

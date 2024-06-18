@@ -1,36 +1,13 @@
 //
-//  InfoView.swift
+//  Untitled.swift
 //  Annotation
 //
-//  Created by Vaida on 5/10/22.
+//  Created by Vaida on 6/18/24.
 //
 
-import Foundation
 import SwiftUI
-import Support
+import Stratum
 
-struct InfoView: View {
-    
-    // core
-    @Binding var annotation: Annotation
-    
-    var body: some View {
-//        List($annotation.annotations) { item in
-//            InfoViewItem(item: item, annotation: $annotation)
-//            Divider()
-//        }
-        
-        ScrollView(.vertical) {
-            LazyVGrid(columns: [GridItem(.fixed(60)), GridItem(.flexible())]) {
-                ForEach($annotation.annotations) { item in
-                    InfoViewItem(item: item, annotation: $annotation)
-                }
-            }
-            .padding(.all)
-        }
-        .background(.background)
-    }
-}
 
 struct InfoViewItem: View {
     
@@ -105,21 +82,17 @@ struct InfoViewItem: View {
     }
 }
 
-struct InfoViewImage: View {
-    
-    @State var annotation: Annotation
-    @State var coordinate: Annotation.Annotations.Coordinate
-    
-    var body: some View {
-        AsyncView {
-            trimImage(from: annotation.image, at: coordinate) ?? NSImage()
-        } content: { image in
-            Image(nsImage: image)
-                .resizable()
-                .cornerRadius(5)
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 75)
+#Preview {
+    withStateObserved(initial: AnnotationDocument.preview.annotations[0]) { annotation in
+        withStateObserved(initial: annotation.annotations[0].wrappedValue) { state in
+            LazyVGrid(columns: [GridItem(.fixed(60)), GridItem(.flexible())]) {
+                GridRow {
+                    InfoViewItem(item: state, annotation: annotation)
+                }
+            }
         }
-        .frame(height: 75)
     }
+    .environmentObject(AnnotationDocument.preview)
+    .frame(width: 400)
+    .padding(.all)
 }

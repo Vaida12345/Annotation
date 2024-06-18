@@ -7,7 +7,9 @@
 
 import SwiftUI
 import Cocoa
-import Support
+import Stratum
+import ViewCollection
+
 
 struct ContentView: View {
     
@@ -56,7 +58,7 @@ struct ContentView: View {
                 Toggle(isOn: $showLabelList.animation()) {
                     Image(systemName: "rectangle.grid.3x2")
                 }
-                .onChange(of: showLabelList) { newValue in
+                .onChange(of: showLabelList) { _, newValue in
                     toggleSideBar(to: !newValue)
                     
                     if newValue {
@@ -109,7 +111,9 @@ struct ContentView: View {
                 .padding(.trailing)
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }
-                    FinderItem(at: url)?.setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+                    Task.detached {
+                        await FinderItem(at: url).setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+                    }
                 }
             }
             
@@ -132,6 +136,7 @@ struct ContentView: View {
                             .foregroundStyle(.gray)
                             .fontDesign(.rounded)
                             .fontWeight(.heavy)
+                            .font(.title3)
                     }
                 } else {
                     DetailView()
@@ -139,24 +144,26 @@ struct ContentView: View {
             } else {
                 DropHandlerView()
                     .onDrop { sources in
-                        Task { @MainActor in
-                            self.document.isImporting = true
-                        }
-                        
-                        let oldItems = await document.annotations
-                        let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
-                        
-                        let union = oldItems + newItems
-                        Task { @MainActor in
-                            self.document.annotations = union
-                            self.document.isImporting = false
+                        Task {
+                            Task { @MainActor in
+                                self.document.isImporting = true
+                            }
                             
-                            if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
+                            let oldItems = document.annotations
+                            let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
                             
-                            undoManager?.setActionName("import files")
-                            undoManager?.registerUndo(withTarget: self.document, handler: { document in
-                                document.replaceItems(with: oldItems, undoManager: undoManager)
-                            })
+                            let union = oldItems + newItems
+                            Task { @MainActor in
+                                self.document.annotations = union
+                                self.document.isImporting = false
+                                
+                                if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
+                                
+                                undoManager?.setActionName("import files")
+                                undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                                    document.replaceItems(with: oldItems, undoManager: undoManager)
+                                })
+                            }
                         }
                     }
             }

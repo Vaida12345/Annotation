@@ -44,3 +44,9 @@ struct SelectLabelMenu: View {
         }
     }
 }
+
+
+#Preview {
+    SelectLabelMenu()
+        .environmentObject(AnnotationDocument.preview)
+}

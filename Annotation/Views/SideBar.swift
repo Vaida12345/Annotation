@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftUI
-import Support
+import Stratum
 
 
 struct SideBar: View {
@@ -91,8 +91,9 @@ struct SideBar: View {
             }
             .frame(minWidth: 200)
             .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
+                nonisolated(unsafe) let providers = providers
+                
                 Task.detached {
-                    
                     let sources = try await [FinderItem](from: providers)
                     
                     Task { @MainActor in

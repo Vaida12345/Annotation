@@ -9,12 +9,12 @@ import Foundation
 import Cocoa
 import SwiftUI
 import Vision
-import Stratum
+import Support
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
-    let id: UUID
-    let image: NSImage
+    var id: UUID
+    var image: NSImage
     var annotations: [Annotations]
     
     init(id: UUID = UUID(), image: NSImage, annotations: [Annotations] = []) {
@@ -23,25 +23,23 @@ struct Annotation: Equatable, Hashable, Identifiable {
         self.annotations = annotations
     }
     
-    /// An annotation with rect and label.
     struct Annotations: Equatable, Hashable, Encodable, Decodable, Identifiable {
         
-        let id: UUID
+        var id: UUID
         var label: String
-        var hidden = false
-        let coordinate: Coordinate
+        var coordinates: Coordinate
         
         init(label: String, coordinates: Coordinate) {
             self.id = UUID()
             self.label = label
-            self.coordinate = coordinates
+            self.coordinates = coordinates
         }
         
-        var export: AnnotationExport.Annotations {
-            return .init(label: label, coordinates: coordinate)
+        var export: AnnotationImport.Annotations {
+            return .init(label: label, coordinates: AnnotationImport.Annotations.Coordinate(x: coordinates.x, y: coordinates.y, width: coordinates.width, height: coordinates.height))
         }
         
-        /// Coordinate relative to image, origin at center, coordinate zero at bottom-left.
+        /// Coordinate relative to image, origin at center.
         struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible, Identifiable {
             
             var id: UUID
@@ -51,18 +49,10 @@ struct Annotation: Equatable, Hashable, Identifiable {
             var height: Double
             
             var description: String {
-                return "(center: \(x), \(y), \(width), \(height))"
+                return "(\(x), \(y), \(width), \(height))"
             }
             
-            var size: CGSize {
-                CGSize(width: self.width, height: self.height)
-            }
-            
-            func squareContainer() -> Coordinate {
-                Coordinate(center: CGPoint(x: x, y: y), size: .square(max(width, height)))
-            }
-            
-            private init(x: Double, y: Double, width: Double, height: Double) {
+            init(x: Double, y: Double, width: Double, height: Double) {
                 self.x = x
                 self.y = y
                 self.width = width
@@ -70,11 +60,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 self.id = UUID()
             }
             
-            static func center(x: Double, y: Double, width: Double, height: Double) -> Coordinate {
-                Coordinate(x: x, y: y, width: width, height: height)
-            }
-            
-            public init(center: CGPoint, size: CGSize) {
+            private init(center: CGPoint, size: CGSize) {
                 self.x = center.x
                 self.y = center.y
                 self.width = size.width
@@ -99,12 +85,12 @@ struct Annotation: Equatable, Hashable, Identifiable {
             }
             
             /// change the coordinate from that of a imageView to that of an image.
-            init?(from frame: CGRect, by imageView: NSImageView) {
+            init(from frame: CGRect, by imageView: NSImageView) {
                 var scaleFactor: Double // imageView / image
                 var heightMargin: Double = 0
                 var widthMargin: Double = 0
                 
-                guard let cgImage = imageView.image?.cgImage else { return nil }
+                let cgImage = imageView.image!.cgImage(forProposedRect: nil, context: nil, hints: nil)!
                 
                 if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
                     scaleFactor = imageView.frame.width / Double(cgImage.width)
@@ -128,7 +114,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 var heightMargin: Double = 0
                 var widthMargin: Double = 0
                 
-                let cgImage = image.cgImage!
+                let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
                 
                 if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
                     scaleFactor = imageView.frame.width / Double(cgImage.width)
@@ -143,21 +129,14 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let width = frame.width / scaleFactor
                 let height = frame.height / scaleFactor
                 
-                let rawFrame = CGRect(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
-                let intersect = rawFrame.intersection(CGRect(origin: .zero, size: cgImage.size))
-                self.init(center: intersect.center, size: intersect.size)
+                self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
             }
             
             // init from the coordinate from that of a observation
             /// Initializes the coordinate from Object Observation and coordinate in a `NSView`.
             init(from observation: VNRecognizedObjectObservation, in image: NSImage) {
-                self.init(from: observation, in: image.cgImage!)
-            }
-            
-            /// Initializes the coordinate from Object Observation and coordinate in a `NSView`.
-            init(from observation: VNRecognizedObjectObservation, in image: CGImage) {
                 
-                let pixelSize = image.size
+                let pixelSize = image.pixelSize!
                 
                 var frame = observation.boundingBox
                 frame.origin.x *= pixelSize.width
@@ -171,35 +150,6 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let height = frame.height
                 
                 self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
-            }
-            
-            
-            // MARK: - Codable
-            
-            func encode(to encoder: Encoder) throws {
-                var container = encoder.container(keyedBy: Annotation.Annotations.Coordinate.CodingKeys.self)
-                try container.encode(self.x, forKey: Annotation.Annotations.Coordinate.CodingKeys.x)
-                try container.encode(self.y, forKey: Annotation.Annotations.Coordinate.CodingKeys.y)
-                try container.encode(self.width, forKey: Annotation.Annotations.Coordinate.CodingKeys.width)
-                try container.encode(self.height, forKey: Annotation.Annotations.Coordinate.CodingKeys.height)
-            }
-            
-            enum CodingKeys: CodingKey {
-                case id
-                case x
-                case y
-                case width
-                case height
-            }
-            
-            init(from decoder: Decoder) throws {
-                let container: KeyedDecodingContainer<Annotation.Annotations.Coordinate.CodingKeys> = try decoder.container(keyedBy: Annotation.Annotations.Coordinate.CodingKeys.self)
-                self.x = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.x)
-                self.y = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.y)
-                self.width = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.width)
-                self.height = try container.decode(Double.self, forKey: Annotation.Annotations.Coordinate.CodingKeys.height)
-                
-                self.id = UUID()
             }
         }
     }
@@ -239,21 +189,22 @@ extension CGRect {
 
 extension Array where Element == Annotation {
     
-    var __labels: [String] {
+    var labels: [String] {
         self.flatMap { $0.annotations.map(\.label) }.unique()
     }
     
-    var labelDictionary: [String: Array<LabelDictionaryValue>] {
-        var dictionary: [String: Array<LabelDictionaryValue>] = [:]
-        dictionary.reserveCapacity(self.map(\.annotations.count).sum)
-        
+    /// \[label: \[(Image Name, Coordinate)\]\]
+    var labelDictionary: [String: [(NSImage, Annotation.Annotations.Coordinate)]] {
+        var dictionary: [String: [(NSImage, Annotation.Annotations.Coordinate)]] = [:]
         for i in self {
+            let image = i.image
             for ii in i.annotations {
                 let label = ii.label
+                let coordinate = ii.coordinates
                 if dictionary[label] == nil {
-                    dictionary[label] = [LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id)]
+                    dictionary[label] = [(image, coordinate)]
                 } else {
-                    dictionary[label]!.append(LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id))
+                    dictionary[label]!.append((image, coordinate))
                 }
             }
         }
@@ -261,22 +212,15 @@ extension Array where Element == Annotation {
         return dictionary
     }
     
-    struct LabelDictionaryValue: Equatable {
-        
-        let annotationID: Annotation.ID
-        
-        let annotationsID: Annotation.Annotations.ID
-        
-    }
-    
 }
 
-nonisolated
 func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
     guard image.pixelSize != .zero else { return nil }
     let rect = CGRect(from: coordinate)
     guard rect.size != .zero else { return nil }
+    print(image.size, coordinate, rect)
     
     guard let result = image.cgImage?.cropping(to: rect) else { return nil }
+    print(result.size)
     return NSImage(cgImage: result)
 }

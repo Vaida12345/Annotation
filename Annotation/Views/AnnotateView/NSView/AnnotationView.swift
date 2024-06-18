@@ -8,7 +8,7 @@
 import Foundation
 import Cocoa
 import SwiftUI
-import Support
+import Stratum
 
 struct AnnotationView: NSViewRepresentable {
 

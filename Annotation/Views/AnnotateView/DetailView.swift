@@ -36,3 +36,9 @@ struct DetailView: View {
         
     }
 }
+
+
+#Preview {
+    DetailView()
+        .environmentObject(AnnotationDocument.preview)
+}

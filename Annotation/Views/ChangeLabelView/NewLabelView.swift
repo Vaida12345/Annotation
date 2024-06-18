@@ -28,7 +28,7 @@ struct NewLabelView: View {
                 .font(.title2)
                 .bold()
             
-            __ChangeLabelNameView(label: $newLabel) {
+            __ChangeLabelNameView(label: newLabel) { _, newLabel in
                 document.labels[newLabel.title] = newLabel
                 onDismiss(newLabel)
                 

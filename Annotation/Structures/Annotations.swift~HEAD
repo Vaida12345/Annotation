@@ -9,7 +9,7 @@ import Foundation
 import Cocoa
 import SwiftUI
 import Vision
-import Stratum
+import Support
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
@@ -58,20 +58,12 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 CGSize(width: self.width, height: self.height)
             }
             
-            func squareContainer() -> Coordinate {
-                Coordinate(center: CGPoint(x: x, y: y), size: .square(max(width, height)))
-            }
-            
-            private init(x: Double, y: Double, width: Double, height: Double) {
+            init(x: Double, y: Double, width: Double, height: Double) {
                 self.x = x
                 self.y = y
                 self.width = width
                 self.height = height
                 self.id = UUID()
-            }
-            
-            static func center(x: Double, y: Double, width: Double, height: Double) -> Coordinate {
-                Coordinate(x: x, y: y, width: width, height: height)
             }
             
             public init(center: CGPoint, size: CGSize) {
@@ -151,13 +143,8 @@ struct Annotation: Equatable, Hashable, Identifiable {
             // init from the coordinate from that of a observation
             /// Initializes the coordinate from Object Observation and coordinate in a `NSView`.
             init(from observation: VNRecognizedObjectObservation, in image: NSImage) {
-                self.init(from: observation, in: image.cgImage!)
-            }
-            
-            /// Initializes the coordinate from Object Observation and coordinate in a `NSView`.
-            init(from observation: VNRecognizedObjectObservation, in image: CGImage) {
                 
-                let pixelSize = image.size
+                let pixelSize = image.pixelSize!
                 
                 var frame = observation.boundingBox
                 frame.origin.x *= pixelSize.width
@@ -245,7 +232,7 @@ extension Array where Element == Annotation {
     
     var labelDictionary: [String: Array<LabelDictionaryValue>] {
         var dictionary: [String: Array<LabelDictionaryValue>] = [:]
-        dictionary.reserveCapacity(self.map(\.annotations.count).sum)
+        dictionary.reserveCapacity(self.map(\.annotations.count).sum())
         
         for i in self {
             for ii in i.annotations {
@@ -271,7 +258,6 @@ extension Array where Element == Annotation {
     
 }
 
-nonisolated
 func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
     guard image.pixelSize != .zero else { return nil }
     let rect = CGRect(from: coordinate)
