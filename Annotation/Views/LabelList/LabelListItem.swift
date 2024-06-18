@@ -68,40 +68,26 @@ struct AsyncLoadedImage: View {
     
     let cornerRadius: CGFloat
     
-    
-    struct Capture: Equatable {
+    nonisolated func contextDraw() async -> CGImage? {
+        let imageSize = source.size.aspectRatio(contentMode, in: frame)
+        let contextSize = frame
         
-        let frame: CGSize
+        let context = CGContext.createContext(size: contextSize, bitsPerComponent: source.bitsPerComponent, space: source.colorSpace!, withAlpha: true)
         
-        let contentMode: ContentMode
+        context.interpolationQuality = .high
         
-        let source: CGImage
+        let path = createRoundedRectPath(for: CGRect(origin: .zero, size: imageSize), radius: cornerRadius)
         
-        let cornerRadius: CGFloat
+        context.addPath(path)
+        context.clip()
         
+        context.draw(source, in: CGRect(center: contextSize.center, size: imageSize))
+        return context.makeImage()
     }
     
     var body: some View {
-        AsyncView(captures: Capture(frame: frame, contentMode: contentMode, source: source, cornerRadius: cornerRadius)) { capture in
-            let frame = capture.frame
-            let contentMode = capture.contentMode
-            let source = capture.source
-            let cornerRadius = capture.cornerRadius
-            
-            let imageSize = source.size.aspectRatio(contentMode, in: frame)
-            let contextSize = frame
-            
-            let context = CGContext.createContext(size: contextSize, bitsPerComponent: source.bitsPerComponent, space: source.colorSpace!, withAlpha: true)
-            
-            context.interpolationQuality = .high
-            
-            let path = createRoundedRectPath(for: CGRect(center: contextSize.center       , size: imageSize), radius: cornerRadius)
-            
-            context.addPath(path)
-            context.clip()
-            
-            context.draw(source, in: CGRect(center: contextSize.center, size: imageSize))
-            return context.makeImage()
+        AsyncView(captures: 1) { _ in
+            await contextDraw()
         } content: { (image: CGImage?) in
             if let image {
                 Image(nativeImage: NativeImage(cgImage: image))
