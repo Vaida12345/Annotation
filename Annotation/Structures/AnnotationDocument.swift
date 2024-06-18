@@ -278,8 +278,7 @@ final class AnnotationDocument: ReferenceFileDocument {
     }
     
     @Observable
-    @codable
-    final class Label: Identifiable, Hashable, Comparable {
+    final class Label: Identifiable, Hashable, Comparable, Codable {
         
         var title: String
         
@@ -302,6 +301,11 @@ final class AnnotationDocument: ReferenceFileDocument {
         
         static func == (_ lhs: AnnotationDocument.Label, _ rhs: AnnotationDocument.Label) -> Bool {
             lhs.title == rhs.title && lhs.color == rhs.color
+        }
+        
+        enum CodingKeys: String, CodingKey {
+            case _title = "title"
+            case _color = "color"
         }
     }
 }

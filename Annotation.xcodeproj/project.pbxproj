@@ -32,7 +32,6 @@
 		B492E58E2AB0398100A949B1 /* SelectLabelMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */; };
 		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
 		B4E36C012C218B9A00FA581E /* MediaKit in Frameworks */ = {isa = PBXBuildFile; productRef = B4E36C002C218B9A00FA581E /* MediaKit */; };
-		B4E36C062C21903800FA581E /* StratumMacros in Frameworks */ = {isa = PBXBuildFile; productRef = B4E36C052C21903800FA581E /* StratumMacros */; };
 		B4E36C092C21A25500FA581E /* LabelListItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C082C21A25200FA581E /* LabelListItems.swift */; };
 		B4E36C0B2C21A26400FA581E /* LabelListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C0A2C21A26200FA581E /* LabelListItem.swift */; };
 		B4E36C0D2C21A67C00FA581E /* LabelListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C0C2C21A67A00FA581E /* LabelListRow.swift */; };
@@ -41,6 +40,7 @@
 		B4E36C142C21AE5D00FA581E /* AnnotateCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C132C21AE5900FA581E /* AnnotateCommand.swift */; };
 		B4E36C172C21B3B900FA581E /* InfoViewItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C162C21B3B900FA581E /* InfoViewItem.swift */; };
 		B4E36C192C21B3DA00FA581E /* InfoViewImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C182C21B3D400FA581E /* InfoViewImage.swift */; };
+		B4ED526A2C21F74900B30943 /* StratumMacros in Frameworks */ = {isa = PBXBuildFile; productRef = B4ED52692C21F74900B30943 /* StratumMacros */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -87,7 +87,7 @@
 			files = (
 				B44136C52C2187AA00E9331D /* Stratum in Frameworks */,
 				B4E36C012C218B9A00FA581E /* MediaKit in Frameworks */,
-				B4E36C062C21903800FA581E /* StratumMacros in Frameworks */,
+				B4ED526A2C21F74900B30943 /* StratumMacros in Frameworks */,
 				B44136C82C21884200E9331D /* ViewCollection in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -275,7 +275,7 @@
 				B44136C42C2187AA00E9331D /* Stratum */,
 				B44136C72C21884200E9331D /* ViewCollection */,
 				B4E36C002C218B9A00FA581E /* MediaKit */,
-				B4E36C052C21903800FA581E /* StratumMacros */,
+				B4ED52692C21F74900B30943 /* StratumMacros */,
 			);
 			productName = Annotation;
 			productReference = B416910327B53B020029AB97 /* Annotation.app */;
@@ -309,7 +309,7 @@
 				B44136C32C2187AA00E9331D /* XCLocalSwiftPackageReference "../../Packages/Stratum" */,
 				B44136C62C21884200E9331D /* XCLocalSwiftPackageReference "../../Packages/ViewCollection" */,
 				B4E36BFF2C218B9A00FA581E /* XCLocalSwiftPackageReference "../../Packages/MediaKit" */,
-				B4E36C042C21903800FA581E /* XCLocalSwiftPackageReference "../../Packages/StratumMacros" */,
+				B4ED52682C21F74900B30943 /* XCLocalSwiftPackageReference "../../Packages/StratumMacros" */,
 			);
 			productRefGroup = B416910427B53B020029AB97 /* Products */;
 			projectDirPath = "";
@@ -499,9 +499,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Annotation/Annotation.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 38;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Annotation/Preview Content\"";
 				DEVELOPMENT_TEAM = UJK52W4D7G;
@@ -532,9 +533,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Annotation/Annotation.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 38;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Annotation/Preview Content\"";
 				DEVELOPMENT_TEAM = UJK52W4D7G;
@@ -594,7 +596,7 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../Packages/MediaKit;
 		};
-		B4E36C042C21903800FA581E /* XCLocalSwiftPackageReference "../../Packages/StratumMacros" */ = {
+		B4ED52682C21F74900B30943 /* XCLocalSwiftPackageReference "../../Packages/StratumMacros" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../Packages/StratumMacros;
 		};
@@ -613,7 +615,7 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = MediaKit;
 		};
-		B4E36C052C21903800FA581E /* StratumMacros */ = {
+		B4ED52692C21F74900B30943 /* StratumMacros */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = StratumMacros;
 		};

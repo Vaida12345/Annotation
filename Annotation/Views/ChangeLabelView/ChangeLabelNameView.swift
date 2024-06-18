@@ -35,7 +35,7 @@ struct __ChangeLabelNameView: View {
             .padding(.vertical, 5)
             
             HStack {
-                ColorPaletteView(color: $label.color, set: Color.allColors)
+                ColorPaletteView(color: $label.color)
                     .showCustomColor(true)
                 
                 Spacer()

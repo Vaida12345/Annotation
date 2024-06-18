@@ -29,7 +29,7 @@ struct LabelListItems: View {
     }
     
     nonisolated func updates() async throws -> [InnerViewElement] {
-        let annotations = document.annotations
+        let annotations = await document.annotations
         
         try Task.checkCancellation()
         

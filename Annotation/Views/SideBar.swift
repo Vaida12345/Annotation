@@ -90,12 +90,10 @@ struct SideBar: View {
                 
             }
             .frame(minWidth: 200)
-            .onDrop(of: [.fileURL], isTargeted: nil) { providers, location in
-                nonisolated(unsafe) let providers = providers
+            .dropDestination(for: FinderItem.self) { sources, location in
+                nonisolated(unsafe) let sources = sources
                 
                 Task.detached {
-                    let sources = try await [FinderItem](from: providers)
-                    
                     Task { @MainActor in
                         self.document.isImporting = true
                     }
