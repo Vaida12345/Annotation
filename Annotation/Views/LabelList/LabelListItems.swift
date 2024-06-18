@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Stratum
+import ViewCollection
 
 
 struct LabelListItems: View {
@@ -15,73 +16,71 @@ struct LabelListItems: View {
     @State var label: AnnotationDocument.Label
     @Binding var showLabelList: Bool
     
-    @State private var labelsDictionaryValue: Array<Array<Annotation>.LabelDictionaryValue> = []
-    
-    @State private var innerView: [InnerViewElement] = []
     @State private var isCompleted = false
     
+    struct Capture: Equatable {
+        
+        let document: AnnotationDocument
+        
+        static func == (_ lhs: Self, _ rhs: Self) -> Bool {
+            lhs.document.labels == rhs.document.labels
+        }
+        
+    }
+    
     var body: some View {
-        Group {
-            if !innerView.isEmpty {
-                ScrollView(.horizontal) {
-                    HStack {
-                        ForEach(innerView, id: \.item.annotationsID) { item in
-                            LabelListItem(showLabelList: $showLabelList, item: item)
-                                .frame(width: 200, height: 200)
-                        }
+        AsyncView(captures: Capture(document: document)) { capture in
+            let document = capture.document
+            let annotations = document.annotations
+            
+            try Task.checkCancellation()
+            
+            let labelsDictionaryValue = await document.annotations.labelDictionary(of: label.title)
+            
+            try Task.checkCancellation()
+            
+            return try! await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
+                try Task.checkCancellation()
+                guard let annotation = annotations.first(where: { $0.id == item.annotationID }) else { return nil }
+                guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
+                
+                try Task.checkCancellation()
+                guard let croppedImage = await trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
+                try Task.checkCancellation()
+                guard let container = await trimImage(from: annotation.image, at: annotations.coordinate.squareContainer()) else { return nil }
+                
+                try Task.checkCancellation()
+                
+                return InnerViewElement(item: item, croppedImage: croppedImage, container: container)
+            }.sequence
+        } content: { innerView in
+            ScrollView(.horizontal) {
+                HStack {
+                    ForEach(innerView, id: \.item.annotationsID) { item in
+                        LabelListItem(showLabelList: $showLabelList, item: item)
+                            .frame(width: 200, height: 200)
                     }
-                    .padding(.horizontal)
                 }
-            } else {
-                if !isCompleted {
-                    HStack {
-                        Text("Loading preview")
-                        
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .padding()
-                    }
-                } else {
-                    Text("Empty")
-                        .foregroundStyle(.gray)
-                        .fontDesign(.rounded)
-                        .fontWeight(.heavy)
-                }
+                .padding(.horizontal)
+            }
+        } placeHolder: {
+            ContainerView {
+                Text("Loading...")
+                    .foregroundStyle(.secondary)
+                    .fontDesign(.rounded)
+                    .font(.title2)
             }
         }
-        .frame(height: LabelListItems.height)
+        .frame(height: 200)
     }
-    
-    func updateInnerViews(labelsDictionaryValue: Array<Array<Annotation>.LabelDictionaryValue>) async {
-        let annotations = document.annotations
-        nonisolated(unsafe)
-        let _innerView = try! await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
-            guard let annotation = annotations.first(where: { $0.id == item.annotationID }) else { return nil }
-            guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
-            
-            let size = await annotations.coordinate.size.aspectRatio(extend: .height, to: LabelListItems.height)
-            guard let croppedImage = trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
-            guard let container = trimImage(from: annotation.image, at: annotations.coordinate.squareContainer()) else { return nil }
-            
-            return InnerViewElement(item: item, croppedImage: croppedImage, container: container, size: size)
-        }.sequence
-        
-        self.labelsDictionaryValue = labelsDictionaryValue
-        self.innerView = _innerView
-        self.isCompleted = true
-    }
-    
-    static let height: CGFloat = 200
     
     struct InnerViewElement {
         
         let item: Array<Annotation>.LabelDictionaryValue
         
-        let croppedImage: NativeImage
+        let croppedImage: CGImage
         
-        let container: NativeImage
-        
-        let size: CGSize
+        let container: CGImage
         
     }
 }

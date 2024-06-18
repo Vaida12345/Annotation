@@ -138,9 +138,8 @@ struct AutoDetectView: View {
                                             
                                             for _annotation in annotation.annotations {
                                                 group.addTask {
-                                                    guard let _image = trimImage(from: image, at: _annotation.coordinate),
-                                                          let cgImage = _image.cgImage,
-                                                          let _cgImage = cgImage.resized(to: cgImage.size.aspectRatio(extend: .width, to: 140)) else { return nil }
+                                                    guard let _image = await trimImage(from: image, at: _annotation.coordinate),
+                                                          let _cgImage = _image.resized(to: _image.size.aspectRatio(extend: .width, to: 140)) else { return nil }
                                                     
                                                     return RawImagesContainer.RawImage(annotationID: annotation.id, annotationsID: _annotation.id, image: NativeImage(cgImage: _cgImage), confidence: _annotation.confidence, rect: _annotation.body.coordinate)
                                                 }

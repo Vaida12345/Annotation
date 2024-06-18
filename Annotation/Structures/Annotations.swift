@@ -244,21 +244,36 @@ extension Array where Element == Annotation {
     }
     
     var labelDictionary: [String: Array<LabelDictionaryValue>] {
-        var dictionary: [String: Array<LabelDictionaryValue>] = [:]
-        dictionary.reserveCapacity(self.map(\.annotations.count).sum)
+        get async {
+            var dictionary: [String: Array<LabelDictionaryValue>] = [:]
+            dictionary.reserveCapacity(self.map(\.annotations.count).sum)
+            
+            for i in self {
+                for ii in i.annotations {
+                    let label = ii.label
+                    if dictionary[label] == nil {
+                        dictionary[label] = [LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id)]
+                    } else {
+                        dictionary[label]!.append(LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id))
+                    }
+                }
+            }
+            
+            return dictionary
+        }
+    }
+    
+    func labelDictionary(of key: String) async -> [LabelDictionaryValue] {
+        var results: [LabelDictionaryValue] = []
         
         for i in self {
             for ii in i.annotations {
-                let label = ii.label
-                if dictionary[label] == nil {
-                    dictionary[label] = [LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id)]
-                } else {
-                    dictionary[label]!.append(LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id))
-                }
+                guard ii.label == key else { continue }
+                results.append(LabelDictionaryValue(annotationID: i.id, annotationsID: ii.id))
             }
         }
         
-        return dictionary
+        return results
     }
     
     struct LabelDictionaryValue: Equatable {
@@ -272,11 +287,11 @@ extension Array where Element == Annotation {
 }
 
 nonisolated
-func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) -> NSImage? {
+func trimImage(from image: NSImage, at coordinate: Annotation.Annotations.Coordinate) async -> CGImage? {
     guard image.pixelSize != .zero else { return nil }
     let rect = CGRect(from: coordinate)
     guard rect.size != .zero else { return nil }
     
     guard let result = image.cgImage?.cropping(to: rect) else { return nil }
-    return NSImage(cgImage: result)
+    return result
 }
