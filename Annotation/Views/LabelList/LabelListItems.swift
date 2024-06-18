@@ -28,32 +28,33 @@ struct LabelListItems: View {
         
     }
     
+    nonisolated func updates() async throws -> [InnerViewElement] {
+        let annotations = document.annotations
+        
+        try Task.checkCancellation()
+        
+        let labelsDictionaryValue = await document.annotations.labelDictionary(of: label.title)
+        
+        try Task.checkCancellation()
+        
+        return try! await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
+            try Task.checkCancellation()
+            guard let annotation = annotations.first(where: { $0.id == item.annotationID }) else { return nil }
+            guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
+            
+            try Task.checkCancellation()
+            guard let croppedImage = await trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
+            try Task.checkCancellation()
+            guard let container = await trimImage(from: annotation.image, at: annotations.coordinate.squareContainer()) else { return nil }
+            
+            try Task.checkCancellation()
+            
+            return InnerViewElement(item: item, croppedImage: croppedImage, container: container)
+        }.sequence
+    }
+    
     var body: some View {
-        AsyncView(captures: Capture(document: document)) { capture in
-            let document = capture.document
-            let annotations = document.annotations
-            
-            try Task.checkCancellation()
-            
-            let labelsDictionaryValue = await document.annotations.labelDictionary(of: label.title)
-            
-            try Task.checkCancellation()
-            
-            return try! await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
-                try Task.checkCancellation()
-                guard let annotation = annotations.first(where: { $0.id == item.annotationID }) else { return nil }
-                guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
-                
-                try Task.checkCancellation()
-                guard let croppedImage = await trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
-                try Task.checkCancellation()
-                guard let container = await trimImage(from: annotation.image, at: annotations.coordinate.squareContainer()) else { return nil }
-                
-                try Task.checkCancellation()
-                
-                return InnerViewElement(item: item, croppedImage: croppedImage, container: container)
-            }.sequence
-        } content: { innerView in
+        AsyncView(generator: updates) { innerView in
             ScrollView(.horizontal) {
                 HStack {
                     ForEach(innerView, id: \.item.annotationsID) { item in

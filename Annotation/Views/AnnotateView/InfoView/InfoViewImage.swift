@@ -20,15 +20,15 @@ struct InfoViewImage: View {
         let coordinate: Annotation.Annotations.Coordinate
     }
     
+    nonisolated func update() async -> (NativeImage, NativeImage) {
+        
+        let image = await NativeImage(cgImage: trimImage(from: annotation.image, at: coordinate)) ?? NativeImage()
+        let container = await NativeImage(cgImage: trimImage(from: annotation.image, at: coordinate.squareContainer())) ?? NativeImage()
+        return (image, container)
+    }
+    
     var body: some View {
-        AsyncView(captures: Capture(annotation: annotation, coordinate: coordinate)) { captures in
-            let annotations = captures.annotation
-            let coordinate = captures.coordinate
-            
-            let image = await NativeImage(cgImage: trimImage(from: annotation.image, at: coordinate)) ?? NativeImage()
-            let container = await NativeImage(cgImage: trimImage(from: annotation.image, at: coordinate.squareContainer())) ?? NativeImage()
-            return (image, container)
-        } content: { image, container in
+        AsyncView(generator: update) { image, container in
             ZStack {
                 Group {
                     Image(nativeImage: container)
