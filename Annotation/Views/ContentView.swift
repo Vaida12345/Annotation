@@ -144,7 +144,9 @@ struct ContentView: View {
             } else {
                 DropHandlerView()
                     .onDrop { sources in
+                        try sources.tryAccessSecurityScope()
                         Task {
+                            defer { sources.stopAccessSecurityScope() }
                             Task { @MainActor in
                                 self.document.isImporting = true
                             }

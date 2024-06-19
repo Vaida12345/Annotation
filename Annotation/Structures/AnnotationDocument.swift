@@ -10,7 +10,6 @@ import UniformTypeIdentifiers
 import Stratum
 import AVFoundation
 import MediaKit
-import StratumMacros
 
 
 extension UTType {
@@ -518,19 +517,19 @@ extension AnnotationDocument {
 func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [Annotation] {
     
     var newItems: [Annotation] = []
-    Task { @MainActor in
+    await MainActor.run {
         reporter.totalUnitCount = Int64(sources.count)
         reporter.completedUnitCount = 0
     }
     
     for source in sources {
-        guard let contentType = try? source.contentType else { continue }
+        let contentType = try source.contentType
         
         switch contentType {
         case .annotationProject, .folder:
             guard let file = try? AnnotationDocument(from: FileWrapper(url: source.url, options: [])) else { fallthrough }
             newItems.append(contentsOf: file.annotations)
-            Task { @MainActor in reporter.completedUnitCount += 1 }
+            await MainActor.run { reporter.completedUnitCount += 1 }
             
         case .folder:
             do {
@@ -547,7 +546,7 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
                             guard let image = try? source.appending(path: item.image).load(.image) else { return nil }
                             let annotation = Annotation(image: image, annotations: item.annotations.map(\.annotations))
                             
-                            Task { @MainActor in childReporter.completedUnitCount += 1 }
+                            await MainActor.run { childReporter.completedUnitCount += 1 }
                             
                             return annotation
                         }
@@ -573,7 +572,7 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
                         guard let image = child.image() else { return nil }
                         let annotation = Annotation(image: image)
                         
-                        Task { @MainActor in childReporter.completedUnitCount += 1 }
+                        await MainActor.run { childReporter.completedUnitCount += 1 }
                         
                         return annotation
                     }
@@ -594,8 +593,9 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
             let frames = try await asset.generateFramesStream()
                 .stream()
                 .map {
-                    defer { Task { @MainActor in childReporter.completedUnitCount += 1 } }
-                    return Annotation(id: UUID(), image: NativeImage(cgImage: $0.image), annotations: [])
+                    let annotation = Annotation(id: UUID(), image: NativeImage(cgImage: $0.image), annotations: [])
+                    await MainActor.run { childReporter.completedUnitCount += 1 }
+                    return annotation
                 }
                 .sequence
             
@@ -604,11 +604,11 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
         default:
             guard let image = source.image() else { continue }
             newItems.append(Annotation(id: UUID(), image: image, annotations: []))
-            Task { @MainActor in reporter.completedUnitCount += 1 }
+            await MainActor.run { reporter.completedUnitCount += 1 }
         }
     }
     
-    Task { @MainActor in
+    await MainActor.run { 
         reporter.completedUnitCount = reporter.totalUnitCount
     }
     return newItems

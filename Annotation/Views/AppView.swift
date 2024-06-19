@@ -25,17 +25,20 @@ struct AppView: View {
                 }
             }
             .fileImporter(isPresented: $document.isShowingImportDialog, allowedContentTypes: [.annotationProject, .movie, .quickTimeMovie, .folder, .image], allowsMultipleSelection: true) { result in
-                guard let urls = try? result.get() else { return }
-                Task.detached(priority: .background) {
-                    let oldItems = await document.annotations
-                    Task { @MainActor in
-                        document.isImporting = true
-                    }
+                guard let urls = try? result.get().map({ FinderItem(at: $0) }) else { return }
+                try! urls.tryAccessSecurityScope()
+                nonisolated(unsafe)
+                let oldItems = document.annotations
+                
+                Task { @MainActor in
+                    document.isImporting = true
                     
-                    let newItems = try await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: document.importingProgress)
-                    
-                    let union = oldItems + newItems
-                    Task { @MainActor in
+                    do {
+                        let newItems = try await loadItems(from: urls, reporter: document.importingProgress)
+                        urls.stopAccessSecurityScope()
+                        
+                        let union = oldItems + newItems
+                        
                         document.annotations = union
                         document.isImporting = false
                         
@@ -43,6 +46,8 @@ struct AppView: View {
                         undoManager?.registerUndo(withTarget: document, handler: { document in
                             document.replaceItems(with: oldItems, undoManager: undoManager)
                         })
+                    } catch {
+                        AlertManager(error).present()
                     }
                 }
             }

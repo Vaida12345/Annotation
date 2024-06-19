@@ -92,8 +92,11 @@ struct SideBar: View {
             .frame(minWidth: 200)
             .dropDestination(for: FinderItem.self) { sources, location in
                 nonisolated(unsafe) let sources = sources
+                try? sources.tryAccessSecurityScope()
                 
                 Task.detached {
+                    defer { sources.stopAccessSecurityScope() }
+                    
                     Task { @MainActor in
                         self.document.isImporting = true
                     }
@@ -116,14 +119,18 @@ struct SideBar: View {
                 return true
             }
             .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
-                guard let urls = try? result.get() else { return }
-                Task.detached(priority: .background) {
+                guard let urls = try? result.get().map ({ FinderItem(at: $0) }) else { return }
+                try? urls.tryAccessSecurityScope()
+                
+                Task.detached {
+                    defer { urls.stopAccessSecurityScope() }
+                    
                     let oldItems = await document.annotations
                     Task { @MainActor in
                         self.document.isImporting = true
                     }
                     
-                    let newItems = try await loadItems(from: urls.map { FinderItem(at: $0) }, reporter: self.document.importingProgress)
+                    let newItems = try await loadItems(from: urls, reporter: self.document.importingProgress)
                     
                     let union = oldItems + newItems
                     Task { @MainActor in
