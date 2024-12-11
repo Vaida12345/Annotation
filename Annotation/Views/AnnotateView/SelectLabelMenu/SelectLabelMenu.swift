@@ -17,14 +17,21 @@ struct SelectLabelMenu: View {
     
     @Environment(\.undoManager) private var undoManager
     
+    @AppStorage("AnnotationApp.groupLabelMenu") private var groupLabelMenu = false
+    
+    
     var body: some View {
         Menu {
-            ForEach(document.labels.values.sorted()) { label in
-                Button {
-                    document.selectedLabel = label
-                } label: {
-                    Text(label.title)
-                        .foregroundStyle(label.color)
+            if groupLabelMenu {
+                SelectLabelGroupedMenu()
+            } else {
+                ForEach(document.labels.values.sorted()) { label in
+                    Button {
+                        document.selectedLabel = label
+                    } label: {
+                        Text(label.title)
+                            .foregroundStyle(label.color)
+                    }
                 }
             }
             

@@ -37,6 +37,7 @@ struct __ChangeLabelNameView: View {
             HStack {
                 ColorPaletteView(color: $label.color)
                     .showCustomColor(true)
+                    .frame(width: 300, height: 30)
                 
                 Spacer()
                 
@@ -55,3 +56,13 @@ struct __ChangeLabelNameView: View {
     }
     
 }
+
+
+#if DEBUG
+#Preview {
+    __ChangeLabelNameView(label: AnnotationDocument.Label(title: "hello", color: .blue), dismiss: { _, _ in
+        
+    })
+        .environmentObject(AnnotationDocument.preview)
+}
+#endif

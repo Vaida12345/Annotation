@@ -46,7 +46,7 @@ struct LabelListRow: View {
                                 document.remove(undoManager: undoManager, label: label)
                             }
                     }
-                    .padding(.trailing)
+                    .padding(.trailing, 23)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }

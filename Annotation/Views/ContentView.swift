@@ -144,7 +144,7 @@ struct ContentView: View {
             } else {
                 DropHandlerView()
                     .onDrop { sources in
-                        try sources.tryAccessSecurityScope()
+                        try? sources.tryAccessSecurityScope()
                         Task {
                             defer { sources.stopAccessSecurityScope() }
                             Task { @MainActor in

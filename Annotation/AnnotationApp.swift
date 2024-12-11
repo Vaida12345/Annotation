@@ -15,6 +15,8 @@ struct AnnotationApp: App {
     
     @FocusedValue(\.document) var document
     
+    @AppStorage("AnnotationApp.groupLabelMenu") private var groupLabelMenu = false
+    
     var body: some Scene {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in
             AppView()
@@ -24,6 +26,14 @@ struct AnnotationApp: App {
             ImportExportCommand()
             
             AnnotateCommand()
+            
+            SidebarCommands()
+            
+            CommandGroup(after: .sidebar) {
+                Divider()
+                
+                Toggle("Group Label Menu", isOn: $groupLabelMenu)
+            }
         }
     }
 }

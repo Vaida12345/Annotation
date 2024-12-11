@@ -448,13 +448,17 @@ extension AnnotationDocument {
             values[key] = list
         }
         
-        self.labels[label.title] = nil
+        withAnimation {
+            self.labels[label.title] = nil
+        }
         
         undoManager?.registerUndo(withTarget: self) { document in
-            for (key, value) in values {
-                document.annotations[key].annotations.append(contentsOf: value)
+            withAnimation {
+                for (key, value) in values {
+                    document.annotations[key].annotations.append(contentsOf: value)
+                }
+                document.labels[label.title] = label
             }
-            self.labels[label.title] = label
             
             undoManager?.registerUndo(withTarget: self) { document in
                 document.remove(undoManager: undoManager, label: label)

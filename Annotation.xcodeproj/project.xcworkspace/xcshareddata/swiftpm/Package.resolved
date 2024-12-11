@@ -1,0 +1,24 @@
+{
+  "originHash" : "d3ba31f50982de624f16d7ec678202e891592f9331d9920479ddd9d39feb3650",
+  "pins" : [
+    {
+      "identity" : "detaileddescription",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/DetailedDescription.git",
+      "state" : {
+        "revision" : "eee79eadf9e9918150c88796e30a202e3f133cf7",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "mediakit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/MediaKit.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "91e2e512e1b4e76b58bf4c2e8dc4964daab7b876"
+      }
+    }
+  ],
+  "version" : 3
+}
