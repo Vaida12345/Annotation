@@ -7,7 +7,7 @@
 
 import SwiftUI
 import ViewCollection
-import Stratum
+import NativeImage
 
 
 struct InfoViewImage: View {
@@ -21,9 +21,9 @@ struct InfoViewImage: View {
     }
     
     nonisolated func update() async -> (NativeImage, NativeImage) {
-        
-        let image = await NativeImage(cgImage: trimImage(from: annotation.image, at: coordinate)) ?? NativeImage()
-        let container = await NativeImage(cgImage: trimImage(from: annotation.image, at: coordinate.squareContainer())) ?? NativeImage()
+        guard let _image = await annotation.representation.image else { return (NativeImage(), NativeImage())}
+        let image = await NativeImage(cgImage: trimImage(from: _image, at: coordinate)) ?? NativeImage()
+        let container = await NativeImage(cgImage: trimImage(from: _image, at: coordinate.squareContainer())) ?? NativeImage()
         return (image, container)
     }
     

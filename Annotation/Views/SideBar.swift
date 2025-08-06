@@ -7,7 +7,8 @@
 
 import Foundation
 import SwiftUI
-import Stratum
+import FinderItem
+import ViewCollection
 
 
 struct SideBar: View {
@@ -24,47 +25,51 @@ struct SideBar: View {
         ScrollViewReader { proxy in
             List(selection: $document.selectedItems) {
                 ForEach(document.annotations) { annotation in
-                    Image(nsImage: annotation.image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .cornerRadius(5)
-                        .contextMenu {
-                            Button("Remove") {
-                                undoManager?.beginUndoGrouping()
-                                for id in document.selectedItems {
-                                    document.removeAnnotation(undoManager: undoManager, annotationID: id)
+                    AsyncView {
+                        annotation.representation.image
+                    } content: { result in
+                        Image(nsImage: result)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .cornerRadius(5)
+                    }
+                    .contextMenu {
+                        Button("Remove") {
+                            undoManager?.beginUndoGrouping()
+                            for id in document.selectedItems {
+                                document.removeAnnotation(undoManager: undoManager, annotationID: id)
+                            }
+                            undoManager?.endUndoGrouping()
+                            undoManager?.setActionName("Remove images")
+                            document.selectedItems = []
+                        }
+                        
+                        Menu {
+                            Button("All") {
+                                undoManager?.setActionName("Remove all annotations for selected items")
+                                document.apply(undoManager: undoManager) {
+                                    for i in document.selectedItems {
+                                        document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
+                                    }
                                 }
-                                undoManager?.endUndoGrouping()
-                                undoManager?.setActionName("Remove images")
-                                document.selectedItems = []
                             }
                             
-                            Menu {
-                                Button("All") {
-                                    undoManager?.setActionName("Remove all annotations for selected items")
+                            ForEach(document.annotations.filter({ document.selectedItems.contains($0.id) }).__labels, id: \.self) { item in
+                                Button(item) {
+                                    undoManager?.setActionName("Remove annotation \"\(item)\" for selected items")
                                     document.apply(undoManager: undoManager) {
                                         for i in document.selectedItems {
-                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
+                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
                                         }
                                     }
                                 }
-                                
-                                ForEach(document.annotations.filter({ document.selectedItems.contains($0.id) }).__labels, id: \.self) { item in
-                                    Button(item) {
-                                        undoManager?.setActionName("Remove annotation \"\(item)\" for selected items")
-                                        document.apply(undoManager: undoManager) {
-                                            for i in document.selectedItems {
-                                                document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
-                                            }
-                                        }
-                                    }
-                                }
-                            } label: {
-                                Text("Remove annotations")
                             }
+                        } label: {
+                            Text("Remove annotations")
                         }
-                        .disabled(!document.selectedItems.contains(annotation.id))
-                        .id(annotation.id)
+                    }
+                    .disabled(!document.selectedItems.contains(annotation.id))
+                    .id(annotation.id)
                 }
                 .onMove { fromIndex, toIndex in
                     document.moveItemsAt(offsets: fromIndex, toOffset: toIndex, undoManager: undoManager)
@@ -91,16 +96,16 @@ struct SideBar: View {
             }
             .frame(minWidth: 200)
             .dropDestination(for: FinderItem.self) { sources, location in
-                nonisolated(unsafe) let sources = sources
-                try? sources.tryAccessSecurityScope()
+                let sources = sources
+                try? sources.startAccessingSecurityScopedResource()
                 
                 Task.detached {
-                    defer { sources.stopAccessSecurityScope() }
+                    defer { sources.stopAccessingSecurityScopedResource() }
                     
                     Task { @MainActor in
                         self.document.isImporting = true
                     }
-                    let oldItems = await document.annotations
+                    nonisolated(unsafe) let oldItems = await document.annotations
                     let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
                     
                     let union = oldItems + newItems
@@ -120,10 +125,10 @@ struct SideBar: View {
             }
             .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
                 guard let urls = try? result.get().map ({ FinderItem(at: $0) }) else { return }
-                try? urls.tryAccessSecurityScope()
+                try? urls.startAccessingSecurityScopedResource()
                 
                 Task.detached {
-                    defer { urls.stopAccessSecurityScope() }
+                    defer { urls.stopAccessingSecurityScopedResource() }
                     
                     let oldItems = await document.annotations
                     Task { @MainActor in
@@ -147,9 +152,9 @@ struct SideBar: View {
                 }
             }
             .onDeleteCommand {
-                let sequence = document.annotations.indexes(where: { document.selectedItems.contains($0.id) })
-                let indexSet = IndexSet(sequence)
-                document.delete(offsets: indexSet, undoManager: undoManager)
+                let sequence = document.annotations.indices(where: { document.selectedItems.contains($0.id) })
+                let indexSet = sequence.ranges.flatten()
+                document.delete(offsets: IndexSet(indexSet), undoManager: undoManager)
                 
                 document.selectedItems = []
             }

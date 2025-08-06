@@ -6,7 +6,8 @@
 //
 
 import SwiftUI
-import Stratum
+import Essentials
+import ViewCollection
 
 
 struct InfoViewItem: View {

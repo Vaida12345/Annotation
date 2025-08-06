@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Stratum
+
 import ViewCollection
 
 
@@ -37,15 +37,16 @@ struct LabelListItems: View {
         
         try Task.checkCancellation()
         
-        return try! await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
+        return try await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
             try Task.checkCancellation()
             guard let annotation = annotations.first(where: { $0.id == item.annotationID }) else { return nil }
             guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
             
             try Task.checkCancellation()
-            guard let croppedImage = await trimImage(from: annotation.image, at: annotations.coordinate) else { return nil }
+            guard let image = annotation.representation.image else { return nil }
+            guard let croppedImage = await trimImage(from: image, at: annotations.coordinate) else { return nil }
             try Task.checkCancellation()
-            guard let container = await trimImage(from: annotation.image, at: annotations.coordinate.squareContainer()) else { return nil }
+            guard let container = await trimImage(from: image, at: annotations.coordinate.squareContainer()) else { return nil }
             
             try Task.checkCancellation()
             

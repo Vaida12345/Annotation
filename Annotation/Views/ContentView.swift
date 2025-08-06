@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Cocoa
-import Stratum
+import FinderItem
 import ViewCollection
 
 
@@ -81,7 +81,7 @@ struct ContentView: View {
                         ProgressView(document.importingProgress)
                     }
                 }
-                .progressViewStyle(.simpleCircular)
+                .progressViewStyle(.circular())
                 .onTapGesture {
                     showPopover.toggle()
                 }
@@ -111,9 +111,7 @@ struct ContentView: View {
                 .padding(.trailing)
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }
-                    Task.detached {
-                        await FinderItem(at: url).setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
-                    }
+                    FinderItem(at: url).setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
                 }
             }
             
@@ -144,18 +142,18 @@ struct ContentView: View {
             } else {
                 DropHandlerView()
                     .onDrop { sources in
-                        try? sources.tryAccessSecurityScope()
+                        try? sources.startAccessingSecurityScopedResource()
                         Task {
-                            defer { sources.stopAccessSecurityScope() }
+                            defer { sources.stopAccessingSecurityScopedResource() }
                             Task { @MainActor in
                                 self.document.isImporting = true
                             }
                             
-                            let oldItems = document.annotations
+                            nonisolated(unsafe) let oldItems = await document.annotations
                             let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
                             
                             let union = oldItems + newItems
-                            Task { @MainActor in
+                            await MainActor.run {
                                 self.document.annotations = union
                                 self.document.isImporting = false
                                 

@@ -8,7 +8,7 @@
 import Foundation
 import Cocoa
 import SwiftUI
-import Stratum
+
 
 struct AnnotationView: NSViewRepresentable {
 
@@ -34,7 +34,7 @@ struct AnnotationView: NSViewRepresentable {
         defer { print("\(#function) took \(date.distanceToNow())") }
         
         let view = NSView(frame: NSRect(origin: .zero, size: size))
-        for image in annotations.map({ $0.image }) {
+        for image in annotations.compactMap({ $0.representation.image }) {
             let imageView: NSImageView = NSImageView()
             image.size = image.pixelSize!.aspectRatio(.fit, in: size)
             imageView.frame = CGRect(origin: .zero, size: size)
@@ -67,7 +67,7 @@ struct AnnotationView: NSViewRepresentable {
         nsView.addSubview(viewController.view)
         
         for annotation in annotations {
-            let image = annotation.image
+            guard let image = annotation.representation.image else { continue }
             let imageView: NSImageView = NSImageView()
             image.size = image.pixelSize!.aspectRatio(.fit, in: size)
             imageView.frame = CGRect(origin: .zero, size: size)
@@ -154,8 +154,9 @@ struct AnnotationView: NSViewRepresentable {
                 
                 for item in document.selectedItems {
                     guard let index = document.annotations.firstIndex(where: { $0.id == item }) else { continue }
+                    guard let pixelSize = document.annotations[index].representation.pixelSize else { continue }
                     
-                    let coordinate = Annotation.Annotations.Coordinate(from: recognizerView.frame, by: view, image: document.annotations[index].image)
+                    let coordinate = Annotation.Annotations.Coordinate(from: recognizerView.frame, by: view, pixelSize: pixelSize)
                     let annotation = Annotation.Annotations(label: label.title, coordinates: coordinate)
                     
                     document.appendAnnotations(undoManager: undoManager, annotationID: item, item: annotation)

@@ -9,7 +9,8 @@ import Foundation
 import SwiftUI
 import CoreML
 import Vision
-import Stratum
+import ViewCollection
+
 
 struct AutoAnnotateView: View {
     
@@ -31,8 +32,10 @@ struct AutoAnnotateView: View {
                     let model = try MLModel(contentsOf: MLModel.compileModel(at: firstItem.url))
                     
                     Task {
-                        self.model = model
-                        dismiss()
+                        await MainActor.run {
+                            self.model = model
+                        }
+                        await dismiss()
                         await applyML()
                     }
                 }
@@ -73,30 +76,30 @@ struct AutoAnnotateView: View {
         
         let _unannotatedImagesOnly = unannotatedImageOnly
         
-        nonisolated(unsafe)
-        let images = _document.annotations.map(\.image).compactMap(\.cgImage)
-        
         for i in 0..<_document.annotations.count {
-            if _unannotatedImagesOnly && !_document.annotations[i].annotations.isEmpty {
-                continue
-            }
-            
-            guard let result = await applyObjectDetectionML(to: images[i], model: model) else {
-                Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
-                continue
-            }
-            let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
-                guard let label = item.labels.first?.identifier else { return nil }
-                let coordinate = Annotation.Annotations.Coordinate(from: item, in: images[i])
-                return Annotation.Annotations.init(label: label, coordinates: coordinate)
-            }
-            
-            Task { @MainActor in
-                document.annotations[i].annotations.append(contentsOf: annotations)
+            await Task {
+                guard let image = _document.annotations[i].representation.image?.cgImage else { return }
+                if _unannotatedImagesOnly && !_document.annotations[i].annotations.isEmpty {
+                    return
+                }
                 
-                document.selectedItems = [document.annotations[i].id]
-                document.scrollProxy?.scrollTo(document.annotations[i].id)
-            }
+                guard let result = await applyObjectDetectionML(to: image, model: model) else {
+                    Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
+                    return
+                }
+                let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
+                    guard let label = item.labels.first?.identifier else { return nil }
+                    let coordinate = Annotation.Annotations.Coordinate(from: item, in: image)
+                    return Annotation.Annotations.init(label: label, coordinates: coordinate)
+                }
+                
+                Task { @MainActor in
+                    document.annotations[i].annotations.append(contentsOf: annotations)
+                    
+                    document.selectedItems = [document.annotations[i].id]
+                    document.scrollProxy?.scrollTo(document.annotations[i].id)
+                }
+            }.value // autorelease
         }
         
         

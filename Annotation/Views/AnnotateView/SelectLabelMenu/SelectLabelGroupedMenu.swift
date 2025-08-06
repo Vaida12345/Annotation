@@ -82,7 +82,7 @@ struct SelectLabelGroupedMenu: View {
     }
     
     /// A node
-    indirect enum GroupedNode: Hashable, CustomStringConvertible {
+    indirect enum GroupedNode: Hashable {
         
         case root([GroupedNode])
         
@@ -150,28 +150,6 @@ struct SelectLabelGroupedMenu: View {
                 return String(word.1.first ?? "")
             case .root:
                 return ""
-            }
-        }
-        
-        public var description: String {
-            String.recursiveDescription(of: self) { source in
-                switch source {
-                case .root(let nodes):
-                    nodes
-                case .children(_, let nodes):
-                    nodes
-                case .leaf:
-                    nil
-                }
-            } description: { source in
-                switch source {
-                case .root:
-                    "GroupedNode"
-                case .children(let t, _):
-                    "\(t)"
-                case .leaf(let leaf):
-                    "\(leaf)"
-                }
             }
         }
         

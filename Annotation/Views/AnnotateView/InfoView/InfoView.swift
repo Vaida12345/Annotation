@@ -7,7 +7,6 @@
 
 import Foundation
 import SwiftUI
-import Stratum
 import ViewCollection
 
 struct InfoView: View {

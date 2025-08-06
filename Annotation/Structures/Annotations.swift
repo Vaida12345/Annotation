@@ -9,18 +9,69 @@ import Foundation
 import Cocoa
 import SwiftUI
 import Vision
-import Stratum
+import FinderItem
+
 
 struct Annotation: Equatable, Hashable, Identifiable {
     
     let id: UUID
-    let image: NSImage
+    let representation: Representation
     var annotations: [Annotations]
     
-    init(id: UUID = UUID(), image: NSImage, annotations: [Annotations] = []) {
+    init(id: UUID = UUID(), representation: Representation, annotations: [Annotations] = []) {
         self.id = id
-        self.image = image
+        self.representation = representation
         self.annotations = annotations
+    }
+    
+    final class Representation: Hashable, Equatable {
+        
+        var rep: Rep
+        
+        init(rep: Rep) {
+            self.rep = rep
+        }
+        
+        lazy var pixelSize: CGSize? = {
+            self.image?.size
+        }()
+        
+        lazy var image: NSImage? = {
+            self.rep.makeImage()
+        }()
+        
+        
+        static func image(_ image: NSImage) -> Representation {
+            .init(rep: .image(image))
+        }
+        
+        static func fileWrapper(_ fileWrapper: FileWrapper) -> Representation {
+            .init(rep: .fileWrapper(fileWrapper))
+        }
+        
+        
+        public static func == (_ lhs: Representation, _ rhs: Representation) -> Bool {
+            lhs.rep == rhs.rep
+        }
+        
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(rep)
+        }
+        
+        enum Rep: Hashable, Equatable {
+            case image(NSImage)
+            case fileWrapper(FileWrapper)
+            
+            fileprivate func makeImage() -> NSImage? {
+                switch self {
+                case .image(let image):
+                    return image
+                case .fileWrapper(let fileWrapper):
+                    guard let data = fileWrapper.regularFileContents else { return nil }
+                    return NSImage(data: data)
+                }
+            }
+        }
     }
     
     /// An annotation with rect and label.
@@ -123,19 +174,17 @@ struct Annotation: Equatable, Hashable, Identifiable {
             }
             
             /// change the coordinate from that of a imageView to that of an image.
-            init(from frame: CGRect, by imageView: NSView, image: NSImage) {
+            init(from frame: CGRect, by imageView: NSView, pixelSize: CGSize) {
                 var scaleFactor: Double // imageView / image
                 var heightMargin: Double = 0
                 var widthMargin: Double = 0
                 
-                let cgImage = image.cgImage!
-                
-                if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
-                    scaleFactor = imageView.frame.width / Double(cgImage.width)
-                    heightMargin = (imageView.frame.height - Double(cgImage.height) * scaleFactor) / 2
+                if Double(pixelSize.width) / Double(pixelSize.height) >= imageView.frame.width / imageView.frame.height {
+                    scaleFactor = imageView.frame.width / Double(pixelSize.width)
+                    heightMargin = (imageView.frame.height - Double(pixelSize.height) * scaleFactor) / 2
                 } else {
-                    scaleFactor = imageView.frame.height / Double(cgImage.height)
-                    widthMargin = (imageView.frame.width - Double(cgImage.width) * scaleFactor) / 2
+                    scaleFactor = imageView.frame.height / Double(pixelSize.height)
+                    widthMargin = (imageView.frame.width - Double(pixelSize.width) * scaleFactor) / 2
                 }
                 
                 let x = (frame.origin.x - widthMargin + frame.width / 2) / scaleFactor
@@ -144,7 +193,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
                 let height = frame.height / scaleFactor
                 
                 let rawFrame = CGRect(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
-                let intersect = rawFrame.intersection(CGRect(origin: .zero, size: cgImage.size))
+                let intersect = rawFrame.intersection(CGRect(origin: .zero, size: pixelSize))
                 self.init(center: intersect.center, size: intersect.size)
             }
             

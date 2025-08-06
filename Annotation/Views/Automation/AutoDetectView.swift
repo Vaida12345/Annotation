@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
-import Stratum
+import Essentials
 import Vision
 import CoreImage
 import ViewCollection
+import NativeImage
+
 
 struct AutoDetectView: View {
     
@@ -127,11 +129,11 @@ struct AutoDetectView: View {
                         case .initial:
                             let option = self.detectOption
                             Task {
-                                await withErrorPresented {
+                                await withErrorPresented("Failed to apply ML") {
                                     let annotations = try await autoDetectDocument.applyML(option: option, document: self.document, unannotatedImagesOnly: unannotatedImagesOnly)
                                     guard !annotations.isEmpty else { throw MLError.noMatch }
                                     
-                                    let __croppedImages = await withTaskGroup(of: RawImagesContainer.RawImage?.self) { group in
+                                    let __croppedImages = try await withThrowingTaskGroup(of: RawImagesContainer.RawImage?.self) { group in
                                         for annotation in annotations {
                                             nonisolated(unsafe)
                                             let image = annotation.image
@@ -146,15 +148,14 @@ struct AutoDetectView: View {
                                             }
                                         }
                                         
-                                        var iterator = group.makeAsyncIterator()
-                                        return await iterator.allObjects(reservingCapacity: annotations.count).compacted()
+                                        return try await group.sequence
                                     }
                                     
                                     Task { @MainActor in
                                         autoDetectDocument.annotations = annotations
                                         
                                         self.rawImages.objectWillChange.send()
-                                        self.rawImages.images = __croppedImages
+                                        self.rawImages.images = __croppedImages.compacted()
                                         self.detectProgress = .waitForConfidence
                                     }
                                 }
@@ -196,7 +197,7 @@ struct AutoDetectView: View {
         }
     }
     
-    enum DetectOption: String, CaseIterable {
+    enum DetectOption: String, CaseIterable, CustomLocalizedStringResourceConvertible {
         case AttentionBasedSaliency = "Attention Based Saliency"
         case ObjectnessBasedSaliency = "Objectness Based Saliency"
         case FaceRectangles = "Face Rectangles"
@@ -204,6 +205,21 @@ struct AutoDetectView: View {
         case RecognizeAnimals = "Recognize Animals"
         
         var description: String {
+            switch self {
+            case .AttentionBasedSaliency:
+                return "Identifies the parts of an image most likely to draw attention."
+            case .ObjectnessBasedSaliency:
+                return "Identifies the parts of an image most likely to represent objects."
+            case .FaceRectangles:
+                return "Finds faces within an image."
+            case .HumanRectangles:
+                return "Finds rectangular regions that contain people in an image."
+            case .RecognizeAnimals:
+                return "recognizes animals in an image."
+            }
+        }
+        
+        var localizedStringResource: LocalizedStringResource {
             switch self {
             case .AttentionBasedSaliency:
                 return "Identifies the parts of an image most likely to draw attention."
@@ -343,7 +359,7 @@ final class AutoDetectDocument: ObservableObject {
                     request = VNRecognizeAnimalsRequest()
                 }
                 
-                guard let image = annotation.image.cgImage else { return }
+                guard let image = annotation.representation.image?.cgImage else { return }
                 let requestHandler = VNImageRequestHandler(cgImage: image)
                 
                 try requestHandler.perform([request])
@@ -373,7 +389,7 @@ final class AutoDetectDocument: ObservableObject {
                     return (Annotation.Annotations.Coordinate(center: CGPoint(x: rect.center.x, y: image.size.height - rect.center.y), size: rect.size), confidence)
                 }
                 
-                result.append(IdentifiedAnnotation(id: annotation.id, image: annotation.image, annotations: coordinates.map { IdentifiedAnnotation._Annotation(body: Annotation.Annotations(label: UUID().uuidString, coordinates: $0.0), confidence:  $0.1) }))
+                result.append(IdentifiedAnnotation(id: annotation.id, image: NSImage(cgImage: image), annotations: coordinates.map { IdentifiedAnnotation._Annotation(body: Annotation.Annotations(label: UUID().uuidString, coordinates: $0.0), confidence:  $0.1) }))
             }
         }
         

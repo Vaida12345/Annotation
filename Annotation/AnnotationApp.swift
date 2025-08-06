@@ -8,7 +8,7 @@
 import SwiftUI
 import CoreML
 import UniformTypeIdentifiers
-import Stratum
+
 
 @main
 struct AnnotationApp: App {
