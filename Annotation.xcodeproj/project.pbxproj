@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 55;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -18,8 +18,11 @@
 		B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914C27B53B740029AB97 /* AnnotationView.swift */; };
 		B416914F27B53FB20029AB97 /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B416914E27B53FB20029AB97 /* icon.icns */; };
 		B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41B36AF298A921D0075DADD /* RenameLabelView.swift */; };
-		B44136C52C2187AA00E9331D /* Stratum in Frameworks */ = {isa = PBXBuildFile; productRef = B44136C42C2187AA00E9331D /* Stratum */; };
 		B44136C82C21884200E9331D /* ViewCollection in Frameworks */ = {isa = PBXBuildFile; productRef = B44136C72C21884200E9331D /* ViewCollection */; };
+		B449F9982E6EB82C003C4CE6 /* ViewCollection in Frameworks */ = {isa = PBXBuildFile; productRef = B449F9972E6EB82C003C4CE6 /* ViewCollection */; };
+		B449F99B2E6EB852003C4CE6 /* FinderItem in Frameworks */ = {isa = PBXBuildFile; productRef = B449F99A2E6EB852003C4CE6 /* FinderItem */; };
+		B449F99E2E6EB859003C4CE6 /* NativeImage in Frameworks */ = {isa = PBXBuildFile; productRef = B449F99D2E6EB859003C4CE6 /* NativeImage */; };
+		B449F9A12E6EB85F003C4CE6 /* Essentials in Frameworks */ = {isa = PBXBuildFile; productRef = B449F9A02E6EB85F003C4CE6 /* Essentials */; };
 		B45B52F0282A8C4E007C8CCC /* SideBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52EF282A8C4E007C8CCC /* SideBar.swift */; };
 		B45B52F2282A8C7B007C8CCC /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F1282A8C7B007C8CCC /* DetailView.swift */; };
 		B45B52F4282A8C93007C8CCC /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F3282A8C93007C8CCC /* InfoView.swift */; };
@@ -33,7 +36,6 @@
 		B492E58C2AB00F4400A949B1 /* NewLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58B2AB00F4400A949B1 /* NewLabelView.swift */; };
 		B492E58E2AB0398100A949B1 /* SelectLabelMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */; };
 		B4B766A32D09A27B00FE5526 /* MediaKit in Frameworks */ = {isa = PBXBuildFile; productRef = B4B766A22D09A27B00FE5526 /* MediaKit */; };
-		B4B766A62D09A2E800FE5526 /* Stratum in Frameworks */ = {isa = PBXBuildFile; productRef = B4B766A52D09A2E800FE5526 /* Stratum */; };
 		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
 		B4E36C012C218B9A00FA581E /* MediaKit in Frameworks */ = {isa = PBXBuildFile; productRef = B4E36C002C218B9A00FA581E /* MediaKit */; };
 		B4E36C092C21A25500FA581E /* LabelListItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C082C21A25200FA581E /* LabelListItems.swift */; };
@@ -90,11 +92,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B449F99B2E6EB852003C4CE6 /* FinderItem in Frameworks */,
 				B4B766A32D09A27B00FE5526 /* MediaKit in Frameworks */,
-				B44136C52C2187AA00E9331D /* Stratum in Frameworks */,
 				B4E36C012C218B9A00FA581E /* MediaKit in Frameworks */,
+				B449F9A12E6EB85F003C4CE6 /* Essentials in Frameworks */,
 				B44136C82C21884200E9331D /* ViewCollection in Frameworks */,
-				B4B766A62D09A2E800FE5526 /* Stratum in Frameworks */,
+				B449F9982E6EB82C003C4CE6 /* ViewCollection in Frameworks */,
+				B449F99E2E6EB859003C4CE6 /* NativeImage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,11 +292,13 @@
 			);
 			name = Annotation;
 			packageProductDependencies = (
-				B44136C42C2187AA00E9331D /* Stratum */,
 				B44136C72C21884200E9331D /* ViewCollection */,
 				B4E36C002C218B9A00FA581E /* MediaKit */,
 				B4B766A22D09A27B00FE5526 /* MediaKit */,
-				B4B766A52D09A2E800FE5526 /* Stratum */,
+				B449F9972E6EB82C003C4CE6 /* ViewCollection */,
+				B449F99A2E6EB852003C4CE6 /* FinderItem */,
+				B449F99D2E6EB859003C4CE6 /* NativeImage */,
+				B449F9A02E6EB85F003C4CE6 /* Essentials */,
 			);
 			productName = Annotation;
 			productReference = B416910327B53B020029AB97 /* Annotation.app */;
@@ -323,9 +329,11 @@
 			);
 			mainGroup = B41690FA27B53B020029AB97;
 			packageReferences = (
-				B44136C62C21884200E9331D /* XCLocalSwiftPackageReference "../../Packages/ViewCollection" */,
 				B4B766A12D09A27B00FE5526 /* XCRemoteSwiftPackageReference "MediaKit" */,
-				B4B766A42D09A2E800FE5526 /* XCLocalSwiftPackageReference "../../Packages/Stratum" */,
+				B449F9962E6EB82C003C4CE6 /* XCRemoteSwiftPackageReference "ViewCollection" */,
+				B449F9992E6EB852003C4CE6 /* XCRemoteSwiftPackageReference "FinderItem" */,
+				B449F99C2E6EB859003C4CE6 /* XCRemoteSwiftPackageReference "NativeImage" */,
+				B449F99F2E6EB85F003C4CE6 /* XCRemoteSwiftPackageReference "Essentials" */,
 			);
 			productRefGroup = B416910427B53B020029AB97 /* Products */;
 			projectDirPath = "";
@@ -534,7 +542,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -568,7 +576,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -601,45 +609,78 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		B44136C62C21884200E9331D /* XCLocalSwiftPackageReference "../../Packages/ViewCollection" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../Packages/ViewCollection;
-		};
-		B4B766A42D09A2E800FE5526 /* XCLocalSwiftPackageReference "../../Packages/Stratum" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../Packages/Stratum;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
+		B449F9962E6EB82C003C4CE6 /* XCRemoteSwiftPackageReference "ViewCollection" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Vaida12345/ViewCollection.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.29;
+			};
+		};
+		B449F9992E6EB852003C4CE6 /* XCRemoteSwiftPackageReference "FinderItem" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Vaida12345/FinderItem.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.4;
+			};
+		};
+		B449F99C2E6EB859003C4CE6 /* XCRemoteSwiftPackageReference "NativeImage" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Vaida12345/NativeImage.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.3;
+			};
+		};
+		B449F99F2E6EB85F003C4CE6 /* XCRemoteSwiftPackageReference "Essentials" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Vaida12345/Essentials.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.5;
+			};
+		};
 		B4B766A12D09A27B00FE5526 /* XCRemoteSwiftPackageReference "MediaKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Vaida12345/MediaKit.git";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		B44136C42C2187AA00E9331D /* Stratum */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Stratum;
-		};
 		B44136C72C21884200E9331D /* ViewCollection */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ViewCollection;
+		};
+		B449F9972E6EB82C003C4CE6 /* ViewCollection */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B449F9962E6EB82C003C4CE6 /* XCRemoteSwiftPackageReference "ViewCollection" */;
+			productName = ViewCollection;
+		};
+		B449F99A2E6EB852003C4CE6 /* FinderItem */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B449F9992E6EB852003C4CE6 /* XCRemoteSwiftPackageReference "FinderItem" */;
+			productName = FinderItem;
+		};
+		B449F99D2E6EB859003C4CE6 /* NativeImage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B449F99C2E6EB859003C4CE6 /* XCRemoteSwiftPackageReference "NativeImage" */;
+			productName = NativeImage;
+		};
+		B449F9A02E6EB85F003C4CE6 /* Essentials */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B449F99F2E6EB85F003C4CE6 /* XCRemoteSwiftPackageReference "Essentials" */;
+			productName = Essentials;
 		};
 		B4B766A22D09A27B00FE5526 /* MediaKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = B4B766A12D09A27B00FE5526 /* XCRemoteSwiftPackageReference "MediaKit" */;
 			productName = MediaKit;
-		};
-		B4B766A52D09A2E800FE5526 /* Stratum */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Stratum;
 		};
 		B4E36C002C218B9A00FA581E /* MediaKit */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -6,7 +6,8 @@
 //
 
 import SwiftUI
-import Stratum
+import FinderItem
+import Essentials
 
 
 struct AppView: View {
@@ -20,34 +21,32 @@ struct AppView: View {
         ContentView()
             .fileExporter(isPresented: $document.isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                 guard let url = try? result.get() else { return }
-                Task.detached {
-                    await FinderItem(at: url).setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
-                }
+                FinderItem(at: url).setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
             }
             .fileImporter(isPresented: $document.isShowingImportDialog, allowedContentTypes: [.annotationProject, .movie, .quickTimeMovie, .folder, .image], allowsMultipleSelection: true) { result in
                 guard let urls = try? result.get().map({ FinderItem(at: $0) }) else { return }
-                try! urls.tryAccessSecurityScope()
-                nonisolated(unsafe)
                 let oldItems = document.annotations
                 
                 Task { @MainActor in
                     document.isImporting = true
                     
-                    do {
+                    await withErrorPresented("Failed to load files") {
+                        try urls.startAccessingSecurityScopedResource()
+                        
                         let newItems = try await loadItems(from: urls, reporter: document.importingProgress)
-                        urls.stopAccessSecurityScope()
+                        urls.stopAccessingSecurityScopedResource()
                         
                         let union = oldItems + newItems
                         
-                        document.annotations = union
-                        document.isImporting = false
-                        
-                        undoManager?.setActionName("import files")
-                        undoManager?.registerUndo(withTarget: document, handler: { document in
-                            document.replaceItems(with: oldItems, undoManager: undoManager)
-                        })
-                    } catch {
-                        AlertManager(error).present()
+                        await MainActor.run {
+                            document.annotations = union
+                            document.isImporting = false
+                            
+                            undoManager?.setActionName("import files")
+                            undoManager?.registerUndo(withTarget: document, handler: { document in
+                                document.replaceItems(with: oldItems, undoManager: undoManager)
+                            })
+                        }
                     }
                 }
             }

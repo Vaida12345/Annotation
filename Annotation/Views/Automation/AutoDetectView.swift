@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
-import Stratum
 import Vision
 import CoreImage
 import ViewCollection
+import Essentials
+import NativeImage
+
 
 struct AutoDetectView: View {
     
@@ -127,13 +129,12 @@ struct AutoDetectView: View {
                         case .initial:
                             let option = self.detectOption
                             Task {
-                                await withErrorPresented {
+                                await withErrorPresented("Failed to detect") {
                                     let annotations = try await autoDetectDocument.applyML(option: option, document: self.document, unannotatedImagesOnly: unannotatedImagesOnly)
                                     guard !annotations.isEmpty else { throw MLError.noMatch }
                                     
                                     let __croppedImages = await withTaskGroup(of: RawImagesContainer.RawImage?.self) { group in
                                         for annotation in annotations {
-                                            nonisolated(unsafe)
                                             let image = annotation.image
                                             
                                             for _annotation in annotation.annotations {
@@ -146,8 +147,7 @@ struct AutoDetectView: View {
                                             }
                                         }
                                         
-                                        var iterator = group.makeAsyncIterator()
-                                        return await iterator.allObjects(reservingCapacity: annotations.count).compacted()
+                                        return await group.compacted().sequence()
                                     }
                                     
                                     Task { @MainActor in

@@ -9,7 +9,7 @@ import Foundation
 import Cocoa
 import SwiftUI
 import Vision
-import Stratum
+
 
 struct Annotation: Equatable, Hashable, Identifiable {
     

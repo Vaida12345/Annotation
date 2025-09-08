@@ -9,7 +9,8 @@ import Foundation
 import SwiftUI
 import CoreML
 import Vision
-import Stratum
+import ViewCollection
+
 
 struct AutoAnnotateView: View {
     
@@ -30,9 +31,10 @@ struct AutoAnnotateView: View {
                     guard let firstItem = sources.first else { return }
                     let model = try MLModel(contentsOf: MLModel.compileModel(at: firstItem.url))
                     
+                    self.model = model
+                    dismiss()
+                    
                     Task {
-                        self.model = model
-                        dismiss()
                         await applyML()
                     }
                 }
@@ -73,7 +75,6 @@ struct AutoAnnotateView: View {
         
         let _unannotatedImagesOnly = unannotatedImageOnly
         
-        nonisolated(unsafe)
         let images = _document.annotations.map(\.image).compactMap(\.cgImage)
         
         for i in 0..<_document.annotations.count {

@@ -1,13 +1,40 @@
 {
-  "originHash" : "d3ba31f50982de624f16d7ec678202e891592f9331d9920479ddd9d39feb3650",
+  "originHash" : "1a85c5a81ac670b6b8febb664466e8d6751d585f1f612fe6155d54dc7b013bb8",
   "pins" : [
+    {
+      "identity" : "concurrentstream",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/ConcurrentStream.git",
+      "state" : {
+        "revision" : "5b38deff93bc99abea5abfcd5290772d935cec78",
+        "version" : "1.0.3"
+      }
+    },
     {
       "identity" : "detaileddescription",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Vaida12345/DetailedDescription.git",
       "state" : {
-        "revision" : "eee79eadf9e9918150c88796e30a202e3f133cf7",
-        "version" : "1.0.0"
+        "revision" : "d4ae923e6cc5dadc7219d54cbf31912889f7bf33",
+        "version" : "2.1.1"
+      }
+    },
+    {
+      "identity" : "essentials",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/Essentials.git",
+      "state" : {
+        "revision" : "b3d27eadb8486dd5047e71700818d35a9803a798",
+        "version" : "1.1.6"
+      }
+    },
+    {
+      "identity" : "finderitem",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/FinderItem.git",
+      "state" : {
+        "revision" : "5456f831e325313a44814e5b19beafd434b12b7f",
+        "version" : "1.2.4"
       }
     },
     {
@@ -15,8 +42,44 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Vaida12345/MediaKit.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "91e2e512e1b4e76b58bf4c2e8dc4964daab7b876"
+        "revision" : "fbbb27ca0fe84c0605b3ff86cd425c855962007d",
+        "version" : "1.0.11"
+      }
+    },
+    {
+      "identity" : "nativeimage",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/NativeImage.git",
+      "state" : {
+        "revision" : "85534ff1cf306ed9e674c5dc782dd0ca8bda423d",
+        "version" : "1.0.3"
+      }
+    },
+    {
+      "identity" : "optimization",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/Optimization.git",
+      "state" : {
+        "revision" : "bcfac7079a3a159647a2e96aafa1fe3d1cdfdb3c",
+        "version" : "1.0.11"
+      }
+    },
+    {
+      "identity" : "swift-flac",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/Swift-FLAC.git",
+      "state" : {
+        "revision" : "80b027ea9d209bae06af42a088780f1b4d2071bd",
+        "version" : "1.0.7"
+      }
+    },
+    {
+      "identity" : "viewcollection",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Vaida12345/ViewCollection.git",
+      "state" : {
+        "revision" : "d759c446b809af4cdb0271a1f562d8280f76666a",
+        "version" : "1.1.29"
       }
     }
   ],

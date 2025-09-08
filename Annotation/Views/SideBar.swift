@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftUI
-import Stratum
+import FinderItem
 
 
 struct SideBar: View {
@@ -91,11 +91,11 @@ struct SideBar: View {
             }
             .frame(minWidth: 200)
             .dropDestination(for: FinderItem.self) { sources, location in
-                nonisolated(unsafe) let sources = sources
-                try? sources.tryAccessSecurityScope()
+                let sources = sources
+                try? sources.startAccessingSecurityScopedResource()
                 
                 Task.detached {
-                    defer { sources.stopAccessSecurityScope() }
+                    defer { sources.stopAccessingSecurityScopedResource() }
                     
                     Task { @MainActor in
                         self.document.isImporting = true
@@ -120,10 +120,10 @@ struct SideBar: View {
             }
             .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
                 guard let urls = try? result.get().map ({ FinderItem(at: $0) }) else { return }
-                try? urls.tryAccessSecurityScope()
+                try? urls.startAccessingSecurityScopedResource()
                 
                 Task.detached {
-                    defer { urls.stopAccessSecurityScope() }
+                    defer { urls.stopAccessingSecurityScopedResource() }
                     
                     let oldItems = await document.annotations
                     Task { @MainActor in
@@ -147,9 +147,9 @@ struct SideBar: View {
                 }
             }
             .onDeleteCommand {
-                let sequence = document.annotations.indexes(where: { document.selectedItems.contains($0.id) })
-                let indexSet = IndexSet(sequence)
-                document.delete(offsets: indexSet, undoManager: undoManager)
+                let sequence = document.annotations.indices(where: { document.selectedItems.contains($0.id) })
+                let indexSet = sequence.ranges.flatten()
+                document.delete(offsets: IndexSet(indexSet), undoManager: undoManager)
                 
                 document.selectedItems = []
             }

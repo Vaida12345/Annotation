@@ -7,7 +7,7 @@
 
 import SwiftUI
 import ViewCollection
-import Stratum
+import NativeImage
 
 
 struct InfoViewImage: View {

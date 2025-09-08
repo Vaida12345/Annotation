@@ -8,7 +8,7 @@
 import SwiftUI
 import CoreML
 import UniformTypeIdentifiers
-import Stratum
+
 
 @main
 struct AnnotationApp: App {
@@ -16,6 +16,7 @@ struct AnnotationApp: App {
     @FocusedValue(\.document) var document
     
     @AppStorage("AnnotationApp.groupLabelMenu") private var groupLabelMenu = false
+    
     
     var body: some Scene {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in

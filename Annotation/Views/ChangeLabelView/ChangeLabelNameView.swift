@@ -7,7 +7,6 @@
 
 import Foundation
 import SwiftUI
-import Stratum
 import ViewCollection
 
 
@@ -36,7 +35,7 @@ struct __ChangeLabelNameView: View {
             
             HStack {
                 ColorPaletteView(color: $label.color)
-                    .showCustomColor(true)
+                    .showCustomColorPicker(true)
                     .frame(width: 300, height: 30)
                 
                 Spacer()
