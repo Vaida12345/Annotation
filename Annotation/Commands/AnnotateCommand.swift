@@ -14,12 +14,16 @@ struct AnnotateCommand: Commands {
     
     var body: some Commands {
         CommandMenu("Annotate") {
-            Button("Based on model...") {
+            Button {
                 document?.isShowingAutoAnnotate.toggle()
+            } label: {
+                Label("Based on model...", systemImage: "shippingbox")
             }
             
-            Button("Auto detect...") {
+            Button {
                 document?.isShowingAutoDetect.toggle()
+            } label: {
+                Label("Auto detect...", systemImage: "lasso.badge.sparkles")
             }
         }
     }

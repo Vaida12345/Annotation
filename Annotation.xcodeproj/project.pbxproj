@@ -30,13 +30,15 @@
 		B45B52F8282A8CE9007C8CCC /* AutoAnnotateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */; };
 		B46539812AAEE2E30042562E /* Recognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46539802AAEE2E30042562E /* Recognizer.swift */; };
 		B466771E2AADDE7A00648F04 /* ChangeLabelNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */; };
+		B4693E562E6EC1B70002B607 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B4693E552E6EC1B70002B607 /* AppIcon.icon */; };
+		B4693E582E6EC1F90002B607 /* folder_26.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4693E572E6EC1F90002B607 /* folder_26.icns */; };
 		B4745EBC2C22FDE600E594D8 /* SelectLabelGroupedMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4745EBB2C22FDE100E594D8 /* SelectLabelGroupedMenu.swift */; };
 		B4745EBF2C2301C600E594D8 /* SelectLabelGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4745EBE2C2301C300E594D8 /* SelectLabelGroup.swift */; };
 		B47D623C298D532200F6025B /* AutoDetectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B47D623B298D532200F6025B /* AutoDetectView.swift */; };
 		B492E58C2AB00F4400A949B1 /* NewLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58B2AB00F4400A949B1 /* NewLabelView.swift */; };
 		B492E58E2AB0398100A949B1 /* SelectLabelMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */; };
 		B4B766A32D09A27B00FE5526 /* MediaKit in Frameworks */ = {isa = PBXBuildFile; productRef = B4B766A22D09A27B00FE5526 /* MediaKit */; };
-		B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */; };
+		B4C0BF4027B60ED600CCD4B0 /* folder_15.icns in Resources */ = {isa = PBXBuildFile; fileRef = B4C0BF3F27B60ED600CCD4B0 /* folder_15.icns */; };
 		B4E36C012C218B9A00FA581E /* MediaKit in Frameworks */ = {isa = PBXBuildFile; productRef = B4E36C002C218B9A00FA581E /* MediaKit */; };
 		B4E36C092C21A25500FA581E /* LabelListItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C082C21A25200FA581E /* LabelListItems.swift */; };
 		B4E36C0B2C21A26400FA581E /* LabelListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E36C0A2C21A26200FA581E /* LabelListItem.swift */; };
@@ -70,12 +72,14 @@
 		B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoAnnotateView.swift; sourceTree = "<group>"; };
 		B46539802AAEE2E30042562E /* Recognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recognizer.swift; sourceTree = "<group>"; };
 		B466771D2AADDE7A00648F04 /* ChangeLabelNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeLabelNameView.swift; sourceTree = "<group>"; };
+		B4693E552E6EC1B70002B607 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		B4693E572E6EC1F90002B607 /* folder_26.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = folder_26.icns; sourceTree = "<group>"; };
 		B4745EBB2C22FDE100E594D8 /* SelectLabelGroupedMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLabelGroupedMenu.swift; sourceTree = "<group>"; };
 		B4745EBE2C2301C300E594D8 /* SelectLabelGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLabelGroup.swift; sourceTree = "<group>"; };
 		B47D623B298D532200F6025B /* AutoDetectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoDetectView.swift; sourceTree = "<group>"; };
 		B492E58B2AB00F4400A949B1 /* NewLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewLabelView.swift; sourceTree = "<group>"; };
 		B492E58D2AB0398100A949B1 /* SelectLabelMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLabelMenu.swift; sourceTree = "<group>"; };
-		B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "Folder Icon.icns"; sourceTree = "<group>"; };
+		B4C0BF3F27B60ED600CCD4B0 /* folder_15.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = folder_15.icns; sourceTree = "<group>"; };
 		B4C716F92824D3CC00D19A9D /* DataBase */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DataBase; path = ../../Packages/DataBase; sourceTree = "<group>"; };
 		B4E36C082C21A25200FA581E /* LabelListItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelListItems.swift; sourceTree = "<group>"; };
 		B4E36C0A2C21A26200FA581E /* LabelListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelListItem.swift; sourceTree = "<group>"; };
@@ -155,7 +159,9 @@
 		B416911D27B53B450029AB97 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				B4C0BF3F27B60ED600CCD4B0 /* Folder Icon.icns */,
+				B4693E572E6EC1F90002B607 /* folder_26.icns */,
+				B4693E552E6EC1B70002B607 /* AppIcon.icon */,
+				B4C0BF3F27B60ED600CCD4B0 /* folder_15.icns */,
 				B416914E27B53FB20029AB97 /* icon.icns */,
 				B416910C27B53B020029AB97 /* Assets.xcassets */,
 				B416911127B53B020029AB97 /* Info.plist */,
@@ -312,7 +318,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1320;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					B416910227B53B020029AB97 = {
 						CreatedOnToolsVersion = 13.2.1;
@@ -351,7 +357,9 @@
 			files = (
 				B416914F27B53FB20029AB97 /* icon.icns in Resources */,
 				B416911A27B53B2B0029AB97 /* LICENSE in Resources */,
-				B4C0BF4027B60ED600CCD4B0 /* Folder Icon.icns in Resources */,
+				B4C0BF4027B60ED600CCD4B0 /* folder_15.icns in Resources */,
+				B4693E562E6EC1B70002B607 /* AppIcon.icon in Resources */,
+				B4693E582E6EC1F90002B607 /* folder_26.icns in Resources */,
 				B416911027B53B020029AB97 /* Preview Assets.xcassets in Resources */,
 				B416911B27B53B2B0029AB97 /* README.md in Resources */,
 				B416910D27B53B020029AB97 /* Assets.xcassets in Resources */,
@@ -434,6 +442,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = UJK52W4D7G;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -456,6 +465,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -498,6 +508,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = UJK52W4D7G;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -513,6 +524,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
@@ -531,9 +543,10 @@
 				CURRENT_PROJECT_VERSION = 41;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Annotation/Preview Content\"";
-				DEVELOPMENT_TEAM = UJK52W4D7G;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Annotation/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
@@ -565,9 +578,10 @@
 				CURRENT_PROJECT_VERSION = 41;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Annotation/Preview Content\"";
-				DEVELOPMENT_TEAM = UJK52W4D7G;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Annotation/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";

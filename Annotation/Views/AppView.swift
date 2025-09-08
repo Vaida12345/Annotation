@@ -21,7 +21,11 @@ struct AppView: View {
         ContentView()
             .fileExporter(isPresented: $document.isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                 guard let url = try? result.get() else { return }
-                FinderItem(at: url).setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+                if #available(macOS 26, *) {
+                    try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_26", withExtension: "icns").load(.image))
+                } else {
+                    try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_15", withExtension: "icns").load(.image))
+                }
             }
             .fileImporter(isPresented: $document.isShowingImportDialog, allowedContentTypes: [.annotationProject, .movie, .quickTimeMovie, .folder, .image], allowsMultipleSelection: true) { result in
                 guard let urls = try? result.get().map({ FinderItem(at: $0) }) else { return }

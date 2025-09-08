@@ -111,7 +111,11 @@ struct ContentView: View {
                 .padding(.trailing)
                 .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                     guard let url = try? result.get() else { return }
-                    FinderItem(at: url).setIcon(image: NSImage(imageLiteralResourceName: "Folder Icon"))
+                    if #available(macOS 26, *) {
+                        try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_26", withExtension: "icns").load(.image))
+                    } else {
+                        try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_15", withExtension: "icns").load(.image))
+                    }
                 }
             }
             

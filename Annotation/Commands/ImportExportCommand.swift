@@ -16,13 +16,17 @@ struct ImportExportCommand: Commands {
     var body: some Commands {
         CommandGroup(replacing: .importExport) {
             Section {
-                Button("Import") {
+                Button {
                     document?.isShowingImportDialog = true
+                } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
                 }
                 .keyboardShortcut("i")
                 
-                Button("Export...") {
+                Button {
                     document?.isShowingExportDialog = true
+                } label: {
+                    Label("Export...", systemImage: "square.and.arrow.up")
                 }
                 .keyboardShortcut("e")
             }
