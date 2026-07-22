@@ -18,6 +18,7 @@
 		B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B416914C27B53B740029AB97 /* AnnotationView.swift */; };
 		B416914F27B53FB20029AB97 /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = B416914E27B53FB20029AB97 /* icon.icns */; };
 		B41B36B0298A921D0075DADD /* RenameLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41B36AF298A921D0075DADD /* RenameLabelView.swift */; };
+		B42A8A043011166B000654F4 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B42A8A0330111667000654F4 /* GalleryView.swift */; };
 		B44136C82C21884200E9331D /* ViewCollection in Frameworks */ = {isa = PBXBuildFile; productRef = B44136C72C21884200E9331D /* ViewCollection */; };
 		B449F9982E6EB82C003C4CE6 /* ViewCollection in Frameworks */ = {isa = PBXBuildFile; productRef = B449F9972E6EB82C003C4CE6 /* ViewCollection */; };
 		B449F99B2E6EB852003C4CE6 /* FinderItem in Frameworks */ = {isa = PBXBuildFile; productRef = B449F99A2E6EB852003C4CE6 /* FinderItem */; };
@@ -65,6 +66,7 @@
 		B416914C27B53B740029AB97 /* AnnotationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnnotationView.swift; sourceTree = "<group>"; };
 		B416914E27B53FB20029AB97 /* icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icon.icns; sourceTree = "<group>"; };
 		B41B36AF298A921D0075DADD /* RenameLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenameLabelView.swift; sourceTree = "<group>"; };
+		B42A8A0330111667000654F4 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
 		B45B52EF282A8C4E007C8CCC /* SideBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideBar.swift; sourceTree = "<group>"; };
 		B45B52F1282A8C7B007C8CCC /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 		B45B52F3282A8C93007C8CCC /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 			children = (
 				B45B52F7282A8CE9007C8CCC /* AutoAnnotateView.swift */,
 				B47D623B298D532200F6025B /* AutoDetectView.swift */,
+				B42A8A0330111667000654F4 /* GalleryView.swift */,
 			);
 			path = Automation;
 			sourceTree = "<group>";
@@ -398,6 +401,7 @@
 				B4E36C122C21AD8100FA581E /* AppView.swift in Sources */,
 				B416914D27B53B740029AB97 /* AnnotationView.swift in Sources */,
 				B46539812AAEE2E30042562E /* Recognizer.swift in Sources */,
+				B42A8A043011166B000654F4 /* GalleryView.swift in Sources */,
 				B4E36C0B2C21A26400FA581E /* LabelListItem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -556,7 +560,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.8;
+				MARKETING_VERSION = 1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -591,7 +595,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.8;
+				MARKETING_VERSION = 1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Vaida.AnnotationCreater;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -637,7 +641,7 @@
 			repositoryURL = "https://github.com/Vaida12345/FinderItem.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.4;
+				minimumVersion = 2.0.0;
 			};
 		};
 		B449F99C2E6EB859003C4CE6 /* XCRemoteSwiftPackageReference "NativeImage" */ = {

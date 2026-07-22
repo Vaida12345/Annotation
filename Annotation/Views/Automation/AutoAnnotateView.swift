@@ -75,20 +75,22 @@ struct AutoAnnotateView: View {
         
         let _unannotatedImagesOnly = unannotatedImageOnly
         
-        let images = _document.annotations.map(\.image).compactMap(\.cgImage)
+        let images = _document.annotations.enumerated().compactMap { index, annotation in
+            annotation.image.cgImage.map { (index: index, image: $0) }
+        }
         
-        for i in 0..<_document.annotations.count {
+        for (i, image) in images {
             if _unannotatedImagesOnly && !_document.annotations[i].annotations.isEmpty {
                 continue
             }
             
-            guard let result = await applyObjectDetectionML(to: images[i], model: model) else {
+            guard let result = await applyObjectDetectionML(to: image, model: model) else {
                 Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
                 continue
             }
             let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
                 guard let label = item.labels.first?.identifier else { return nil }
-                let coordinate = Annotation.Annotations.Coordinate(from: item, in: images[i])
+                let coordinate = Annotation.Annotations.Coordinate(from: item, in: image)
                 return Annotation.Annotations.init(label: label, coordinates: coordinate)
             }
             

@@ -35,16 +35,16 @@ struct AppView: View {
                     document.isImporting = true
                     
                     await withErrorPresented("Failed to load files") {
+                        defer { document.isImporting = false }
                         try urls.startAccessingSecurityScopedResource()
+                        defer { urls.stopAccessingSecurityScopedResource() }
                         
                         let newItems = try await loadItems(from: urls, reporter: document.importingProgress)
-                        urls.stopAccessingSecurityScopedResource()
                         
                         let union = oldItems + newItems
                         
                         await MainActor.run {
                             document.annotations = union
-                            document.isImporting = false
                             
                             undoManager?.setActionName("import files")
                             undoManager?.registerUndo(withTarget: document, handler: { document in

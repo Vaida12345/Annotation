@@ -87,10 +87,10 @@ struct LabelListItems: View {
 
 
 #Preview {
-    withStateObserved(initial: false) { state in
-        LabelListItems(label: AnnotationDocument.preview.labels.first!.value,
-                       showLabelList: state)
+    @Previewable @State var showLabelList = false
+
+    LabelListItems(label: AnnotationDocument.preview.labels.first!.value,
+                   showLabelList: $showLabelList)
         .frame(width: 300, height: 300)
         .environmentObject(AnnotationDocument.preview)
-    }
 }

@@ -5,6 +5,8 @@
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
+			<key>LSTypeIsPackage</key>
+			<true/>
 			<key>CFBundleTypeName</key>
 			<string>Annotation Project</string>
 			<key>CFBundleTypeRole</key>

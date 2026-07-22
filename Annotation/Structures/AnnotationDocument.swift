@@ -176,8 +176,8 @@ final class AnnotationDocument: ReferenceFileDocument {
                 
                 if !addedItems.isEmpty {
                     let _newItems = snapshot.filter({ addedItems.contains($0.id.description + ".heic" )})
-                    let _newWrappers = _newItems.map { item in
-                        let image = try! item.image.data(format: .heic)
+                    let _newWrappers = try _newItems.map { item in
+                        let image = try item.image.data(format: .heic)
                         let imageWrapper = FileWrapper(regularFileWithContents: image)
                         imageWrapper.preferredFilename = "\(item.id).heic"
                         
@@ -196,8 +196,8 @@ final class AnnotationDocument: ReferenceFileDocument {
                     reporter.completedUnitCount = 0
                 }
                 
-                let _newWrappers = snapshot.map { item in
-                    let image = try! item.image.data(format: .heic)
+                let _newWrappers = try snapshot.map { item in
+                    let image = try item.image.data(format: .heic)
                     let imageWrapper = FileWrapper(regularFileWithContents: image)
                     imageWrapper.preferredFilename = "\(item.id).heic"
                     
@@ -217,8 +217,8 @@ final class AnnotationDocument: ReferenceFileDocument {
                     reporter.totalUnitCount = Int64(snapshot.count)
                     reporter.completedUnitCount = 0
                 }
-                let _newWrappers = snapshot.map { item in
-                    let image = try! item.image.data(format: .heic)
+                let _newWrappers = try snapshot.map { item in
+                    let image = try item.image.data(format: .heic)
                     let imageWrapper = FileWrapper(regularFileWithContents: image)
                     imageWrapper.preferredFilename = "\(item.id).heic"
                     
@@ -237,8 +237,8 @@ final class AnnotationDocument: ReferenceFileDocument {
                     reporter.completedUnitCount = 0
                 }
                 
-                let _newWrappers = source.map { item in
-                    let image = try! item.image.data(format: .heic)
+                let _newWrappers = try source.map { item in
+                    let image = try item.image.data(format: .heic)
                     let imageWrapper = FileWrapper(regularFileWithContents: image)
                     imageWrapper.preferredFilename = "\(item.id).heic"
                     
@@ -630,6 +630,42 @@ struct AnnotationExport: Codable {
         
         var annotations: Annotation.Annotations {
             return Annotation.Annotations(label: label, coordinates: coordinates)
+        }
+    }
+    
+}
+
+extension AVAsset {
+    
+    /// Returns the iterator of all the frames of the video.
+    func generateFramesStream() async throws -> AsyncStream<(image: CGImage, actualTime: CMTime)> {
+        let vidLength: CMTime = try await self.load(.duration)
+        
+        guard let video = try await self.loadTracks(withMediaType: .video).first else { throw AlertManager("Failed to load video", message: "No video found.") }
+        
+        let seconds = vidLength.seconds
+        let frameRate = try await video.load(.nominalFrameRate)
+        
+        var requiredFramesCount = Int(seconds * Double(frameRate))
+        if requiredFramesCount == 0 { requiredFramesCount = 1 }
+        
+        let step = Int(vidLength.value / Int64(requiredFramesCount))
+        
+        let imageGenerator = AVAssetImageGenerator(asset: self)
+        imageGenerator.requestedTimeToleranceAfter = CMTime(value: CMTimeValue(step / 2), timescale: vidLength.timescale)
+        imageGenerator.requestedTimeToleranceBefore = CMTime(value: CMTimeValue(step / 2), timescale: vidLength.timescale)
+        
+        let requestedTimes = (0..<requiredFramesCount).map { CMTime(value: Int64(step * $0), timescale: vidLength.timescale) }
+        
+        return AsyncStream { continuation in
+            Task {
+                for time in requestedTimes {
+                    guard let result = try? await imageGenerator.image(at: time) else { return }
+                    continuation.yield(result)
+                }
+                
+                continuation.finish()
+            }
         }
     }
     

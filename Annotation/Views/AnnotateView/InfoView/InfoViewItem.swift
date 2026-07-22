@@ -83,13 +83,12 @@ struct InfoViewItem: View {
 }
 
 #Preview {
-    withStateObserved(initial: AnnotationDocument.preview.annotations[0]) { annotation in
-        withStateObserved(initial: annotation.annotations[0].wrappedValue) { state in
-            LazyVGrid(columns: [GridItem(.fixed(60)), GridItem(.flexible())]) {
-                GridRow {
-                    InfoViewItem(item: state, annotation: annotation)
-                }
-            }
+    @Previewable @State var annotation = AnnotationDocument.preview.annotations[0]
+    @Previewable @State var item = AnnotationDocument.preview.annotations[0].annotations[0]
+
+    LazyVGrid(columns: [GridItem(.fixed(60)), GridItem(.flexible())]) {
+        GridRow {
+            InfoViewItem(item: $item, annotation: $annotation)
         }
     }
     .environmentObject(AnnotationDocument.preview)

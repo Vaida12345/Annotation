@@ -33,10 +33,9 @@ struct InfoView: View {
 }
 
 #Preview {
-    withStateObserved(initial: AnnotationDocument.preview.annotations.first!) { state in
-        InfoView(annotation: state)
-            .frame(width: 400)
-            .environmentObject(AnnotationDocument.preview)
-    }
-}
+    @Previewable @State var annotation = AnnotationDocument.preview.annotations.first!
 
+    InfoView(annotation: $annotation)
+        .frame(width: 400)
+        .environmentObject(AnnotationDocument.preview)
+}

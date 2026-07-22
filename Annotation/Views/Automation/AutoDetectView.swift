@@ -321,7 +321,7 @@ final class AutoDetectDocument: ObservableObject {
     
     @Published var annotations: [IdentifiedAnnotation] = []
     
-    func applyML(option: AutoDetectView.DetectOption, document: AnnotationDocument, unannotatedImagesOnly: Bool) throws -> [IdentifiedAnnotation] {
+    func applyML(option: AutoDetectView.DetectOption, document: AnnotationDocument, unannotatedImagesOnly: Bool) async throws -> [IdentifiedAnnotation] {
         let annotations = document.annotations.filter { unannotatedImagesOnly => $0.annotations.isEmpty }
         
         var result: [IdentifiedAnnotation] = []
@@ -358,8 +358,18 @@ final class AutoDetectDocument: ObservableObject {
                     boundingBoxes = objects.map(\.boundingBox)
                     confidence = objects.map(\.confidence)
                     
-                case .FaceRectangles, .HumanRectangles, .RecognizeAnimals:
+                case .FaceRectangles:
                     guard let results = request.results as? [VNFaceObservation] else { return }
+                    boundingBoxes = results.map(\.boundingBox)
+                    confidence = results.map(\.confidence)
+
+                case .HumanRectangles:
+                    guard let results = request.results as? [VNHumanObservation] else { return }
+                    boundingBoxes = results.map(\.boundingBox)
+                    confidence = results.map(\.confidence)
+
+                case .RecognizeAnimals:
+                    guard let results = request.results as? [VNRecognizedObjectObservation] else { return }
                     boundingBoxes = results.map(\.boundingBox)
                     confidence = results.map(\.confidence)
                 }

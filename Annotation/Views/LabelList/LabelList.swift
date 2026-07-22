@@ -32,8 +32,8 @@ struct LabelList: View {
 
 
 #Preview {
-    withStateObserved(initial: false) { state in
-        LabelList(showLabelList: state)
-            .environmentObject(AnnotationDocument.preview)
-    }
+    @Previewable @State var showLabelList = false
+
+    LabelList(showLabelList: $showLabelList)
+        .environmentObject(AnnotationDocument.preview)
 }
