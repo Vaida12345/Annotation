@@ -10,6 +10,7 @@ import SwiftUI
 import CoreML
 import Vision
 import ViewCollection
+import Essentials
 
 
 struct AutoAnnotateView: View {
@@ -18,7 +19,7 @@ struct AutoAnnotateView: View {
     @State private var model: MLModel?
     @State private var unannotatedImageOnly = true
     
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     @Environment(\.dismiss) var dismiss
     
     let undoManager: UndoManager?
@@ -29,13 +30,14 @@ struct AutoAnnotateView: View {
             DropHandlerView(prompt: "Drop a CoreML model here")
                 .onDrop { sources in
                     guard let firstItem = sources.first else { return }
-                    let model = try MLModel(contentsOf: MLModel.compileModel(at: firstItem.url))
-                    
-                    self.model = model
-                    dismiss()
-                    
-                    Task {
-                        await applyML()
+                    Task { @MainActor in
+                        await withErrorPresented("Failed to annotate") {
+                            let compiledURL = try await MLModel.compileModel(at: firstItem.url)
+                            let model = try MLModel(contentsOf: compiledURL)
+                            self.model = model
+                            try await applyML(using: model)
+                            dismiss()
+                        }
                     }
                 }
                 .background(.regularMaterial)
@@ -65,9 +67,11 @@ struct AutoAnnotateView: View {
         }
     }
     
-    func applyML() async {
-        guard let model = model else { return }
+    @MainActor
+    func applyML(using model: MLModel) async throws {
         let oldItems = document.annotations
+        let oldLabels = document.labels.values.map { AnnotationDocument.Label(title: $0.title, color: $0.color) }
+        let oldSelection = document.selectedItems
         self.document.selectedItems = []
         
         let _document = document
@@ -80,33 +84,27 @@ struct AutoAnnotateView: View {
         }
         
         for (i, image) in images {
+            try Task.checkCancellation()
             if _unannotatedImagesOnly && !_document.annotations[i].annotations.isEmpty {
                 continue
             }
             
-            guard let result = await applyObjectDetectionML(to: image, model: model) else {
-                Task { @MainActor in document.selectedItems = [document.annotations[i].id] }
-                continue
-            }
+            let result = try await applyObjectDetectionML(to: image, model: model)
             let annotations = result.filter({ $0.confidence >= Float(staticConfidence) }).compactMap { item -> Annotation.Annotations? in
                 guard let label = item.labels.first?.identifier else { return nil }
                 let coordinate = Annotation.Annotations.Coordinate(from: item, in: image)
                 return Annotation.Annotations.init(label: label, coordinates: coordinate)
             }
             
-            Task { @MainActor in
-                document.annotations[i].annotations.append(contentsOf: annotations)
-                
-                document.selectedItems = [document.annotations[i].id]
-                document.scrollProxy?.scrollTo(document.annotations[i].id)
-            }
+            document.annotations[i].annotations.append(contentsOf: annotations)
+            document.selectedItems = [document.annotations[i].id]
+            document.scrollProxy?.scrollTo(document.annotations[i].id)
         }
         
         
         // synchronize labels
         let _labels = document.annotations.__labels
         let difference = Set(_labels).subtracting(document.labels.keys)
-        document.objectWillChange.send()
         for i in difference {
             document.labels[i] = .init(title: i, color: .green)
         }
@@ -114,11 +112,7 @@ struct AutoAnnotateView: View {
         // undo / redo
         undoManager?.setActionName("Auto Annotate")
         undoManager?.registerUndo(withTarget: document) { document in
-            document.replaceItems(with: oldItems, undoManager: undoManager)
-            
-            for i in difference {
-                document.labels[i] = nil
-            }
+            document.replaceState(annotations: oldItems, labels: oldLabels, selection: oldSelection, undoManager: undoManager)
         }
         
     }
@@ -151,17 +145,36 @@ struct AutoAnnotateView: View {
 ///     - image: The image on which performs the ML.
 ///
 /// - Returns: The observations in the image; `nil` otherwise.
-func applyObjectDetectionML(to image: CGImage, model: MLModel) async -> [VNRecognizedObjectObservation]? {
+enum ObjectDetectionError: LocalizedError {
+    case incompatibleModel
+    case unsupportedResults
+    case noResults
+
+    var errorDescription: String? {
+        switch self {
+        case .incompatibleModel: "The selected Core ML model cannot be used by Vision."
+        case .unsupportedResults: "The model does not produce object-detection observations."
+        case .noResults: "The model did not detect any objects."
+        }
+    }
+}
+
+func applyObjectDetectionML(to image: CGImage, model coreMLModel: MLModel) async throws -> [VNRecognizedObjectObservation] {
     let orientation = CGImagePropertyOrientation.up
     let handler = VNImageRequestHandler(cgImage: image, orientation: orientation, options: [:])
     
-    let model = try! VNCoreMLModel(for: model)
+    let model: VNCoreMLModel
+    do {
+        model = try VNCoreMLModel(for: coreMLModel)
+    } catch {
+        throw ObjectDetectionError.incompatibleModel
+    }
     let request = VNCoreMLRequest(model: model)
-    try! handler.perform([request])
+    try handler.perform([request])
     
-    guard let results = request.results else { return nil }
-    let observations = results as! [VNRecognizedObjectObservation]
-    guard !observations.isEmpty else { return nil }
+    guard let results = request.results else { throw ObjectDetectionError.noResults }
+    guard let observations = results as? [VNRecognizedObjectObservation] else { throw ObjectDetectionError.unsupportedResults }
+    guard !observations.isEmpty else { throw ObjectDetectionError.noResults }
     
     return observations
 }

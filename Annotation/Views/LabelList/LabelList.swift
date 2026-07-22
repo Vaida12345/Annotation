@@ -13,7 +13,7 @@ import ViewCollection
 struct LabelList: View {
     
     // core
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     @Binding var showLabelList: Bool
     
     @Environment(\.undoManager) var undoManager
@@ -35,5 +35,5 @@ struct LabelList: View {
     @Previewable @State var showLabelList = false
 
     LabelList(showLabelList: $showLabelList)
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }

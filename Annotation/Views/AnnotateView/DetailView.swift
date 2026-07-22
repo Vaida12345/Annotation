@@ -12,7 +12,7 @@ import SwiftUI
 struct DetailView: View {
     
     // core
-    @EnvironmentObject private var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     var body: some View {
         GeometryReader { reader in
@@ -40,5 +40,5 @@ struct DetailView: View {
 
 #Preview {
     DetailView()
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }

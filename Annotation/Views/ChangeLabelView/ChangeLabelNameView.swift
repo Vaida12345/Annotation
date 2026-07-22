@@ -16,7 +16,7 @@ struct __ChangeLabelNameView: View {
     
     let original: AnnotationDocument.Label
     
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     let dismiss: (_ original: AnnotationDocument.Label, _ modified: AnnotationDocument.Label) -> Void
     
@@ -27,7 +27,7 @@ struct __ChangeLabelNameView: View {
                 
                 TextField("Name for label", text: $label.title)
                     .onSubmit {
-                        dismiss(original, label)
+                        if isValid { dismiss(original, label) }
                     }
                     .padding(.bottom)
             }
@@ -43,9 +43,16 @@ struct __ChangeLabelNameView: View {
                 Button("Done") {
                     dismiss(original, label)
                 }
+                .disabled(!isValid)
                 .keyboardShortcut(.defaultAction)
             }
         }
+    }
+
+    private var isValid: Bool {
+        let title = label.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return false }
+        return title == original.title || document.labels[title] == nil
     }
     
     init(label: AnnotationDocument.Label, dismiss: @escaping (_: AnnotationDocument.Label, _: AnnotationDocument.Label) -> Void) {
@@ -62,6 +69,6 @@ struct __ChangeLabelNameView: View {
     __ChangeLabelNameView(label: AnnotationDocument.Label(title: "hello", color: .blue), dismiss: { _, _ in
         
     })
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }
 #endif

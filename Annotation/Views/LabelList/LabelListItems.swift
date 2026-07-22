@@ -11,7 +11,7 @@ import ViewCollection
 
 struct LabelListItems: View {
     
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     @State var label: AnnotationDocument.Label
     @Binding var showLabelList: Bool
     
@@ -36,7 +36,7 @@ struct LabelListItems: View {
         
         try Task.checkCancellation()
         
-        return try! await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
+        return try await labelsDictionaryValue.stream.compactMap { (item) -> InnerViewElement? in
             try Task.checkCancellation()
             guard let annotation = annotations.first(where: { $0.id == item.annotationID }) else { return nil }
             guard let annotations = annotation.annotations.first(where: { $0.id == item.annotationsID }) else { return nil }
@@ -92,5 +92,5 @@ struct LabelListItems: View {
     LabelListItems(label: AnnotationDocument.preview.labels.first!.value,
                    showLabelList: $showLabelList)
         .frame(width: 300, height: 300)
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }

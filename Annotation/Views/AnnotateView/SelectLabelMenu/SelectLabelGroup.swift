@@ -10,7 +10,7 @@ import SwiftUI
 
 struct SelectLabelGroup: View {
     
-    @EnvironmentObject private var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     let node: SelectLabelGroupedMenu.GroupedNode
     

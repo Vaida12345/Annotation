@@ -16,7 +16,7 @@ struct RenameLabelView: View {
     let undoManager: UndoManager?
     
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     
     var body: some View {

@@ -41,7 +41,7 @@ struct Annotation: Equatable, Hashable, Identifiable {
             return .init(label: label, coordinates: coordinate)
         }
         
-        /// Coordinate relative to image, origin at center, coordinate zero at bottom-left.
+        /// A rectangle in image pixels. `x` and `y` describe its center and the origin is at the image's top-left.
         struct Coordinate: Equatable, Hashable, Encodable, Decodable, CustomStringConvertible, Identifiable {
             
             var id: UUID
@@ -56,6 +56,10 @@ struct Annotation: Equatable, Hashable, Identifiable {
             
             var size: CGSize {
                 CGSize(width: self.width, height: self.height)
+            }
+
+            var isValid: Bool {
+                x.isFinite && y.isFinite && width.isFinite && height.isFinite && width > 0 && height > 0
             }
             
             func squareContainer() -> Coordinate {
@@ -100,58 +104,25 @@ struct Annotation: Equatable, Hashable, Identifiable {
             
             /// change the coordinate from that of a imageView to that of an image.
             init?(from frame: CGRect, by imageView: NSImageView) {
-                var scaleFactor: Double // imageView / image
-                var heightMargin: Double = 0
-                var widthMargin: Double = 0
-                
-                guard let cgImage = imageView.image?.cgImage else { return nil }
-                
-                if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
-                    scaleFactor = imageView.frame.width / Double(cgImage.width)
-                    heightMargin = (imageView.frame.height - Double(cgImage.height) * scaleFactor) / 2
-                } else {
-                    scaleFactor = imageView.frame.height / Double(cgImage.height)
-                    widthMargin = (imageView.frame.width - Double(cgImage.width) * scaleFactor) / 2
-                }
-                
-                let x = (frame.origin.x - widthMargin + frame.width / 2) / scaleFactor
-                let y = (imageView.frame.height - (frame.origin.y + frame.height / 2) - heightMargin) / scaleFactor
-                let width = frame.width / scaleFactor
-                let height = frame.height / scaleFactor
-                
-                self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+                guard let image = imageView.image,
+                      let coordinate = ImageCoordinateTransformer.coordinate(fromViewRect: frame, viewSize: imageView.bounds.size, image: image) else { return nil }
+                self = coordinate
             }
             
             /// change the coordinate from that of a imageView to that of an image.
             init(from frame: CGRect, by imageView: NSView, image: NSImage) {
-                var scaleFactor: Double // imageView / image
-                var heightMargin: Double = 0
-                var widthMargin: Double = 0
-                
-                let cgImage = image.cgImage!
-                
-                if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
-                    scaleFactor = imageView.frame.width / Double(cgImage.width)
-                    heightMargin = (imageView.frame.height - Double(cgImage.height) * scaleFactor) / 2
-                } else {
-                    scaleFactor = imageView.frame.height / Double(cgImage.height)
-                    widthMargin = (imageView.frame.width - Double(cgImage.width) * scaleFactor) / 2
-                }
-                
-                let x = (frame.origin.x - widthMargin + frame.width / 2) / scaleFactor
-                let y = (imageView.frame.height - (frame.origin.y + frame.height / 2) - heightMargin) / scaleFactor
-                let width = frame.width / scaleFactor
-                let height = frame.height / scaleFactor
-                
-                let rawFrame = CGRect(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
-                let intersect = rawFrame.intersection(CGRect(origin: .zero, size: cgImage.size))
-                self.init(center: intersect.center, size: intersect.size)
+                self = ImageCoordinateTransformer.coordinate(fromViewRect: frame, viewSize: imageView.bounds.size, image: image)
+                    ?? Coordinate(center: .zero, size: .zero)
             }
             
             // init from the coordinate from that of a observation
             /// Initializes the coordinate from Object Observation and coordinate in a `NSView`.
             init(from observation: VNRecognizedObjectObservation, in image: NSImage) {
-                self.init(from: observation, in: image.cgImage!)
+                if let cgImage = image.cgImage {
+                    self.init(from: observation, in: cgImage)
+                } else {
+                    self.init(center: .zero, size: .zero)
+                }
             }
             
             /// Initializes the coordinate from Object Observation and coordinate in a `NSView`.
@@ -209,31 +180,44 @@ extension CGRect {
     
     /// change the coordinate from that of an image to that of a imageView.
     init(from coordinate: Annotation.Annotations.Coordinate, by imageView: NSImageView) {
-        var scaleFactor: Double // imageView / image
-        var heightMargin: Double = 0
-        var widthMargin: Double = 0
-        
-        let cgImage = imageView.image!.cgImage(forProposedRect: nil, context: nil, hints: nil)!
-        
-        if Double(cgImage.width) / Double(cgImage.height) >= imageView.frame.width / imageView.frame.height {
-            scaleFactor = imageView.frame.width / Double(cgImage.width)
-            heightMargin = (imageView.frame.height - Double(cgImage.height) * scaleFactor) / 2
-        } else {
-            scaleFactor = imageView.frame.height / Double(cgImage.height)
-            widthMargin = (imageView.frame.width - Double(cgImage.width) * scaleFactor) / 2
-        }
-        
-        let x = coordinate.x * scaleFactor + widthMargin
-        let y = -1 * (coordinate.y * scaleFactor + heightMargin - imageView.frame.height)
-        let width = coordinate.width * scaleFactor
-        let height = coordinate.height * scaleFactor
-        
-        self.init(center: CGPoint(x: x, y: y), size: CGSize(width: width, height: height))
+        self = imageView.image.map {
+            ImageCoordinateTransformer.viewRect(from: coordinate, viewSize: imageView.bounds.size, image: $0)
+        } ?? .zero
     }
     
     /// change the coordinate from createML image to CGImage. ie, center to bottom-left
     init(from coordinate: Annotation.Annotations.Coordinate) {
         self.init(x: coordinate.x - coordinate.width / 2, y: coordinate.y - coordinate.height / 2, width: coordinate.width, height: coordinate.height)
+    }
+}
+
+enum ImageCoordinateTransformer {
+    private static func geometry(viewSize: CGSize, image: NSImage) -> (scale: CGFloat, xMargin: CGFloat, yMargin: CGFloat, pixelSize: CGSize)? {
+        guard viewSize.width > 0, viewSize.height > 0, let cgImage = image.cgImage else { return nil }
+        let pixelSize = CGSize(width: cgImage.width, height: cgImage.height)
+        guard pixelSize.width > 0, pixelSize.height > 0 else { return nil }
+        let scale = min(viewSize.width / pixelSize.width, viewSize.height / pixelSize.height)
+        return (scale, (viewSize.width - pixelSize.width * scale) / 2, (viewSize.height - pixelSize.height * scale) / 2, pixelSize)
+    }
+
+    static func coordinate(fromViewRect rect: CGRect, viewSize: CGSize, image: NSImage) -> Annotation.Annotations.Coordinate? {
+        guard let geometry = geometry(viewSize: viewSize, image: image), geometry.scale > 0 else { return nil }
+        let center = CGPoint(
+            x: (rect.midX - geometry.xMargin) / geometry.scale,
+            y: (viewSize.height - rect.midY - geometry.yMargin) / geometry.scale
+        )
+        let raw = CGRect(center: center, size: CGSize(width: rect.width / geometry.scale, height: rect.height / geometry.scale))
+        let clipped = raw.intersection(CGRect(origin: .zero, size: geometry.pixelSize))
+        guard !clipped.isNull, clipped.width > 0, clipped.height > 0 else { return nil }
+        return .init(center: clipped.center, size: clipped.size)
+    }
+
+    static func viewRect(from coordinate: Annotation.Annotations.Coordinate, viewSize: CGSize, image: NSImage) -> CGRect {
+        guard coordinate.isValid, let geometry = geometry(viewSize: viewSize, image: image) else { return .zero }
+        return CGRect(center: CGPoint(
+            x: coordinate.x * geometry.scale + geometry.xMargin,
+            y: viewSize.height - coordinate.y * geometry.scale - geometry.yMargin
+        ), size: CGSize(width: coordinate.width * geometry.scale, height: coordinate.height * geometry.scale))
     }
 }
 

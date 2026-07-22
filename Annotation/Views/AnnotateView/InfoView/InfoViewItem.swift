@@ -13,7 +13,7 @@ struct InfoViewItem: View {
     
     @Binding var item: Annotation.Annotations
     @Binding var annotation: Annotation
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     @State var showLabelSheet = false
     
@@ -91,7 +91,7 @@ struct InfoViewItem: View {
             InfoViewItem(item: $item, annotation: $annotation)
         }
     }
-    .environmentObject(AnnotationDocument.preview)
+    .environment(AnnotationDocument.preview)
     .frame(width: 400)
     .padding(.all)
 }

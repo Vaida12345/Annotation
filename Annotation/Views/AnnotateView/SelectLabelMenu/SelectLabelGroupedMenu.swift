@@ -10,7 +10,7 @@ import SwiftUI
 
 struct SelectLabelGroupedMenu: View {
     
-    @EnvironmentObject private var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     var body: some View {
         let labels = document.labels.values.map({ ($0, $0.title.split(separator: /[^a-zA-Z0-9]/)) })
@@ -184,6 +184,5 @@ struct SelectLabelGroupedMenu: View {
 
 #Preview {
     SelectLabelGroupedMenu()
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }
-

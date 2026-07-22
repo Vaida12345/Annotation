@@ -8,12 +8,13 @@
 import Foundation
 import SwiftUI
 import FinderItem
+import Essentials
 
 
 struct SideBar: View {
     
     // core
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     // layout
     @State var isShowingImportDialog = false
@@ -21,6 +22,7 @@ struct SideBar: View {
     @Environment(\.undoManager) var undoManager
     
     var body: some View {
+        @Bindable var document = document
         ScrollViewReader { proxy in
             List(selection: $document.selectedItems) {
                 ForEach(document.annotations) { annotation in
@@ -44,7 +46,8 @@ struct SideBar: View {
                                     undoManager?.setActionName("Remove all annotations for selected items")
                                     document.apply(undoManager: undoManager) {
                                         for i in document.selectedItems {
-                                            document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations = []
+                                            guard let index = document.annotations.firstIndex(where: { $0.id == i }) else { continue }
+                                            document.annotations[index].annotations = []
                                         }
                                     }
                                 }
@@ -54,7 +57,8 @@ struct SideBar: View {
                                         undoManager?.setActionName("Remove annotation \"\(item)\" for selected items")
                                         document.apply(undoManager: undoManager) {
                                             for i in document.selectedItems {
-                                                document.annotations[document.annotations.firstIndex(where: { $0.id == i })!].annotations.removeAll(where: { $0.label == item })
+                                                guard let index = document.annotations.firstIndex(where: { $0.id == i }) else { continue }
+                                                document.annotations[index].annotations.removeAll(where: { $0.label == item })
                                             }
                                         }
                                     }
@@ -91,58 +95,40 @@ struct SideBar: View {
             }
             .frame(minWidth: 200)
             .dropDestination(for: FinderItem.self) { sources, location in
-                let sources = sources
-                try? sources.startAccessingSecurityScopedResource()
-                
-                Task.detached {
-                    defer { sources.stopAccessingSecurityScopedResource() }
-                    
-                    Task { @MainActor in
-                        self.document.isImporting = true
-                    }
-                    let oldItems = await document.annotations
-                    let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
-                    
-                    let union = oldItems + newItems
-                    Task { @MainActor in
-                        self.document.annotations = union
-                        self.document.isImporting = false
-                        
-                        if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
-                        
-                        undoManager?.setActionName("import files")
-                        undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                Task { @MainActor in
+                    await withErrorPresented("Failed to import files") {
+                        try sources.startAccessingSecurityScopedResource()
+                        defer { sources.stopAccessingSecurityScopedResource() }
+                        document.isImporting = true
+                        defer { document.isImporting = false }
+                        let oldItems = document.annotations
+                        let newItems = try await loadItems(from: sources, reporter: document.importingProgress)
+                        document.annotations = oldItems + newItems
+                        if let onlyItem = newItems.count == 1 ? newItems.first : nil { document.selectedItems = [onlyItem.id] }
+                        undoManager?.setActionName("Import files")
+                        undoManager?.registerUndo(withTarget: document) { document in
                             document.replaceItems(with: oldItems, undoManager: undoManager)
-                        })
+                        }
                     }
                 }
                 return true
             }
             .fileImporter(isPresented: $isShowingImportDialog, allowedContentTypes: [.annotationProject, .folder, .movie, .quickTimeMovie, .image], allowsMultipleSelection: true) { result in
                 guard let urls = try? result.get().map ({ FinderItem(at: $0) }) else { return }
-                try? urls.startAccessingSecurityScopedResource()
-                
-                Task.detached {
-                    defer { urls.stopAccessingSecurityScopedResource() }
-                    
-                    let oldItems = await document.annotations
-                    Task { @MainActor in
-                        self.document.isImporting = true
-                    }
-                    
-                    let newItems = try await loadItems(from: urls, reporter: self.document.importingProgress)
-                    
-                    let union = oldItems + newItems
-                    Task { @MainActor in
-                        self.document.annotations = union
-                        self.document.isImporting = false
-                        
-                        if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
-                        
-                        undoManager?.setActionName("import files")
-                        undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                Task { @MainActor in
+                    await withErrorPresented("Failed to import files") {
+                        try urls.startAccessingSecurityScopedResource()
+                        defer { urls.stopAccessingSecurityScopedResource() }
+                        document.isImporting = true
+                        defer { document.isImporting = false }
+                        let oldItems = document.annotations
+                        let newItems = try await loadItems(from: urls, reporter: document.importingProgress)
+                        document.annotations = oldItems + newItems
+                        if let onlyItem = newItems.count == 1 ? newItems.first : nil { document.selectedItems = [onlyItem.id] }
+                        undoManager?.setActionName("Import files")
+                        undoManager?.registerUndo(withTarget: document) { document in
                             document.replaceItems(with: oldItems, undoManager: undoManager)
-                        })
+                        }
                     }
                 }
             }

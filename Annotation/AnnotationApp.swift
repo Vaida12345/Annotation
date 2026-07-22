@@ -21,6 +21,7 @@ struct AnnotationApp: App {
     var body: some Scene {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in
             AppView()
+                .environment(file.document)
                 .focusedSceneValue(\.document, file.document)
         }
         .commands {

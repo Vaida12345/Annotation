@@ -10,7 +10,7 @@ import SwiftUI
 
 struct LabelListRow: View {
     
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     let label: AnnotationDocument.Label
     

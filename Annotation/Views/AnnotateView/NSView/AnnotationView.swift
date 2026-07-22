@@ -18,11 +18,9 @@ struct AnnotationView: NSViewRepresentable {
     // layout
     let size: CGSize
     
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     var annotations: [Annotation] {
-        let date = Date()
-        defer { print("Obtain AnnotationView annotations took \(date.distanceToNow())") }
         return document.annotations.filter({ document.selectedItems.contains($0.id) })
     }
     
@@ -30,15 +28,12 @@ struct AnnotationView: NSViewRepresentable {
 //    var annotationsViews: [NSView] = []
 
     func makeNSView(context: Context) -> NSView {
-        let date = Date()
-        defer { print("\(#function) took \(date.distanceToNow())") }
-        
         let view = NSView(frame: NSRect(origin: .zero, size: size))
         for image in annotations.map({ $0.image }) {
             let imageView: NSImageView = NSImageView()
-            image.size = image.pixelSize!.aspectRatio(.fit, in: size)
             imageView.frame = CGRect(origin: .zero, size: size)
             imageView.image = image
+            imageView.imageScaling = .scaleProportionallyUpOrDown
             imageView.alphaValue = 1.0 / CGFloat(annotations.count)
             view.addSubview(imageView)
         }
@@ -54,9 +49,6 @@ struct AnnotationView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        let date = Date()
-        defer { print("\(#function) took \(date.distanceToNow())") }
-        
         _ = nsView.subviews.map{ $0.removeFromSuperview() }
         
         let viewController = ViewController(document: document)
@@ -69,9 +61,9 @@ struct AnnotationView: NSViewRepresentable {
         for annotation in annotations {
             let image = annotation.image
             let imageView: NSImageView = NSImageView()
-            image.size = image.pixelSize!.aspectRatio(.fit, in: size)
             imageView.frame = CGRect(origin: .zero, size: size)
             imageView.image = image
+            imageView.imageScaling = .scaleProportionallyUpOrDown
             imageView.alphaValue = 1.0 / CGFloat(annotations.count)
             nsView.addSubview(imageView)
             
@@ -146,7 +138,6 @@ struct AnnotationView: NSViewRepresentable {
                     self?.recognizerView.frame = CGRect(origin: .zero, size: .zero)
                     self?.recognizerView.removeFromSuperview()
                     self?.recognizerStartingPoint = NSPoint.zero
-                    self?.document.objectWillChange.send()
                     return
                 }
                 
@@ -156,6 +147,7 @@ struct AnnotationView: NSViewRepresentable {
                     guard let index = document.annotations.firstIndex(where: { $0.id == item }) else { continue }
                     
                     let coordinate = Annotation.Annotations.Coordinate(from: recognizerView.frame, by: view, image: document.annotations[index].image)
+                    guard coordinate.isValid else { continue }
                     let annotation = Annotation.Annotations(label: label.title, coordinates: coordinate)
                     
                     document.appendAnnotations(undoManager: undoManager, annotationID: item, item: annotation)
@@ -181,8 +173,9 @@ struct AnnotationView: NSViewRepresentable {
             view.addSubview(mainContentView)
             
             // Create and add the grid cell view
-            gridCellView = GridCellView(frame: self.view.bounds)
-            mainContentView.addSubview(gridCellView!)
+            let gridCellView = GridCellView(frame: self.view.bounds)
+            self.gridCellView = gridCellView
+            mainContentView.addSubview(gridCellView)
         }
         
         init(document: AnnotationDocument) {
@@ -208,13 +201,13 @@ class GridCellView: NSView {
     
     
     override func updateTrackingAreas() {
-        if trackingArea != nil {
-            self.removeTrackingArea(trackingArea!)
+        if let trackingArea {
+            self.removeTrackingArea(trackingArea)
         }
         
         let options : NSTrackingArea.Options = [.mouseEnteredAndExited, .mouseMoved, .activeInKeyWindow]
         trackingArea = NSTrackingArea(rect: self.bounds, options: options, owner: self, userInfo: nil)
-        self.addTrackingArea(trackingArea!)
+        if let trackingArea { self.addTrackingArea(trackingArea) }
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -273,5 +266,3 @@ struct TextLabel: View {
         .frame(width: size.width, height: size.height, alignment: .trailing)
     }
 }
-
-

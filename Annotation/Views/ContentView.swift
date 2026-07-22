@@ -9,13 +9,14 @@ import SwiftUI
 import Cocoa
 import ViewCollection
 import FinderItem
+import Essentials
 
 
 struct ContentView: View {
     
     // core
     @State private var label = "label"
-    @EnvironmentObject private var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     // layout
     @State private var showInfoView = false
@@ -130,7 +131,8 @@ struct ContentView: View {
     }
     
     var mainBody: some View {
-        ZStack {
+        @Bindable var document = document
+        return ZStack {
             if !document.annotations.isEmpty {
                 if document.selectedItems.isEmpty {
                     ContainerView {
@@ -146,27 +148,20 @@ struct ContentView: View {
             } else {
                 DropHandlerView()
                     .onDrop { sources in
-                        try? sources.startAccessingSecurityScopedResource()
-                        Task {
-                            defer { sources.stopAccessingSecurityScopedResource() }
-                            Task { @MainActor in
-                                self.document.isImporting = true
-                            }
-                            
-                            let oldItems = await document.annotations
-                            let newItems = try await loadItems(from: sources, reporter: self.document.importingProgress)
-                            
-                            let union = oldItems + newItems
-                            Task { @MainActor in
-                                self.document.annotations = union
-                                self.document.isImporting = false
-                                
-                                if newItems.count == 1 { self.document.selectedItems = [newItems.first!.id] }
-                                
-                                undoManager?.setActionName("import files")
-                                undoManager?.registerUndo(withTarget: self.document, handler: { document in
+                        Task { @MainActor in
+                            await withErrorPresented("Failed to import files") {
+                                try sources.startAccessingSecurityScopedResource()
+                                defer { sources.stopAccessingSecurityScopedResource() }
+                                document.isImporting = true
+                                defer { document.isImporting = false }
+                                let oldItems = document.annotations
+                                let newItems = try await loadItems(from: sources, reporter: document.importingProgress)
+                                document.annotations = oldItems + newItems
+                                if let onlyItem = newItems.count == 1 ? newItems.first : nil { document.selectedItems = [onlyItem.id] }
+                                undoManager?.setActionName("Import files")
+                                undoManager?.registerUndo(withTarget: document) { document in
                                     document.replaceItems(with: oldItems, undoManager: undoManager)
-                                })
+                                }
                             }
                         }
                     }

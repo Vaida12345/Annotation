@@ -13,7 +13,7 @@ struct SelectLabelMenu: View {
     
     @State private var showLabelSheet = false
     
-    @EnvironmentObject private var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     @Environment(\.undoManager) private var undoManager
     
@@ -55,5 +55,5 @@ struct SelectLabelMenu: View {
 
 #Preview {
     SelectLabelMenu()
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }

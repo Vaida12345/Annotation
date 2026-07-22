@@ -12,12 +12,13 @@ import Essentials
 
 struct AppView: View {
     
-    @EnvironmentObject private var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     @Environment(\.undoManager) private var undoManager
     
     
     var body: some View {
+        @Bindable var document = document
         ContentView()
             .fileExporter(isPresented: $document.isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
                 guard let url = try? result.get() else { return }
@@ -60,5 +61,20 @@ struct AppView: View {
             .sheet(isPresented: $document.isShowingAutoDetect) {
                 AutoDetectView(globalUndoManager: undoManager)
             }
+            .alert("Some project entries could not be opened", isPresented: Binding(
+                get: { !document.loadWarnings.isEmpty },
+                set: { if !$0 { document.loadWarnings.removeAll() } }
+            )) {
+                Button("OK") { document.loadWarnings.removeAll() }
+            } message: {
+                Text(loadWarningMessage)
+            }
+    }
+
+    private var loadWarningMessage: String {
+        let count = document.loadWarnings.count
+        let details = document.loadWarnings.prefix(8).joined(separator: "\n")
+        let remainder = count > 8 ? "\n…and \(count - 8) more." : ""
+        return "\(count) \(count == 1 ? "entry was" : "entries were") skipped. The remaining project content was recovered.\n\n\(details)\(remainder)"
     }
 }

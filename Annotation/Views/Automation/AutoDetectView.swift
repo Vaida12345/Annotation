@@ -23,7 +23,7 @@ struct AutoDetectView: View {
     
     @StateObject private var rawImages: RawImagesContainer = .init()
     
-    @EnvironmentObject private var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     @StateObject private var autoDetectDocument: AutoDetectDocument = AutoDetectDocument()
     
     let globalUndoManager: UndoManager?
@@ -130,6 +130,9 @@ struct AutoDetectView: View {
                             let option = self.detectOption
                             Task {
                                 await withErrorPresented("Failed to detect") {
+                                    defer {
+                                        if detectProgress == .applyingML { detectProgress = .initial }
+                                    }
                                     let annotations = try await autoDetectDocument.applyML(option: option, document: self.document, unannotatedImagesOnly: unannotatedImagesOnly)
                                     guard !annotations.isEmpty else { throw MLError.noMatch }
                                     
@@ -150,13 +153,9 @@ struct AutoDetectView: View {
                                         return await group.compacted().sequence()
                                     }
                                     
-                                    Task { @MainActor in
-                                        autoDetectDocument.annotations = annotations
-                                        
-                                        self.rawImages.objectWillChange.send()
-                                        self.rawImages.images = __croppedImages
-                                        self.detectProgress = .waitForConfidence
-                                    }
+                                    autoDetectDocument.annotations = annotations
+                                    self.rawImages.images = __croppedImages
+                                    self.detectProgress = .waitForConfidence
                                 }
                             }
 
@@ -172,8 +171,8 @@ struct AutoDetectView: View {
                             globalUndoManager?.setActionName("Merge from Auto Detect")
                             self.document.apply(undoManager: globalUndoManager) {
                                 for image in rawImages.images {
-                                    let index = self.document.annotations.firstIndex(where: { $0.id == image.annotationID })!
-                                    guard let tag = image.givenTag else { continue }
+                                    guard let index = self.document.annotations.firstIndex(where: { $0.id == image.annotationID }),
+                                          let tag = image.givenTag else { continue }
                                     self.document.annotations[index].annotations.append(.init(label: tag.title, coordinates: image.rect))
                                 }
                             }

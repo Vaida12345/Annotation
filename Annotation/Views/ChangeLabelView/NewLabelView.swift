@@ -19,7 +19,7 @@ struct NewLabelView: View {
     @State var newLabel = AnnotationDocument.Label(title: "", color: .green)
     
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     
     
     var body: some View {
@@ -29,8 +29,9 @@ struct NewLabelView: View {
                 .bold()
             
             __ChangeLabelNameView(label: newLabel) { _, newLabel in
-                document.labels[newLabel.title] = newLabel
-                onDismiss(newLabel)
+                guard let created = try? document.addLabel(title: newLabel.title, color: newLabel.color, undoManager: undoManager) else { return }
+                undoManager?.setActionName("Create label")
+                onDismiss(created)
                 
                 dismiss()
             }
@@ -44,6 +45,6 @@ struct NewLabelView: View {
 #if DEBUG
 #Preview {
     NewLabelView(undoManager: nil, onDismiss: { _ in })
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }
 #endif

@@ -12,7 +12,7 @@ import ViewCollection
 struct LabelListItem: View {
     
     // core
-    @EnvironmentObject var document: AnnotationDocument
+    @Environment(AnnotationDocument.self) private var document
     @Binding var showLabelList: Bool
     
     let item: LabelListItems.InnerViewElement
@@ -65,5 +65,5 @@ struct LabelListItem: View {
                    showLabelList: $showLabelList)
         .frame(width: 300, height: 300)
         .padding(.all)
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }

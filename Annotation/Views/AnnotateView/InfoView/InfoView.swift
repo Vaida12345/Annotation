@@ -37,5 +37,5 @@ struct InfoView: View {
 
     InfoView(annotation: $annotation)
         .frame(width: 400)
-        .environmentObject(AnnotationDocument.preview)
+        .environment(AnnotationDocument.preview)
 }
