@@ -16,28 +16,20 @@ struct ContentView: View {
     
     // core
     @State private var label = "label"
-    @Environment(AnnotationDocument.self) private var document
+    @Bindable var document: AnnotationDocument
     
     // layout
     @State private var showInfoView = false
     @State private var showLabelList = false
     @State private var showPopover = false
     @State private var sideBarState = true
-    @State private var isShowingExportDialog = false
-    
-//    @State private var sideBarWidth = 0.0
     
     
     @Environment(\.undoManager) private var undoManager
     
     var body: some View {
         NavigationView {
-//            GeometryReader { geometry in
-                SideBar()
-//                    .onChange(of: geometry.size.width) { value in
-//                        self.sideBarWidth = value
-//                    }
-//            }
+            SideBar()
             
             if showLabelList {
                 LabelList(showLabelList: $showLabelList)
@@ -76,22 +68,26 @@ struct ContentView: View {
             
             ToolbarItem(placement: .navigation) {
                 Group {
-                    if document.isExporting {
-                        ProgressView(document.exportingProgress)
-                    } else if document.isImporting {
+                    if document.isImporting {
                         ProgressView(document.importingProgress)
+                    } else if document.isExporting {
+                        ProgressView(document.exportingProgress)
                     }
                 }
                 .progressViewStyle(.circular())
                 .onTapGesture {
-                    showPopover.toggle()
+                    if document.isImporting || document.isExporting { showPopover.toggle() }
                 }
                 .popover(isPresented: $showPopover) {
                     VStack {
                         HStack {
-                            Text(document.isImporting ? "Importing..." : "Exporting..")
+                            Text(document.isImporting ? "Importing…" : "Exporting…")
                             
                             Spacer()
+
+                            if document.isImporting {
+                                Button("Cancel") { document.cancelImport() }
+                            }
                         }
                         .padding(.bottom)
                         
@@ -100,24 +96,23 @@ struct ContentView: View {
                     .padding()
                     .frame(width: 300)
                 }
+                .onChange(of: document.isImporting) { _, isImporting in
+                    if !isImporting && !document.isExporting { showPopover = false }
+                }
+                .onChange(of: document.isExporting) { _, isExporting in
+                    if !isExporting && !document.isImporting { showPopover = false }
+                }
             }
             
             ToolbarItem {
                 Button {
-                    isShowingExportDialog = true
+                    document.isShowingExportDialog = true
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up")
                         .labelStyle(.iconOnly)
                 }
                 .padding(.trailing)
-                .fileExporter(isPresented: $isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
-                    guard let url = try? result.get() else { return }
-                    if #available(macOS 26, *) {
-                        try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_26", withExtension: "icns").load(.image))
-                    } else {
-                        try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_15", withExtension: "icns").load(.image))
-                    }
-                }
+                .disabled(document.isImporting || document.isExporting || document.isReadOnly)
             }
             
             ToolbarItem {
@@ -130,9 +125,9 @@ struct ContentView: View {
         }
     }
     
+    @ViewBuilder
     var mainBody: some View {
-        @Bindable var document = document
-        return ZStack {
+        ZStack {
             if !document.annotations.isEmpty {
                 if document.selectedItems.isEmpty {
                     ContainerView {
@@ -149,20 +144,7 @@ struct ContentView: View {
                 DropHandlerView()
                     .onDrop { sources in
                         Task { @MainActor in
-                            await withErrorPresented("Failed to import files") {
-                                try sources.startAccessingSecurityScopedResource()
-                                defer { sources.stopAccessingSecurityScopedResource() }
-                                document.isImporting = true
-                                defer { document.isImporting = false }
-                                let oldItems = document.annotations
-                                let newItems = try await loadItems(from: sources, reporter: document.importingProgress)
-                                document.annotations = oldItems + newItems
-                                if let onlyItem = newItems.count == 1 ? newItems.first : nil { document.selectedItems = [onlyItem.id] }
-                                undoManager?.setActionName("Import files")
-                                undoManager?.registerUndo(withTarget: document) { document in
-                                    document.replaceItems(with: oldItems, undoManager: undoManager)
-                                }
-                            }
+                            document.startImport(from: sources, undoManager: undoManager)
                         }
                     }
             }

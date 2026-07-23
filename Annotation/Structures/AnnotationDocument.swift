@@ -50,6 +50,8 @@ final class AnnotationDocument: ReferenceFileDocument {
         case unreadableMedia(String)
         case invalidCoordinate(image: String)
         case duplicateLabel(String)
+        case recoveredDocumentIsReadOnly
+        case invalidVideoTiming
 
         var errorDescription: String? {
             switch self {
@@ -60,10 +62,12 @@ final class AnnotationDocument: ReferenceFileDocument {
             case .unreadableMedia(let path): "The media file \(path) is not a readable image."
             case .invalidCoordinate(let image): "The project contains an invalid annotation rectangle for \(image)."
             case .duplicateLabel(let title): "The project contains more than one label named “\(title)”."
+            case .recoveredDocumentIsReadOnly: "This recovered project is read-only. Use the original project to repair its missing entries."
+            case .invalidVideoTiming: "The video has invalid duration or frame-rate metadata."
             }
         }
     }
-    
+
     // core
     /// The images, with real annotations hidden inside.
     var annotations: [Annotation]
@@ -86,6 +90,7 @@ final class AnnotationDocument: ReferenceFileDocument {
     
     
     var isShowingExportDialog = false
+    var isShowingRecoverySaveDialog = false
     var isShowingImportDialog = false
     
     var isShowingAutoAnnotate = false
@@ -93,6 +98,23 @@ final class AnnotationDocument: ReferenceFileDocument {
 
     /// Non-fatal issues found while recovering a project package.
     var loadWarnings: [String] = []
+    var isShowingRecoveryWarning = false
+    private(set) var hasRecoveredEntries = false
+
+    var isReadOnly: Bool { hasRecoveredEntries }
+
+    /// Creates a writable document containing only the entries that were
+    /// successfully recovered. The open document remains read-only so an
+    /// automatic save can never replace the damaged package.
+    func recoveredCopy() -> AnnotationDocument {
+        AnnotationDocument(
+            annotations: annotations,
+            labels: labels.values.map { Label(title: $0.title, color: $0.color) }
+        )
+    }
+
+    @ObservationIgnored
+    private var importTask: Task<Void, Never>?
     
 
     init(annotations: [Annotation] = [], labels: Array<Label> = []) {
@@ -119,7 +141,6 @@ final class AnnotationDocument: ReferenceFileDocument {
         recoveredAnnotations.reserveCapacity(document.count)
         for documentItem in document {
             do {
-                guard seenIDs.insert(documentItem.id).inserted else { throw DocumentError.duplicateImageID(documentItem.id) }
                 guard documentItem.image.hasPrefix("Media/"),
                       !documentItem.image.contains(".."),
                       !documentItem.image.dropFirst("Media/".count).contains("/") else {
@@ -135,23 +156,30 @@ final class AnnotationDocument: ReferenceFileDocument {
                 guard documentItem.annotations.allSatisfy({ $0.coordinates.isValid }) else {
                     throw DocumentError.invalidCoordinate(image: documentItem.image)
                 }
+                guard seenIDs.insert(documentItem.id).inserted else { throw DocumentError.duplicateImageID(documentItem.id) }
                 recoveredAnnotations.append(Annotation(id: documentItem.id, image: image, annotations: documentItem.annotations.map(\.annotations)))
             } catch {
                 warnings.append(error.localizedDescription)
             }
         }
         self.annotations = recoveredAnnotations
-        self.loadWarnings = warnings
         
         if let labelsWrapper = wrapper.fileWrappers?["labels.plist"],
            let data = labelsWrapper.regularFileContents {
-            let set = try [Label](data: data, format: .plist)
-            let normalized = try Self.validatedLabels(set)
-            self.labels = .init(uniqueKeysWithValues: normalized.map { ($0.title, $0) })
+            do {
+                let set = try [Label](data: data, format: .plist)
+                let normalized = try Self.validatedLabels(set)
+                self.labels = .init(uniqueKeysWithValues: normalized.map { ($0.title, $0) })
+            } catch {
+                warnings.append("Label metadata could not be read: \(error.localizedDescription)")
+                self.labels = Self.reconstructedLabels(from: recoveredAnnotations)
+            }
         } else {
-            let set = Set(Set(recoveredAnnotations.__labels.map({ Label(title: $0, color: .green) })))
-            self.labels = .init(uniqueKeysWithValues: set.map { ($0.title, $0) })
+            self.labels = Self.reconstructedLabels(from: recoveredAnnotations)
         }
+        self.loadWarnings = warnings
+        self.hasRecoveredEntries = !warnings.isEmpty
+        self.isShowingRecoveryWarning = !warnings.isEmpty
         reconcileState()
     }
 
@@ -161,12 +189,14 @@ final class AnnotationDocument: ReferenceFileDocument {
     }
     
     func snapshot(contentType: UTType) throws -> Snapshot {
+        guard !isReadOnly else { throw DocumentError.recoveredDocumentIsReadOnly }
         reconcileState()
         return Snapshot(annotations: annotations, labels: labels.values.map(LabelSnapshot.init))
     }
     
     
     func fileWrapper(snapshot: Snapshot, configuration: WriteConfiguration) throws -> FileWrapper {
+        guard !isReadOnly else { throw DocumentError.recoveredDocumentIsReadOnly }
         
         Task { @MainActor in
             self.isExporting = true
@@ -326,6 +356,47 @@ final class AnnotationDocument: ReferenceFileDocument {
         return wrapper
         
     }
+
+    @MainActor
+    func startImport(from sources: [FinderItem], undoManager: UndoManager?) {
+        guard importTask == nil, !isReadOnly, !isExporting else { return }
+        isImporting = true
+        let oldItems = annotations
+        
+        try? sources.startAccessingSecurityScopedResource()
+
+        importTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                self.isImporting = false
+                self.importTask = nil
+                
+                sources.stopAccessingSecurityScopedResource()
+            }
+
+            await withErrorPresented("Failed to import files") {
+                do {
+                    let newItems = try await loadItems(from: sources, reporter: self.importingProgress)
+                    try Task.checkCancellation()
+                    self.annotations = oldItems + newItems
+                    if let onlyItem = newItems.count == 1 ? newItems.first : nil {
+                        self.selectedItems = [onlyItem.id]
+                    }
+                    undoManager?.setActionName("Import files")
+                    undoManager?.registerUndo(withTarget: self) { document in
+                        document.replaceItems(with: oldItems, undoManager: undoManager)
+                    }
+                } catch is CancellationError {
+                    return
+                }
+            }
+        }
+    }
+
+    @MainActor
+    func cancelImport() {
+        importTask?.cancel()
+    }
     
     fileprivate struct _AnnotationImport: Codable {
         
@@ -389,6 +460,12 @@ final class AnnotationDocument: ReferenceFileDocument {
 
 
 extension AnnotationDocument {
+
+    private static func reconstructedLabels(from annotations: [Annotation]) -> [String: Label] {
+        Dictionary(uniqueKeysWithValues: annotations.__labels.map { title in
+            (title, Label(title: title, color: .green))
+        })
+    }
 
     func replaceState(annotations newAnnotations: [Annotation], labels newLabels: [Label], selection: Set<Annotation.ID>, undoManager: UndoManager?) {
         let oldAnnotations = annotations
@@ -700,7 +777,8 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
                     guard item.image.hasPrefix("Media/"), !item.image.contains("..") else {
                         throw AnnotationDocument.DocumentError.invalidManifestPath(item.image)
                     }
-                    let image = try source.appending(path: item.image).load(.image)
+                    let mediaItem = source.appending(path: item.image)
+                    let image = try mediaItem.load(.image)
                     guard item.annotations.allSatisfy({ $0.coordinates.isValid }) else {
                         throw AnnotationDocument.DocumentError.invalidCoordinate(image: item.image)
                     }
@@ -712,7 +790,9 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
                 let childReporter = Progress(totalUnitCount: Int64(children.count), parent: reporter, pendingUnitCount: 1)
                 for child in children {
                     try Task.checkCancellation()
-                    if let image = try? child.load(.image) { newItems.append(Annotation(image: image)) }
+                    if let image = try? child.load(.image) {
+                        newItems.append(Annotation(image: image))
+                    }
                     await MainActor.run { childReporter.completedUnitCount += 1 }
                 }
             }
@@ -723,7 +803,8 @@ func loadItems(from sources: [FinderItem], reporter: Progress) async throws -> [
             let childReporter = Progress(totalUnitCount: 300, parent: reporter, pendingUnitCount: 1)
             for try await frame in frames {
                 try Task.checkCancellation()
-                newItems.append(Annotation(image: NativeImage(cgImage: frame.image)))
+                let image = NativeImage(cgImage: frame.image)
+                newItems.append(Annotation(image: image))
                 await MainActor.run { childReporter.completedUnitCount += 1 }
             }
             await MainActor.run { childReporter.totalUnitCount = childReporter.completedUnitCount }
@@ -769,8 +850,17 @@ extension AVAsset {
         
         let seconds = vidLength.seconds
         let frameRate = try await video.load(.nominalFrameRate)
-        
-        let sourceFrameCount = max(Int(seconds * Double(frameRate)), 1)
+
+        guard vidLength.isValid, vidLength.isNumeric, vidLength.timescale > 0,
+              seconds.isFinite, seconds > 0,
+              frameRate.isFinite, frameRate > 0 else {
+            throw AnnotationDocument.DocumentError.invalidVideoTiming
+        }
+        let rawFrameCount = seconds * Double(frameRate)
+        guard rawFrameCount.isFinite, rawFrameCount > 0, rawFrameCount <= Double(Int.max) else {
+            throw AnnotationDocument.DocumentError.invalidVideoTiming
+        }
+        let sourceFrameCount = max(Int(rawFrameCount), 1)
         let requiredFramesCount = min(sourceFrameCount, max(maximumFrameCount, 1))
         
         let step = max(Int(vidLength.value / Int64(requiredFramesCount)), 1)
@@ -782,7 +872,7 @@ extension AVAsset {
         let requestedTimes = (0..<requiredFramesCount).map { CMTime(value: Int64(step * $0), timescale: vidLength.timescale) }
         
         return AsyncThrowingStream { continuation in
-            Task {
+            let producer = Task {
                 do {
                     for time in requestedTimes {
                         try Task.checkCancellation()
@@ -792,6 +882,10 @@ extension AVAsset {
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+            continuation.onTermination = { @Sendable _ in
+                producer.cancel()
+                imageGenerator.cancelAllCGImageGeneration()
             }
         }
     }

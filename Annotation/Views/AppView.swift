@@ -12,69 +12,114 @@ import Essentials
 
 struct AppView: View {
     
-    @Environment(AnnotationDocument.self) private var document
+    @Bindable var document: AnnotationDocument
     
     @Environment(\.undoManager) private var undoManager
+
+    @State private var recoveryExportDocument: AnnotationDocument?
     
     
     var body: some View {
-        @Bindable var document = document
-        ContentView()
-            .fileExporter(isPresented: $document.isShowingExportDialog, document: document, contentType: .folder, defaultFilename: "Annotation Export") { result in
-                guard let url = try? result.get() else { return }
-                if #available(macOS 26, *) {
-                    try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_26", withExtension: "icns").load(.image))
-                } else {
-                    try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_15", withExtension: "icns").load(.image))
+        VStack(spacing: 0) {
+            if document.isReadOnly {
+                HStack {
+                    Image(systemName: "lock.fill")
+                    Text("Recovered project — read-only")
+                    Spacer()
+                    Text("Some entries could not be opened.")
+                        .foregroundStyle(.secondary)
+                    Button("Save Recovered Copy…") {
+                        recoveryExportDocument = document.recoveredCopy()
+                        document.isShowingRecoverySaveDialog = true
+                    }
                 }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(.yellow.opacity(0.18))
             }
-            .fileImporter(isPresented: $document.isShowingImportDialog, allowedContentTypes: [.annotationProject, .movie, .quickTimeMovie, .folder, .image], allowsMultipleSelection: true) { result in
-                guard let urls = try? result.get().map({ FinderItem(at: $0) }) else { return }
-                let oldItems = document.annotations
-                
-                Task { @MainActor in
-                    document.isImporting = true
-                    
-                    await withErrorPresented("Failed to load files") {
-                        defer { document.isImporting = false }
-                        try urls.startAccessingSecurityScopedResource()
-                        defer { urls.stopAccessingSecurityScopedResource() }
-                        
-                        let newItems = try await loadItems(from: urls, reporter: document.importingProgress)
-                        
-                        let union = oldItems + newItems
-                        
-                        await MainActor.run {
-                            document.annotations = union
-                            
-                            undoManager?.setActionName("import files")
-                            undoManager?.registerUndo(withTarget: document, handler: { document in
-                                document.replaceItems(with: oldItems, undoManager: undoManager)
-                            })
+            
+            ContentView(document: document)
+                .disabled(document.isReadOnly)
+        }
+        .fileExporter(
+            isPresented: isShowingFileExporter,
+            document: recoveryExportDocument ?? document,
+            contentType: recoveryExportDocument == nil ? .folder : .annotationProject,
+            defaultFilename: recoveryExportDocument == nil ? "Annotation Export" : "Recovered Annotation Project"
+        ) { result in
+            Task { @MainActor in
+                let isRecoveryExport = recoveryExportDocument != nil
+                defer {
+                    if isRecoveryExport {
+                        recoveryExportDocument = nil
+                    }
+                }
+                withErrorPresented(isRecoveryExport ? "Failed to save recovered project" : "Failed to export") {
+                    let url: URL
+                    do {
+                        url = try result.get()
+                    } catch let error as CocoaError where error.code == .userCancelled {
+                        return
+                    }
+                    if !isRecoveryExport {
+                        if #available(macOS 26, *) {
+                            try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_26", withExtension: "icns").load(.image))
+                        } else {
+                            try? FinderItem(at: url).setIcon(image: FinderItem.bundleItem(forResource: "folder_15", withExtension: "icns").load(.image))
                         }
                     }
                 }
             }
-            .sheet(isPresented: $document.isShowingAutoAnnotate) {
-                AutoAnnotateView(undoManager: undoManager)
+        }
+        .fileImporter(isPresented: $document.isShowingImportDialog, allowedContentTypes: [.annotationProject, .movie, .quickTimeMovie, .folder, .image], allowsMultipleSelection: true) { result in
+            Task { @MainActor in
+                withErrorPresented("Failed to load files") {
+                    let urls: [URL]
+                    do {
+                        urls = try result.get()
+                    } catch let error as CocoaError where error.code == .userCancelled {
+                        return
+                    }
+                    let sources = urls.map(FinderItem.init(at:))
+                    document.startImport(from: sources, undoManager: undoManager)
+                }
             }
-            .sheet(isPresented: $document.isShowingAutoDetect) {
-                AutoDetectView(globalUndoManager: undoManager)
+        }
+        .sheet(isPresented: $document.isShowingAutoAnnotate) {
+            AutoAnnotateView(undoManager: undoManager)
+        }
+        .sheet(isPresented: $document.isShowingAutoDetect) {
+            AutoDetectView(globalUndoManager: undoManager)
+        }
+        .alert("Some project entries could not be opened", isPresented: $document.isShowingRecoveryWarning) {
+            Button("Save Recovered Copy…") {
+                recoveryExportDocument = document.recoveredCopy()
+                document.isShowingRecoverySaveDialog = true
             }
-            .alert("Some project entries could not be opened", isPresented: Binding(
-                get: { !document.loadWarnings.isEmpty },
-                set: { if !$0 { document.loadWarnings.removeAll() } }
-            )) {
-                Button("OK") { document.loadWarnings.removeAll() }
-            } message: {
-                Text(loadWarningMessage)
-            }
+            Button("OK") { document.isShowingRecoveryWarning = false }
+        } message: {
+            Text(loadWarningMessage)
+        }
     }
 
+    private var isShowingFileExporter: Binding<Bool> {
+        Binding(
+            get: {
+                document.isShowingExportDialog || document.isShowingRecoverySaveDialog
+            },
+            set: { isPresented in
+                if !isPresented {
+                    document.isShowingExportDialog = false
+                    document.isShowingRecoverySaveDialog = false
+                }
+            }
+        )
+    }
+    
     private var loadWarningMessage: String {
         let count = document.loadWarnings.count
         let details = document.loadWarnings.prefix(8).joined(separator: "\n")
         let remainder = count > 8 ? "\n…and \(count - 8) more." : ""
-        return "\(count) \(count == 1 ? "entry was" : "entries were") skipped. The remaining project content was recovered.\n\n\(details)\(remainder)"
+        return "\(count) \(count == 1 ? "entry was" : "entries were") skipped. The remaining project content was recovered in read-only mode to protect the original package.\n\n\(details)\(remainder)"
     }
 }

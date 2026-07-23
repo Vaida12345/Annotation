@@ -67,6 +67,7 @@
 		B416914E27B53FB20029AB97 /* icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icon.icns; sourceTree = "<group>"; };
 		B41B36AF298A921D0075DADD /* RenameLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenameLabelView.swift; sourceTree = "<group>"; };
 		B42A8A0330111667000654F4 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
+		B42A8A2430112129000654F4 /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
 		B45B52EF282A8C4E007C8CCC /* SideBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideBar.swift; sourceTree = "<group>"; };
 		B45B52F1282A8C7B007C8CCC /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 		B45B52F3282A8C93007C8CCC /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
@@ -114,6 +115,7 @@
 		B41690FA27B53B020029AB97 = {
 			isa = PBXGroup;
 			children = (
+				B42A8A2430112129000654F4 /* TODO.md */,
 				B416910527B53B020029AB97 /* Annotation */,
 				B416911C27B53B300029AB97 /* Assets */,
 				B416910427B53B020029AB97 /* Products */,

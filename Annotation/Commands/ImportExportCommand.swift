@@ -22,6 +22,7 @@ struct ImportExportCommand: Commands {
                     Label("Import", systemImage: "square.and.arrow.down")
                 }
                 .keyboardShortcut("i")
+                .disabled(document == nil || document?.isReadOnly == true || document?.isImporting == true || document?.isExporting == true)
                 
                 Button {
                     document?.isShowingExportDialog = true
@@ -29,6 +30,7 @@ struct ImportExportCommand: Commands {
                     Label("Export...", systemImage: "square.and.arrow.up")
                 }
                 .keyboardShortcut("e")
+                .disabled(document == nil || document?.isReadOnly == true || document?.isImporting == true || document?.isExporting == true)
             }
         }
     }

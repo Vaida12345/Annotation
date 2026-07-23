@@ -58,8 +58,9 @@ struct LabelListRow: View {
             Divider()
         }
         .id(label)
+        .contentShape(Rectangle())
         .onHover { newValue in
-            withAnimation {
+            withAnimation(.default.speed(2)) {
                 onHover = newValue
             }
         }

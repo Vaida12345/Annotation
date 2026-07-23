@@ -13,14 +13,12 @@ import UniformTypeIdentifiers
 @main
 struct AnnotationApp: App {
     
-    @FocusedValue(\.document) var document
-    
     @AppStorage("AnnotationApp.groupLabelMenu") private var groupLabelMenu = false
     
     
     var body: some Scene {
         DocumentGroup(newDocument: { AnnotationDocument() }) { file in
-            AppView()
+            AppView(document: file.document)
                 .environment(file.document)
                 .focusedSceneValue(\.document, file.document)
         }

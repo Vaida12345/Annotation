@@ -11,6 +11,7 @@ import CoreImage
 import ViewCollection
 import Essentials
 import NativeImage
+import Observation
 
 
 struct AutoDetectView: View {
@@ -21,10 +22,10 @@ struct AutoDetectView: View {
     
     @State private var detectProgress: DetectProgress = .initial
     
-    @StateObject private var rawImages: RawImagesContainer = .init()
+    @State private var rawImages = RawImagesContainer()
     
     @Environment(AnnotationDocument.self) private var document
-    @StateObject private var autoDetectDocument: AutoDetectDocument = AutoDetectDocument()
+    @State private var autoDetectDocument = AutoDetectDocument()
     
     let globalUndoManager: UndoManager?
     
@@ -162,7 +163,6 @@ struct AutoDetectView: View {
                             detectProgress = .applyingML
                             
                         case .waitForConfidence:
-                            self.rawImages.objectWillChange.send()
                             self.rawImages.images = self.rawImages.images.filter({ $0.confidence > confidence })
                             detectProgress = .waitForSelection
                             
@@ -267,14 +267,14 @@ struct AutoDetectView: View {
 }
 
 
-final class RawImagesContainer: ObservableObject {
+@Observable
+final class RawImagesContainer {
     
-    @Published var images: [RawImage] = []
+    var images: [RawImage] = []
     
     func assign(label: AnnotationDocument.Label?, to image: RawImage, with undoManager: UndoManager?) {
         guard let firstIndex = self.images.firstIndex(of: image) else { return }
         let oldLabel = self.images[firstIndex].givenTag
-        self.objectWillChange.send()
         self.images[firstIndex].givenTag = label
         
         if let label {
@@ -316,9 +316,10 @@ final class RawImagesContainer: ObservableObject {
 }
 
 
-final class AutoDetectDocument: ObservableObject {
+@Observable
+final class AutoDetectDocument {
     
-    @Published var annotations: [IdentifiedAnnotation] = []
+    var annotations: [IdentifiedAnnotation] = []
     
     func applyML(option: AutoDetectView.DetectOption, document: AnnotationDocument, unannotatedImagesOnly: Bool) async throws -> [IdentifiedAnnotation] {
         let annotations = document.annotations.filter { unannotatedImagesOnly => $0.annotations.isEmpty }
