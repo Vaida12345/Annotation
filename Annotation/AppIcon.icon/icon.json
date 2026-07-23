@@ -4,14 +4,21 @@
   },
   "groups" : [
     {
-      "blur-material" : 0.5,
+      "blur-material" : null,
       "layers" : [
         {
           "fill" : {
-            "automatic-gradient" : "extended-srgb:0.00000,0.47843,1.00000,1.00000"
+            "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
           },
-          "image-name" : "icon_512x512@2x 3.png",
-          "name" : "icon_512x512@2x 3"
+          "image-name" : "hero_1080p.png",
+          "name" : "hero_1080p",
+          "position" : {
+            "scale" : 0.73,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
       ],
       "position" : {
@@ -23,11 +30,11 @@
       },
       "shadow" : {
         "kind" : "layer-color",
-        "opacity" : 0.4
+        "opacity" : 0.2
       },
       "specular" : true,
       "translucency" : {
-        "enabled" : true,
+        "enabled" : false,
         "value" : 0.5
       }
     }
